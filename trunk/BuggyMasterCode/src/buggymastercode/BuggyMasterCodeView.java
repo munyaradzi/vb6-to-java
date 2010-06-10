@@ -21,6 +21,10 @@ import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 
+import org.fife.ui.rtextarea.*;
+import org.fife.ui.rsyntaxtextarea.*;
+
+
 /**
  * The application's main frame.
  */
@@ -116,10 +120,12 @@ public class BuggyMasterCodeView extends FrameView {
 
         mainPanel = new javax.swing.JPanel();
         jSplitPane1 = new javax.swing.JSplitPane();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        txSourceCode = new javax.swing.JTextArea();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        txSourceCodeJava = new javax.swing.JTextArea();
+        txSourceCode = new RSyntaxTextArea();
+        txSourceCode.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_VB);
+        jScrollPane1 = new RTextScrollPane(txSourceCode);
+        txSourceCodeJava = new RSyntaxTextArea();
+        txSourceCodeJava.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
+        jScrollPane2 = new RTextScrollPane(txSourceCodeJava);
         jPanel1 = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         txFileVB = new javax.swing.JTextField();
@@ -155,7 +161,7 @@ public class BuggyMasterCodeView extends FrameView {
         txSourceCode.setColumns(20);
         txSourceCode.setRows(5);
         txSourceCode.setName("txSourceCode"); // NOI18N
-        jScrollPane1.setViewportView(txSourceCode);
+        //jScrollPane1.setViewportView(txSourceCode);
 
         jSplitPane1.setLeftComponent(jScrollPane1);
 
@@ -164,7 +170,7 @@ public class BuggyMasterCodeView extends FrameView {
         txSourceCodeJava.setColumns(20);
         txSourceCodeJava.setRows(5);
         txSourceCodeJava.setName("txSourceCodeJava"); // NOI18N
-        jScrollPane2.setViewportView(txSourceCodeJava);
+        //jScrollPane2.setViewportView(txSourceCodeJava);
 
         jSplitPane1.setRightComponent(jScrollPane2);
 
@@ -385,8 +391,8 @@ public class BuggyMasterCodeView extends FrameView {
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
-    private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
+    private RTextScrollPane jScrollPane1;
+    private RTextScrollPane jScrollPane2;
     private javax.swing.JSplitPane jSplitPane1;
     private javax.swing.JLabel lbPackage;
     private javax.swing.JPanel mainPanel;
@@ -397,8 +403,8 @@ public class BuggyMasterCodeView extends FrameView {
     private javax.swing.JPanel statusPanel;
     private javax.swing.JMenu toolMenu;
     private javax.swing.JTextField txFileVB;
-    private javax.swing.JTextArea txSourceCode;
-    private javax.swing.JTextArea txSourceCodeJava;
+    private RSyntaxTextArea txSourceCode;
+    private RSyntaxTextArea txSourceCodeJava;
     // End of variables declaration//GEN-END:variables
 
     private final Timer messageTimer;

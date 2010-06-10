@@ -161,14 +161,19 @@ public class Login extends javax.swing.JDialog {
     }
 
     private boolean getDbObjects(String type) {
-    	if (type.equals(BuggyMasterCodeApp.C_DB_TYPE_ORACLE)) {
-    		BuggyMasterCodeApp.setDb(new DBOracle());
-    		BuggyMasterCodeApp.setDbBuggyMasterCode(new DBOracleBuggyMasterCode());
-		} else {
-			BuggyMasterCodeApp.getLogger().log(Level.WARNING, "the database type " + type + " is not implemented yet");
-			return false;
-		}
-    	return true;
+        if (type.equals(BuggyMasterCodeApp.C_DB_TYPE_ORACLE)) {
+            BuggyMasterCodeApp.setDb(new DBOracle());
+            BuggyMasterCodeApp.setDbBuggyMasterCode(new DBOracleBuggyMasterCode());
+        }
+        else if (type.equals(BuggyMasterCodeApp.C_DB_TYPE_H2)) {
+            BuggyMasterCodeApp.setDb(new DBH2());
+            BuggyMasterCodeApp.setDbBuggyMasterCode(new DBH2BuggyMasterCode());
+        }
+        else {
+            BuggyMasterCodeApp.getLogger().log(Level.WARNING, "the database type " + type + " is not implemented yet");
+            return false;
+        }
+        return true;
     }
 
     @Action

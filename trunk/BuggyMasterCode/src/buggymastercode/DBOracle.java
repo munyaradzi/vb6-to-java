@@ -23,10 +23,10 @@ import org.apache.commons.beanutils.RowSetDynaClass;
 public class DBOracle implements DBConnection {
 
     Connection m_cn = null;
-    boolean m_isValid = false; // esto esta por que la pc se levanto medio boluda
-    // y no anda el metodo isValid de JDBC asi que lo
-    // resolvimos con esta variable local que no es lo
-    // mejor pero almenos funca :P
+    boolean m_isValid = false;  // esto esta por que la pc se levanto medio boluda
+                                // y no anda el metodo isValid de JDBC asi que lo
+                                // resolvimos con esta variable local que no es lo
+                                // mejor pero almenos funca :P
     String m_server = "";
     String m_user = "";
     String m_password = "";
@@ -192,6 +192,7 @@ public class DBOracle implements DBConnection {
         return m_cn;
     }
 
+    @Override
     public boolean getNewId(String table, DataBaseId id) {
         G.setHourglass();
         String sqlstmt = "select seq_" + table + "_id.nextval from dual";
