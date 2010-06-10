@@ -151,7 +151,7 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
             translator.initTranslator(vbFullFile);
 
             if (translator.isVbSource()) {
-                fstream = new FileInputStream(vbFullFile);
+                fstream = new FileInputStream(getFileForOS(vbFullFile));
                 DataInputStream in = new DataInputStream(fstream);
                 BufferedReader br = new BufferedReader(new InputStreamReader(in));
                 String strLine;
@@ -196,7 +196,7 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
 
             translator.initTranslator(vbFile);
 
-            fstream = new FileInputStream(vbFile);
+            fstream = new FileInputStream(getFileForOS(vbFile));
             DataInputStream in = new DataInputStream(fstream);
             BufferedReader br = new BufferedReader(new InputStreamReader(in));
             String strLine;
@@ -223,5 +223,9 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
                 Logger.getLogger(BuggyMasterCodeView.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+    }
+
+    private String getFileForOS(String file) {
+        return file.replace("\\", "/");
     }
 }

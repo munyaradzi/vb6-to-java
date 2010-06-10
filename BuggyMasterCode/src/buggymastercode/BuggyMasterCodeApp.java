@@ -18,8 +18,8 @@ import org.jdesktop.application.SingleFrameApplication;
 public class BuggyMasterCodeApp extends SingleFrameApplication {
 
     // constants
-    public static final String C_SERVICE_NAME = "cairo server";
     public static final String C_DB_TYPE_ORACLE = "oracle";
+    public static final String C_DB_TYPE_H2 = "h2";
 
     static Logger m_logger = Logger.getLogger("ar.com.crowsoft.cvxi");
     FileHandler fh;
