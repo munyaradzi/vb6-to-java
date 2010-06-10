@@ -226,6 +226,12 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
     }
 
     private String getFileForOS(String file) {
-        return file.replace("\\", "/");
+        String nameOS = "os.name";
+        if (System.getProperty(nameOS).toLowerCase().contains("windows")) {
+            return file;
+        }
+        else {
+            return file.replace("\\", "/");
+        }
     }
 }
