@@ -23,6 +23,9 @@ public class Translator {
     private boolean m_attributeBlockHasStarted = false;
     private boolean m_inFunction = false;
     private boolean m_inEnum = false;
+
+    private String[] m_iterators = {"","_i","_j","_k","_t","_w","_z"};
+    private int m_iteratorIndex = 0;
     
     private ArrayList<String> m_collTypes = new ArrayList<String>();
     private ArrayList<String> m_collEnums = new ArrayList<String>();
@@ -572,6 +575,16 @@ public class Translator {
                         return translateCaseSentence(strLine);
                     else if (isEndSelectSentence(workLine))
                         return translateEndSelectSentence(strLine);
+                    else if (isExitFunctionSentence(workLine))
+                        return translateExitFunctionSentence(strLine);
+                    else if (isWhileSentence(workLine))
+                        return translateWhileSentence(strLine);
+                    else if (isWendSentence(workLine))
+                        return translateWendSentence(strLine);
+                    else if (isForSentence(workLine))
+                        return translateForSentence(strLine);
+                    else if (isNextSentence(workLine))
+                        return translateNextSentence(strLine);
                     else
                         return translateSentenceWithNewLine(strLine);
                         // loop block
@@ -651,6 +664,22 @@ public class Translator {
             return false;
     }
 
+    private boolean isWhileSentence(String strLine) {
+        if (G.beginLike(strLine, "While ")) {
+            return true;
+        }
+        else
+            return false;
+    }
+
+    private boolean isForSentence(String strLine) {
+        if (G.beginLike(strLine, "For ")) {
+            return true;
+        }
+        else
+            return false;
+    }
+
     private boolean isElseIfSentence(String strLine) {
         if (G.beginLike(strLine, "ElseIf ")) {
             return true;
@@ -689,6 +718,63 @@ public class Translator {
             }
             strLine = G.ltrimTab(strLine);
             if (strLine.equalsIgnoreCase("End Select")) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+    }
+
+    private boolean isExitFunctionSentence(String strLine) {
+        if (G.beginLike(strLine, "Exit Function ")) {
+            return true;
+        }
+        else {
+            int startComment = getStartComment(strLine);
+            if (startComment >= 0) {
+                strLine = strLine.substring(0, startComment-1);
+            }
+            strLine = G.ltrimTab(strLine);
+            if (strLine.equalsIgnoreCase("Exit Function")) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+    }
+
+    private boolean isWendSentence(String strLine) {
+        if (G.beginLike(strLine, "Wend ")) {
+            return true;
+        }
+        else {
+            int startComment = getStartComment(strLine);
+            if (startComment >= 0) {
+                strLine = strLine.substring(0, startComment-1);
+            }
+            strLine = G.ltrimTab(strLine);
+            if (strLine.equalsIgnoreCase("Wend")) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+    }
+
+    private boolean isNextSentence(String strLine) {
+        if (G.beginLike(strLine, "Next ")) {
+            return true;
+        }
+        else {
+            int startComment = getStartComment(strLine);
+            if (startComment >= 0) {
+                strLine = strLine.substring(0, startComment-1);
+            }
+            strLine = G.ltrimTab(strLine);
+            if (strLine.equalsIgnoreCase("Next")) {
                 return true;
             }
             else {
@@ -987,6 +1073,314 @@ public class Translator {
         }
         else {
             return "        break;" + newline + getTabs() + "}" + newline;
+        }
+    }
+
+    private String translateExitFunctionSentence(String strLine) {
+        int startComment = getStartComment(strLine);
+        if (startComment >= 0) {
+            String comments = "";
+            comments =  "//" + strLine.substring(startComment);
+            return "return null;" + comments + newline;
+        }
+        else {
+            return "return null;" + newline;
+        }
+    }
+
+    private String translateWhileSentence(String strLine) {
+        // the while block can contain an or more call sentence
+        // and one or more logic operators and unary operators
+        // binary operators: and, or
+        // unary operator: not
+        //
+        boolean literalFlag = false;
+        boolean previousWasNot = false;
+        boolean previousWasParentheses = false;
+        boolean isFirstWord = true;
+        String javaSentenceWhile = "";
+        String comments = "";
+
+        int startComment = getStartComment(strLine);
+        if (startComment >= 0) {
+            comments =  "//" + strLine.substring(startComment);
+            strLine = strLine.substring(0, startComment-1);
+        }
+
+        String[] words = strLine.split("\\s+");
+
+        // we start in 1 because word[0] is "If"
+        //
+        for (int i = 1; i < words.length; i++) {
+            // typical sentence:
+                // " if x then " -> 3 words
+                // " if x and z then " -> 5 words
+                // " if x and callFunction() then " -> 5 words
+                // " if ((x or z) and y) or callFunction(param1, param2, param3)) then " -> too many words :)
+                //
+            // rules
+                // 1- we have to add parentheses
+                // 2- we have to respect parentheses
+                // 3- we have to detect function calls
+                // 4- we have to translate "or", "and", and "not"
+
+            for (int j = 0; j < words[i].length(); j++) {
+                if (words[i].charAt(j) == '"') {
+                    literalFlag = !literalFlag;
+                }
+            }
+
+            if (literalFlag) {
+                javaSentenceWhile += " " + words[i];
+            }
+            else {
+                if (words[i].equalsIgnoreCase("and")) {
+                    javaSentenceWhile += " &&";
+                }
+                else if (words[i].equalsIgnoreCase(")and")) {
+                    javaSentenceWhile += ") &&";
+                }
+                else if (words[i].equalsIgnoreCase("and(")) {
+                    javaSentenceWhile += " && (";
+                }
+                else if (words[i].equalsIgnoreCase("or")) {
+                    javaSentenceWhile += " ||";
+                }
+                else if (words[i].equalsIgnoreCase(")or")) {
+                    javaSentenceWhile += ") ||";
+                }
+                else if (words[i].equalsIgnoreCase("or(")) {
+                    javaSentenceWhile += " || (";
+                }
+                else if (words[i].equalsIgnoreCase("<>")) {
+                    javaSentenceWhile += " !=";
+                }
+                else if (words[i].equalsIgnoreCase("not")) {
+                    javaSentenceWhile += " !";
+                }
+                else if (words[i].equals("(")) {
+                    if (previousWasNot)
+                        javaSentenceWhile += "(";
+                    else
+                        javaSentenceWhile += " (";
+                }
+                else if (words[i].equals(")")) {
+                    javaSentenceWhile += ")";
+                }
+                else if (words[i].equalsIgnoreCase("=")) {
+                    javaSentenceWhile += " ==";
+                }
+                else {
+                    if (isFirstWord) {
+                        javaSentenceWhile += words[i];
+                        isFirstWord = false;
+                    }
+                    else if (previousWasNot || previousWasParentheses) {
+                        javaSentenceWhile += words[i];
+                    }
+                    else {
+                        javaSentenceWhile += " " + words[i];
+                    }
+                }
+
+                // flags
+                //
+                if (words[i].equalsIgnoreCase("not")) {
+                    previousWasNot = true;
+                }
+                else {
+                    previousWasNot = false;
+                }
+
+                if (words[i].charAt(words[i].length()-1) == '(') {
+                    previousWasParentheses = true;
+                }
+                else {
+                    previousWasParentheses = false;
+                }
+            }
+        }
+        return "while (" + translateSentence(javaSentenceWhile) + ") {"
+                + comments + newline;
+    }
+
+    private String translateForSentence(String strLine) {
+
+        m_iteratorIndex++;
+
+        // the for block can have three forms:
+        //   for each var in collection
+        //   for var = value_x to value_y
+        //   for var = value_x to value_y step step_value
+        //
+        boolean literalFlag = false;
+        boolean eachFound = false;
+        boolean toFound = false;
+        boolean inFound = false;
+        boolean equalsFound = false;
+        boolean stepFound = false;
+        String iterator = "";
+        String endValue = "";
+        String startValue = "";
+        String increment = "";
+        String step = "";
+        String collection = "";
+        String comments = "";
+
+        int startComment = getStartComment(strLine);
+        if (startComment >= 0) {
+            comments =  "//" + strLine.substring(startComment);
+            strLine = strLine.substring(0, startComment-1);
+        }
+
+        String[] words = strLine.split("\\s+");
+
+        // we start in 1 because word[0] is "For"
+        //
+        for (int i = 1; i < words.length; i++) {
+            // typical sentence:
+                //   for each var in collection
+                //   for var = value_x to value_y
+                //   for var = value_x to value_y step step_value
+                //
+            // rules
+                // 1- we have to add parentheses
+                // 2- we have to respect parentheses
+                // 3- we have to detect function calls
+
+            for (int j = 0; j < words[i].length(); j++) {
+                if (words[i].charAt(j) == '"') {
+                    literalFlag = !literalFlag;
+                }
+            }
+
+            if (literalFlag) {
+                if (eachFound) {
+                    if (inFound) {
+                        collection += " " + words[i];
+                    }
+                    else {
+                        iterator += " " + words[i];
+                    }
+                }
+                else if (equalsFound) {
+                    if (stepFound) {
+                        step += " " + words[i];
+                    }
+                    else if (toFound) {
+                        endValue += " " + words[i];
+                    }
+                    else {
+                        startValue += " " + words[i];
+                    }
+                }
+                else {
+                    iterator += " " + words[i];
+                }
+            }
+            else {
+                if (eachFound) {
+                    if (inFound) {
+                        collection += " " + words[i];
+                    }
+                    else if (words[i].equalsIgnoreCase("in")) {
+                        inFound = true;
+                    }
+                    else {
+                        iterator += " " + words[i];
+                    }
+                }
+                else if (equalsFound) {
+                    if (stepFound) {
+                        step += " " + words[i];
+                    }
+                    else if (words[i].equalsIgnoreCase("step")) {
+                        stepFound = true;
+                    }
+                    else if (toFound) {
+                        endValue += " " + words[i];
+                    }
+                    else if (words[i].equalsIgnoreCase("to")) {
+                        toFound = true;
+                    }
+                    else {
+                        startValue += " " + words[i];
+                    }
+                }
+                else {
+                    if (words[i].equalsIgnoreCase("each")) {
+                        eachFound = true;
+                    }
+                    else if (words[i].equalsIgnoreCase("=")) {
+                        equalsFound = true;
+                    }
+                    else if (words[i].equals("(")) {
+                        iterator += "(";
+                    }
+                    else if (words[i].equals(")")) {
+                        iterator += ")";
+                    }
+                    else {
+                        iterator += " " + words[i];
+                    }
+                }
+            }
+        }
+        if (eachFound) {
+            collection = collection.trim();
+            iterator = iterator.trim();
+            return "for (int " + m_iterators[m_iteratorIndex] + " = 0;"
+                            + " " + m_iterators[m_iteratorIndex] + " < " + collection + ".count();"
+                            + " " + m_iterators[m_iteratorIndex] + "++) {"
+                            + comments + newline
+                            + getTabs() + "    "
+                            + iterator + " = " + collection 
+                            + ".getItem(" + m_iterators[m_iteratorIndex] + ");" + newline;
+        }
+        else {
+
+            if (step.replace(" ","").equals("+1")) {
+                increment = "++";
+            }
+            else if (step.replace(" ","").equals("-1")) {
+                increment = "--";
+            }
+            else {
+                increment = " = " + iterator + step;
+            }
+            iterator.trim();
+            startValue.trim();
+            return "for (" + iterator + " = " + startValue + ";"
+                            + iterator + " < " + endValue + ";"
+                            + iterator + increment + ") {"
+                            + comments + newline;
+        }
+    }
+
+    private String translateWendSentence(String strLine) {
+        int startComment = getStartComment(strLine);
+        if (startComment >= 0) {
+            String comments = "";
+            comments =  "//" + strLine.substring(startComment);
+            return "}" + comments + newline;
+        }
+        else {
+            return "}" + newline;
+        }
+    }
+
+    private String translateNextSentence(String strLine) {
+
+        m_iteratorIndex--;
+
+        int startComment = getStartComment(strLine);
+        if (startComment >= 0) {
+            String comments = "";
+            comments =  "//" + strLine.substring(startComment);
+            return "}" + comments + newline;
+        }
+        else {
+            return "}" + newline;
         }
     }
 
