@@ -24,7 +24,7 @@ import javax.swing.JTable;
  */
 public class G {
 
-    static private final String C_SYMBOLS = " +-*/,";
+    static private final String C_SYMBOLS = " +-*/,;";
 
     public static boolean isNumeric(Object value) {
         try {
@@ -249,6 +249,7 @@ public class G {
 
     public static String[] split(String strLine) {
         boolean literalFlag = false;
+        boolean numberFlag = false;
         String[] words = new String[500];
         String word = "";
         int j = 0;
@@ -261,33 +262,21 @@ public class G {
             }
             if (!literalFlag) {
 
-                if (openParentheses == 0) {
-                    if (strLine.charAt(i) == '(') {
-                        openParentheses++;
-                        wordEnded = true;
-                    }
-                    else if (C_SYMBOLS.contains(String.valueOf(strLine.charAt(i)))) {
-                        wordEnded = true;
-                    }
-                    if (wordEnded) {
-                        j = addWord(word, strLine, words, i, j);
-                        wordEnded = false;
-                        if (!word.isEmpty()) {
-                            word = "";
-                        }
-                    }
-                    else {
-                        word += String.valueOf(strLine.charAt(i));
-                    }
+                if (strLine.charAt(i) == '#') {
+                    numberFlag = !numberFlag;
                 }
-                else {
-                    if (strLine.charAt(i) == '(') {
-                        openParentheses++;
-                        word += String.valueOf(strLine.charAt(i));
-                    }
-                    else if (strLine.charAt(i) == ')') {
-                        openParentheses--;
-                        if (openParentheses == 0) {
+
+                if (!numberFlag) {
+
+                    if (openParentheses == 0) {
+                        if (strLine.charAt(i) == '(') {
+                            openParentheses++;
+                            wordEnded = true;
+                        }
+                        else if (C_SYMBOLS.contains(String.valueOf(strLine.charAt(i)))) {
+                            wordEnded = true;
+                        }
+                        if (wordEnded) {
                             j = addWord(word, strLine, words, i, j);
                             wordEnded = false;
                             if (!word.isEmpty()) {
@@ -299,8 +288,30 @@ public class G {
                         }
                     }
                     else {
-                        word += String.valueOf(strLine.charAt(i));
+                        if (strLine.charAt(i) == '(') {
+                            openParentheses++;
+                            word += String.valueOf(strLine.charAt(i));
+                        }
+                        else if (strLine.charAt(i) == ')') {
+                            openParentheses--;
+                            if (openParentheses == 0) {
+                                j = addWord(word, strLine, words, i, j);
+                                wordEnded = false;
+                                if (!word.isEmpty()) {
+                                    word = "";
+                                }
+                            }
+                            else {
+                                word += String.valueOf(strLine.charAt(i));
+                            }
+                        }
+                        else {
+                            word += String.valueOf(strLine.charAt(i));
+                        }
                     }
+                }
+                else {
+                    word += String.valueOf(strLine.charAt(i));
                 }
             }
             else {

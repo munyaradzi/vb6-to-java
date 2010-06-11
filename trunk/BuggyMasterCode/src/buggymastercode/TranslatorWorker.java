@@ -207,8 +207,10 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
                 }
             }
             if (translator.isVbSource()) {
+                sourceCodeJava.append(translator.getAuxFunctions());
                 sourceCodeJava.append("}" + newline);
             }
+            sourceCodeJava.insert(0, translator.getImportSection());
             sourceFile.setVbSource(sourceCode.toString());
             sourceFile.setJavaSource(sourceCodeJava.toString() + newline + translator.getSubClasses());
 

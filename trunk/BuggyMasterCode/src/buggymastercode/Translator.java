@@ -23,6 +23,7 @@ public class Translator {
     private boolean m_attributeBlockHasStarted = false;
     private boolean m_inFunction = false;
     private boolean m_inEnum = false;
+    private boolean m_emptyLine = false;
 
     private String[] m_iterators = {"","_i","_j","_k","_t","_w","_z"};
     private int m_iteratorIndex = 0;
@@ -45,6 +46,8 @@ public class Translator {
     private String m_vbClassName = "";
     private String m_javaClassName = "";
     private boolean m_isFirstCase = false;
+    private boolean m_previousWasReturn = false;
+    private boolean m_addDateAuxFunction = false;
 
     public void setSourceFiles(ArrayList<SourceFile> sourceFiles) {
         m_collFiles = sourceFiles;
@@ -107,9 +110,10 @@ public class Translator {
     }
 
     public String translate(String strLine) {
+        String rtn = "";
         if (m_isVbSource) {
             if (m_codeHasStarted) {
-                return translateLine(strLine);
+                rtn = translateLine(strLine);
             }
             else {
                 if (strLine.contains("Attribute VB_Name = \"")) {
@@ -118,38 +122,85 @@ public class Translator {
                     m_vbClassName = className;
                     m_javaClassName = m_vbClassName;
                     m_tabCount++;
-                    return "public class " + className + " {" + newline + newline;
+                    rtn = "public class " + className + " {" + newline + newline;
                 }
                 else {
                     if (m_attributeBlockHasStarted) {
                         if (strLine.length() < 9) {
                             m_codeHasStarted = true;
-                            return translateLine(strLine);
+                            rtn = translateLine(strLine);
                         }
                         else {
                             if (!strLine.substring(0,9).equals("Attribute")) {
                                 m_codeHasStarted = true;
-                                return translateLine(strLine);
+                                rtn = translateLine(strLine);
                             }
                             else
-                                return "";
+                                rtn = "";
                         }
                     }
                     else {
                         if (strLine.length() < 9) {
-                            return "";
+                            rtn = "";
                         }
                         else {
                             if (strLine.substring(0,9).equals("Attribute")) {
                                 m_attributeBlockHasStarted = true;
                             }
-                            return "";
+                            rtn = "";
                         }
                     }
                 }
             }
-        } else
-            return "";
+        }
+        if (rtn.contains("return ")) {
+            m_previousWasReturn = true;
+        }
+        else if (rtn.contains("return;")) {
+            m_previousWasReturn = true;
+        }
+        else if (!rtn.trim().isEmpty()) {
+            m_previousWasReturn = false;
+        }
+        if (m_emptyLine) {
+            m_emptyLine = false;
+            rtn = "";
+        }
+        return rtn;
+    }
+
+    public String getImportSection() {
+        String rtn = "";
+
+        if (m_addDateAuxFunction) {
+            rtn = newline +
+                    "import java.text.DateFormat;" + newline +
+                    "import java.text.ParseException;" + newline +
+                    "import java.text.SimpleDateFormat;" + newline +
+                    "import java.util.Date;" + newline;
+        }
+
+        return rtn + newline;
+    }
+
+    public String getAuxFunctions() {
+        String rtn = "";
+
+        if (m_addDateAuxFunction) {
+            rtn = newline +
+                    "    private static Date getDateFromString(String date)" + newline +
+                    "    {" + newline +
+                    "        DateFormat df = new SimpleDateFormat(\"MM/dd/yyyy\");" + newline +
+                    "        date = date.replace(\"#\",\"\");" + newline +
+                    "        Date dateValue = null;" + newline +
+                    "        try {" + newline +
+                    "            dateValue = df.parse(date);" + newline +
+                    "        } catch (ParseException ex) {/* it can not be possible*/}" + newline +
+                    "        return dateValue;" + newline +
+                    "    }" + newline;
+        }
+
+        return rtn;
     }
 
     private void parseLine(String strLine) {
@@ -508,6 +559,12 @@ public class Translator {
     }
 
     private String translateCode(String strLine, boolean inDeclaration) {
+        String rtn = translateCodeAux(strLine, inDeclaration);
+        rtn = translateDateConstant(rtn);
+        return rtn;
+    }
+
+    private String translateCodeAux(String strLine, boolean inDeclaration) {
         // get out spaces even tabs
         //
         String workLine = G.ltrimTab(strLine).toLowerCase();
@@ -598,6 +655,25 @@ public class Translator {
             }
         }
         return "*" + strLine + newline;
+    }
+
+    private String translateDateConstant(String strLine) {
+        String rtn = "";
+        String[] words = G.split(strLine);
+        for (int i = 0; i < words.length; i++) {
+            if (words[i].length() >= 8) {
+                if (words[i].charAt(0) == '#') {
+                    if (words[i].charAt(words[i].length() - 1) == '#') {
+                        words[i] = "getDateFromString("
+                                    + words[i].substring(1, words[i].length() - 1)
+                                    +")";
+                        m_addDateAuxFunction = true;
+                    }
+                }
+            }
+            rtn += words[i];
+        }
+        return rtn;
     }
 
     private void parseFunctionDeclaration(String strLine) {
@@ -1081,10 +1157,19 @@ public class Translator {
         if (startComment >= 0) {
             String comments = "";
             comments =  "//" + strLine.substring(startComment);
-            return "return null;" + comments + newline;
+            if (m_previousWasReturn)
+                return comments + newline;
+            else
+                return "return null;" + comments + newline;
         }
         else {
-            return "return null;" + newline;
+            if (m_previousWasReturn) {
+                m_emptyLine = true;
+                return "";
+            }
+            else {
+                return "return null;" + newline;
+            }
         }
     }
 
@@ -2492,40 +2577,35 @@ public class Translator {
 
     private String translatePrivateConstMember(String strLine) {
         // form is
-            // dim variable_name as data_type
+            // private const identifier as data_type = value
+            // private const identifier = value
         strLine = strLine.trim();
-        String[] words = strLine.split("\\s+");
+
+        int startComment = getStartComment(strLine);
+        String workLine = strLine;
+        String comments = "";
+        if (startComment >= 0) {
+            comments =  "//" + workLine.substring(startComment);
+            workLine = workLine.substring(0, startComment-1);
+        }
+
+        String[] words = workLine.split("\\s+");
         String dataType = "";
         String identifier = "";
         String constValue = "";
-        String misc = "";
 
-        if (words.length > 2) {
+        // private const identifier as data_type = value
+        //
+        if (words.length > 5) {
             identifier = words[2];
-            if (words.length >= 4) {
-                if (words[4].equals("=")) {
-                    if (words.length > 4) {
-                        dataType = words[4];
-                    }
-                    if (words.length >= 5) {
-                        constValue = words[5];
-                    }
-                    for (int i = 6; i < words.length; i++) {
-                        misc += " " + words[i] ;
-                    }
-                }
-                else {
-                    if (words.length >= 4) {
-                        constValue = words[4];
-                    }
-                    for (int i = 5; i < words.length; i++) {
-                        misc += " " + words[i] ;
-                    }
-                }
-            }
-            else {
-                return "*" + strLine + newline;
-            }
+            dataType = words[4];
+            constValue = words[6];
+        }
+        // private const identifier = value
+        //
+        else if (words.length == 5) {
+            identifier = words[2];
+            constValue = words[4];
         }
         else {
             return "*" + strLine + newline;
@@ -2548,7 +2628,11 @@ public class Translator {
                 return "*TODO: (the data type can't be found for the value [" + constValue + "])" + strLine + newline;
             }
         }
-        return "private static final " + dataType + " " + identifier + " = " + constValue + ";" + misc + newline;
+        return "private static final "
+                + dataType + " "
+                + identifier + " = "
+                + constValue + ";"
+                + comments + newline;
     }
 
     private String translatePublicConstMember(String strLine) {
@@ -2758,6 +2842,7 @@ public class Translator {
         m_privateFunctions = new ArrayList<Function>();
         m_publicFunctions = new ArrayList<Function>();
         m_tabCount = 0;
+        m_addDateAuxFunction = false;
 
         if (name.contains(".")) {
             if (name.length() > 0) {
