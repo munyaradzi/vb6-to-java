@@ -562,6 +562,7 @@ public class Translator {
         String rtn = translateCodeAux(strLine, inDeclaration);
         rtn = translateDateConstant(rtn);
         rtn = translateUbound(rtn);
+        rtn = translateIsNull(rtn);
         return rtn;
     }
 
@@ -708,7 +709,7 @@ public class Translator {
                     }
 
                 }
-                else {
+                else if (!words[i].equalsIgnoreCase("Ubound")) {
                     arrayExpression += words[i];
                 }
             }
@@ -729,7 +730,69 @@ public class Translator {
                         }
                     }
                 }
-                rtn += words[i];
+                if (!uboundFound) {
+                    rtn += words[i];
+                }
+            }
+        }
+        return rtn;
+    }
+
+    private String translateIsNull(String strLine) {
+        boolean openParentheses = false;
+        boolean isNullFound = false;
+        int iOpenParentheses = 0;
+        String nullExpression = "";
+        String rtn = "";
+        String[] words = G.split(strLine);
+        for (int i = 0; i < words.length; i++) {
+            if (isNullFound) {
+                if (words[i].equals("(")) {
+                    iOpenParentheses++;
+                    if (iOpenParentheses > 1) {
+                        nullExpression += words[i];
+                    }
+                }
+                else if (words[i].equals(")")) {
+                    iOpenParentheses--;
+                    if (iOpenParentheses == 0) {
+                        if (nullExpression.contains(" ")) {
+                            rtn += "(" + nullExpression + ") == null";
+                        }
+                        else {
+                            rtn += nullExpression + " == null";
+                        }
+                        isNullFound = false;
+                    }
+                    else {
+                        nullExpression += words[i];
+                    }
+
+                }
+                else if (!words[i].equalsIgnoreCase("IsNull")) {
+                    nullExpression += words[i];
+                }
+            }
+            else {
+                if (words[i].equals("(")) {
+                    openParentheses = true;
+                }
+                else {
+                    if (openParentheses) {
+                        openParentheses = false;
+                        words[i] = translateIsNull(words[i]);
+                    }
+                    else {
+                        if (words[i].length() == 6) {
+                            if (words[i].equalsIgnoreCase("IsNull")) {
+                                isNullFound = true;
+                            }
+                        }
+                    }
+                }
+                if (!isNullFound) {
+                    rtn += words[i];
+                }
             }
         }
         return rtn;
