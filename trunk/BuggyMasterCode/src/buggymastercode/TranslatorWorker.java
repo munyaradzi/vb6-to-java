@@ -153,7 +153,7 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
             if (translator.isVbSource()) {
                 fstream = new FileInputStream(getFileForOS(vbFullFile));
                 DataInputStream in = new DataInputStream(fstream);
-                BufferedReader br = new BufferedReader(new InputStreamReader(in));
+                BufferedReader br = new BufferedReader(new InputStreamReader(in, "ISO-8859-1"));
                 String strLine;
                 while ((strLine = br.readLine()) != null) {
                     translator.parse(strLine);
@@ -198,7 +198,7 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
 
             fstream = new FileInputStream(getFileForOS(vbFile));
             DataInputStream in = new DataInputStream(fstream);
-            BufferedReader br = new BufferedReader(new InputStreamReader(in));
+            BufferedReader br = new BufferedReader(new InputStreamReader(in, "ISO-8859-1"));
             String strLine;
             while ((strLine = br.readLine()) != null) {
                 sourceCode.append(strLine + newline);

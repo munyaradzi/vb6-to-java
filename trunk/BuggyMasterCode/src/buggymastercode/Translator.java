@@ -561,6 +561,7 @@ public class Translator {
     private String translateCode(String strLine, boolean inDeclaration) {
         String rtn = translateCodeAux(strLine, inDeclaration);
         rtn = translateDateConstant(rtn);
+        rtn = translateUbound(rtn);
         return rtn;
     }
 
@@ -666,12 +667,70 @@ public class Translator {
                     if (words[i].charAt(words[i].length() - 1) == '#') {
                         words[i] = "getDateFromString("
                                     + words[i].substring(1, words[i].length() - 1)
-                                    +")";
+                                    + ")";
                         m_addDateAuxFunction = true;
                     }
                 }
             }
             rtn += words[i];
+        }
+        return rtn;
+    }
+
+    private String translateUbound(String strLine) {
+        boolean openParentheses = false;
+        boolean uboundFound = false;
+        int iOpenParentheses = 0;
+        String arrayExpression = "";
+        String rtn = "";
+        String[] words = G.split(strLine);
+        for (int i = 0; i < words.length; i++) {
+            if (uboundFound) {
+                if (words[i].equals("(")) {
+                    iOpenParentheses++;
+                    if (iOpenParentheses > 1) {
+                        arrayExpression += words[i];
+                    }
+                }
+                else if (words[i].equals(")")) {
+                    iOpenParentheses--;
+                    if (iOpenParentheses == 0) {
+                        if (arrayExpression.contains(" ")) {
+                            rtn += "(" + arrayExpression + ").length";
+                        }
+                        else {
+                            rtn += arrayExpression + ".length";
+                        }
+                        uboundFound = false;
+                    }
+                    else {
+                        arrayExpression += words[i];
+                    }
+
+                }
+                else {
+                    arrayExpression += words[i];
+                }
+            }
+            else {
+                if (words[i].equals("(")) {
+                    openParentheses = true;
+                }
+                else {
+                    if (openParentheses) {
+                        openParentheses = false;
+                        words[i] = translateUbound(words[i]);
+                    }
+                    else {
+                        if (words[i].length() == 6) {
+                            if (words[i].equalsIgnoreCase("Ubound")) {
+                                uboundFound = true;
+                            }
+                        }
+                    }
+                }
+                rtn += words[i];
+            }
         }
         return rtn;
     }
@@ -1481,6 +1540,9 @@ public class Translator {
         strLine = G.ltrimTab(strLine);
         if (G.beginLike(strLine,m_vbFunctionName + " = ")) {
             strLine = "return " + strLine.substring((m_vbFunctionName + " = ").length());
+        }
+        if (G.beginLike(strLine,"Set " + m_vbFunctionName + " = ")) {
+            strLine = "return " + strLine.substring(("Set " + m_vbFunctionName + " = ").length());
         }
         if (G.beginLike(strLine,"Set ")) {
             strLine = strLine.substring(4);
@@ -3399,4 +3461,12 @@ public class Translator {
  Until
  While
  If..Else..ElseIf..Then
+ */
+
+/* TODO: file mError.bas line 72 {s = Replace(s, "$" & i + 1, X(i))}
+ *       the code is translated as
+ *              {s = Replace(s, "$" + ((Integer) i).ToString() + 1, X(i));}
+ *       it is wrong because i + 1 must to be evaluated first and then has to apply
+ *       the cast to Integer:
+ *              {s = Replace(s, "$" + ((Integer) (i + 1)).ToString(), X(i));}
  */
