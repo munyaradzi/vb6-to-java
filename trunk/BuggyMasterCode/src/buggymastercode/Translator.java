@@ -1601,11 +1601,26 @@ public class Translator {
 
     private String translateSentence(String strLine) {
         strLine = G.ltrimTab(strLine);
+        int startComment = getStartComment(strLine);
         if (G.beginLike(strLine,m_vbFunctionName + " = ")) {
-            strLine = "return " + strLine.substring((m_vbFunctionName + " = ").length());
+            if (startComment > 0) {
+                String comments = "";
+                comments =  "//" + strLine.substring(startComment);
+                strLine = "return " + strLine.substring((m_vbFunctionName + " = ").length(), startComment) + comments;
+            }
+            else {
+                strLine = "return " + strLine.substring((m_vbFunctionName + " = ").length());
+            }
         }
         if (G.beginLike(strLine,"Set " + m_vbFunctionName + " = ")) {
-            strLine = "return " + strLine.substring(("Set " + m_vbFunctionName + " = ").length());
+            if (startComment > 0) {
+                String comments = "";
+                comments =  "//" + strLine.substring(startComment);
+                strLine = "return " + strLine.substring(("Set " + m_vbFunctionName + " = ").length(), startComment) + comments;
+            }
+            else {
+                strLine = "return " + strLine.substring(("Set " + m_vbFunctionName + " = ").length());
+            }
         }
         if (G.beginLike(strLine,"Set ")) {
             strLine = strLine.substring(4);
@@ -1618,6 +1633,7 @@ public class Translator {
         strLine = replaceAmpersand(strLine);
         strLine = replaceStringComparison(strLine);
         strLine = replaceMidSentence(strLine);
+        strLine = replaceLeftSentence(strLine);
         strLine = replaceLenSentence(strLine);
         strLine = replaceVbWords(strLine);
 
@@ -1945,6 +1961,104 @@ public class Translator {
         return expression.trim();
     }
 
+    private String replaceLeftSentence(String expression) {
+        boolean leftFound = false;
+
+        expression = G.ltrimTab(expression);
+
+        if (containsLeft(expression)) {
+
+            int openParentheses = 0;
+            String[] words = G.split(expression);
+            String params = "";
+            expression = "";
+            leftFound = false;
+
+            for (int i = 0; i < words.length; i++) {
+                if (leftFound) {
+                    if (words[i].equals("(")) {
+                        openParentheses++;
+                        if (openParentheses > 1) {
+                            params += words[i];
+                        }
+                    }
+                    // look for a close parentheses without an open parentheses
+                    else if (words[i].equals(")")) {
+                        openParentheses--;
+                        if (openParentheses == 0) {
+                            if (containsMid(params)) {
+                                params = replaceLeftSentence(params);
+                            }
+                            String[] vparams = G.split(params);
+                            String identifier = "";
+                            String start = "";
+                            String end = "";
+
+                            int colons = 0;
+                            identifier = "";
+                            for (int t = 0; t < vparams.length; t++) {
+                                if (vparams[t].equals(",")) {
+                                    colons++;
+                                }
+                                else {
+
+                                    if (colons == 0) {
+                                        identifier += vparams[t];
+                                    }
+                                    else if (colons == 1) {
+                                        start += vparams[t];
+                                    }
+                                    else {
+                                        G.showInfo("Unexpected colon found in Left function's params: " + params);
+                                    }
+                                }
+                            }
+                            // identifier can be a complex expresion
+                            // like ' "an string plus" + a_var '
+                            //
+                            if (G.contains(identifier, " ")) {
+                                identifier = "(" + identifier + ")";
+                            }
+                            expression += identifier + ".substring(" + start.trim();
+                            if (!end.isEmpty()) {
+                                expression += ", " + end.trim() + ")";
+                            }
+                            else {
+                                expression += ")";
+                            }
+                            leftFound = false;
+                            params = "";
+                        }
+                        else {
+                            params = params.trim() + words[i];
+                        }
+                    }
+                    else {
+                        params += words[i];
+                    }
+                }
+                else {
+                    if (words[i].equalsIgnoreCase("left")) {
+                        leftFound = true;
+                    }
+                    else if (words[i].equalsIgnoreCase("left$")) {
+                        leftFound = true;
+                    }
+                    else if (G.beginLike(words[i],"left(")) {
+                        expression += replaceLeftSentence(words[i]);
+                    }
+                    else if (G.beginLike(words[i],"left$(")) {
+                        expression += replaceLeftSentence(words[i]);
+                    }
+                    else {
+                        expression += words[i];
+                    }
+                }
+            }
+        }
+        return expression.trim();
+    }
+
     private String replaceLenSentence(String expression) {
         boolean lenFound = false;
 
@@ -2049,6 +2163,54 @@ public class Translator {
             return true;
         }
         else if (G.beginLike(expression,"mid$(")) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    private boolean containsLeft(String expression) {
+        if (expression.toLowerCase().contains(" left(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains("(left(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains(" left$(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains("(left$(")) {
+            return true;
+        }
+        else if (G.beginLike(expression,"left(")) {
+            return true;
+        }
+        else if (G.beginLike(expression,"left$(")) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    private boolean containsRight(String expression) {
+        if (expression.toLowerCase().contains(" right(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains("(right(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains(" right$(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains("(right$(")) {
+            return true;
+        }
+        else if (G.beginLike(expression,"right(")) {
+            return true;
+        }
+        else if (G.beginLike(expression,"right$(")) {
             return true;
         }
         else {
