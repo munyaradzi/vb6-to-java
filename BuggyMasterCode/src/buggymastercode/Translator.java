@@ -563,6 +563,7 @@ public class Translator {
         rtn = translateDateConstant(rtn);
         rtn = translateUbound(rtn);
         rtn = translateIsNull(rtn);
+        rtn = translateComments(rtn);
         return rtn;
     }
 
@@ -998,6 +999,22 @@ public class Translator {
                 return false;
             }
         }
+    }
+
+    private String translateComments(String strLine) {
+        // We only translate ' in // if the line doesn't contain a // yet
+        // because if the line does, it means that the comments
+        // has already been translated
+        //
+        if (!strLine.contains("//")) {
+            int startComment = getStartComment(strLine);
+            if (startComment >= 0) {
+                strLine = strLine.substring(0, startComment-1)
+                            + " //"
+                            + strLine.substring(startComment);
+            }
+        }
+        return strLine;
     }
 
     private String translateCaseSentence(String strLine) {
@@ -1605,21 +1622,31 @@ public class Translator {
         if (G.beginLike(strLine,m_vbFunctionName + " = ")) {
             if (startComment > 0) {
                 String comments = "";
-                comments =  "//" + strLine.substring(startComment);
-                strLine = "return " + strLine.substring((m_vbFunctionName + " = ").length(), startComment) + comments;
+                comments =  " //" + strLine.substring(startComment);
+                strLine = "return "
+                            + strLine.substring((m_vbFunctionName + " = ").length()
+                                                , startComment).trim()
+                            + ";"
+                            + comments;
             }
             else {
-                strLine = "return " + strLine.substring((m_vbFunctionName + " = ").length());
+                strLine = "return "
+                            + strLine.substring((m_vbFunctionName + " = ").length());
             }
         }
         if (G.beginLike(strLine,"Set " + m_vbFunctionName + " = ")) {
             if (startComment > 0) {
                 String comments = "";
-                comments =  "//" + strLine.substring(startComment);
-                strLine = "return " + strLine.substring(("Set " + m_vbFunctionName + " = ").length(), startComment) + comments;
+                comments =  " //" + strLine.substring(startComment);
+                strLine = "return "
+                            + strLine.substring(("Set " + m_vbFunctionName + " = ").length() 
+                                                , startComment).trim()
+                            + ";"
+                            + comments;
             }
             else {
-                strLine = "return " + strLine.substring(("Set " + m_vbFunctionName + " = ").length());
+                strLine = "return "
+                            + strLine.substring(("Set " + m_vbFunctionName + " = ").length());
             }
         }
         if (G.beginLike(strLine,"Set ")) {
@@ -1634,6 +1661,7 @@ public class Translator {
         strLine = replaceStringComparison(strLine);
         strLine = replaceMidSentence(strLine);
         strLine = replaceLeftSentence(strLine);
+        strLine = replaceRightSentence(strLine);
         strLine = replaceLenSentence(strLine);
         strLine = replaceVbWords(strLine);
 
@@ -1986,13 +2014,12 @@ public class Translator {
                     else if (words[i].equals(")")) {
                         openParentheses--;
                         if (openParentheses == 0) {
-                            if (containsMid(params)) {
+                            if (containsLeft(params)) {
                                 params = replaceLeftSentence(params);
                             }
                             String[] vparams = G.split(params);
                             String identifier = "";
-                            String start = "";
-                            String end = "";
+                            String length = "";
 
                             int colons = 0;
                             identifier = "";
@@ -2006,7 +2033,7 @@ public class Translator {
                                         identifier += vparams[t];
                                     }
                                     else if (colons == 1) {
-                                        start += vparams[t];
+                                        length += vparams[t];
                                     }
                                     else {
                                         G.showInfo("Unexpected colon found in Left function's params: " + params);
@@ -2019,13 +2046,8 @@ public class Translator {
                             if (G.contains(identifier, " ")) {
                                 identifier = "(" + identifier + ")";
                             }
-                            expression += identifier + ".substring(" + start.trim();
-                            if (!end.isEmpty()) {
-                                expression += ", " + end.trim() + ")";
-                            }
-                            else {
-                                expression += ")";
-                            }
+                            expression += identifier
+                                            + ".substring(0, " + length.trim()+ ")";
                             leftFound = false;
                             params = "";
                         }
@@ -2049,6 +2071,98 @@ public class Translator {
                     }
                     else if (G.beginLike(words[i],"left$(")) {
                         expression += replaceLeftSentence(words[i]);
+                    }
+                    else {
+                        expression += words[i];
+                    }
+                }
+            }
+        }
+        return expression.trim();
+    }
+
+    private String replaceRightSentence(String expression) {
+        boolean rightFound = false;
+
+        expression = G.ltrimTab(expression);
+
+        if (containsRight(expression)) {
+
+            int openParentheses = 0;
+            String[] words = G.split(expression);
+            String params = "";
+            expression = "";
+            rightFound = false;
+
+            for (int i = 0; i < words.length; i++) {
+                if (rightFound) {
+                    if (words[i].equals("(")) {
+                        openParentheses++;
+                        if (openParentheses > 1) {
+                            params += words[i];
+                        }
+                    }
+                    // look for a close parentheses without an open parentheses
+                    else if (words[i].equals(")")) {
+                        openParentheses--;
+                        if (openParentheses == 0) {
+                            if (containsRight(params)) {
+                                params = replaceRightSentence(params);
+                            }
+                            String[] vparams = G.split(params);
+                            String identifier = "";
+                            String lenght = "";
+
+                            int colons = 0;
+                            identifier = "";
+                            for (int t = 0; t < vparams.length; t++) {
+                                if (vparams[t].equals(",")) {
+                                    colons++;
+                                }
+                                else {
+
+                                    if (colons == 0) {
+                                        identifier += vparams[t];
+                                    }
+                                    else if (colons == 1) {
+                                        lenght += vparams[t];
+                                    }
+                                    else {
+                                        G.showInfo("Unexpected colon found in Right function's params: " + params);
+                                    }
+                                }
+                            }
+                            // identifier can be a complex expresion
+                            // like ' "an string plus" + a_var '
+                            //
+                            if (G.contains(identifier, " ")) {
+                                identifier = "(" + identifier + ")";
+                            }
+                            expression += identifier
+                                            + ".substring(" + identifier + ".length() - " + lenght.trim() + ")";
+                            rightFound = false;
+                            params = "";
+                        }
+                        else {
+                            params = params.trim() + words[i];
+                        }
+                    }
+                    else {
+                        params += words[i];
+                    }
+                }
+                else {
+                    if (words[i].equalsIgnoreCase("right")) {
+                        rightFound = true;
+                    }
+                    else if (words[i].equalsIgnoreCase("right$")) {
+                        rightFound = true;
+                    }
+                    else if (G.beginLike(words[i],"right(")) {
+                        expression += replaceRightSentence(words[i]);
+                    }
+                    else if (G.beginLike(words[i],"right$(")) {
+                        expression += replaceRightSentence(words[i]);
                     }
                     else {
                         expression += words[i];
