@@ -25,6 +25,7 @@ import javax.swing.JTable;
 public class G {
 
     static private final String C_SYMBOLS = " +-*/,;";
+    static private final String C_SYMBOLS2 = " +-*/,;()[]{}";
 
     public static boolean isNumeric(Object value) {
         try {
@@ -248,6 +249,67 @@ public class G {
     }
 
     public static String[] split(String strLine) {
+        return split(strLine, C_SYMBOLS);
+    }
+
+    public static String[] split2(String strLine) {
+        return split2(strLine, C_SYMBOLS2);
+    }
+
+    public static String[] split2(String strLine, String symbols) {
+        boolean literalFlag = false;
+        boolean numberFlag = false;
+        String[] words = new String[500];
+        String word = "";
+        int j = 0;
+        boolean wordEnded = false;
+
+        for (int i = 0; i < strLine.length(); i++) {
+            if (strLine.charAt(i) == '"') {
+                literalFlag = !literalFlag;
+            }
+            if (!literalFlag) {
+
+                if (strLine.charAt(i) == '#') {
+                    numberFlag = !numberFlag;
+                }
+
+                if (!numberFlag) {
+
+                    if (symbols.contains(String.valueOf(strLine.charAt(i)))) {
+                        wordEnded = true;
+                    }
+                    if (wordEnded) {
+                        j = addWord(word, strLine, words, i, j);
+                        wordEnded = false;
+                        if (!word.isEmpty()) {
+                            word = "";
+                        }
+                    }
+                    else {
+                        word += String.valueOf(strLine.charAt(i));
+                    }
+                }
+                else {
+                    word += String.valueOf(strLine.charAt(i));
+                }
+            }
+            else {
+                word += String.valueOf(strLine.charAt(i));
+            }
+        }
+        if (!word.isEmpty()) {
+            words[j] = word;
+            j++;
+        }
+        String[] rtn = new String[j];
+        for (int i = 0; i < j; i++) {
+            rtn[i] = words[i];
+        }
+        return rtn;
+    }
+
+    public static String[] split(String strLine, String symbols) {
         boolean literalFlag = false;
         boolean numberFlag = false;
         String[] words = new String[500];
@@ -273,7 +335,7 @@ public class G {
                             openParentheses++;
                             wordEnded = true;
                         }
-                        else if (C_SYMBOLS.contains(String.valueOf(strLine.charAt(i)))) {
+                        else if (symbols.contains(String.valueOf(strLine.charAt(i)))) {
                             wordEnded = true;
                         }
                         if (wordEnded) {
