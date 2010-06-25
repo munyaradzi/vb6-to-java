@@ -1658,7 +1658,8 @@ public class Translator {
         strLine = replaceMemberVariables(strLine);
         strLine = replaceFunctionVariables(strLine);
         strLine = replaceAmpersand(strLine);
-        strLine = replaceStringComparison(strLine);
+        strLine = replaceStringComparison(strLine, "==");
+        strLine = replaceStringComparison(strLine, "!=");
         strLine = replaceMidSentence(strLine);
         strLine = replaceLeftSentence(strLine);
         strLine = replaceRightSentence(strLine);
@@ -1763,7 +1764,7 @@ public class Translator {
         return rtn;
     }
 
-    private String replaceStringComparison(String strLine) {
+    private String replaceStringComparison(String strLine, String operator) {
         boolean equalsFound = false;
         boolean innerEqualFound = false;
         int openParentheses = 0;
@@ -1785,7 +1786,9 @@ public class Translator {
                         if (openParentheses == 0) {
                             if (innerEqualFound) {
                                 innerEqualFound = false;
-                                innerParentheses = replaceStringComparison(innerParentheses);
+                                innerParentheses = replaceStringComparison(
+                                                        innerParentheses,
+                                                        operator);
                             }
                             secondOperand += "(" + G.ltrim(innerParentheses) + ")";
                             innerParentheses = "";
@@ -1796,7 +1799,7 @@ public class Translator {
                     else {
                         if (words[i].equals("(")) {
                             openParentheses++;
-                        } else if (words[i].equals("==")) {
+                        } else if (words[i].equals(operator)) {
                             innerEqualFound = true;
                         }
                         innerParentheses += words[i];
@@ -1810,13 +1813,19 @@ public class Translator {
                         innerParentheses = "";
                     }
                     else if (words[i].equals("&&")) {
-                        rtn += processEqualsSentence(firstOperand, secondOperand) + " &&";
+                        rtn += processEqualsSentence(
+                                    firstOperand,
+                                    secondOperand,
+                                    operator) + " &&";
                         equalsFound = false;
                         firstOperand = "";
                         secondOperand = "";
                     }
                     else if (words[i].equals("||")) {
-                        rtn += processEqualsSentence(firstOperand, secondOperand) + " ||";
+                        rtn += processEqualsSentence(
+                                    firstOperand,
+                                    secondOperand,
+                                    operator) + " ||";
                         equalsFound = false;
                         firstOperand = "";
                         secondOperand = "";
@@ -1834,7 +1843,9 @@ public class Translator {
                         if (openParentheses == 0) {
                             if (innerEqualFound) {
                                 innerEqualFound = false;
-                                innerParentheses = replaceStringComparison(innerParentheses);
+                                innerParentheses = replaceStringComparison(
+                                                        innerParentheses,
+                                                        operator);
                             }
                             firstOperand += "(" + G.ltrim(innerParentheses) + ")";
                             innerParentheses = "";
@@ -1845,7 +1856,7 @@ public class Translator {
                     else {
                         if (words[i].equals("(")) {
                             openParentheses++;
-                        } else if (words[i].equals("==")) {
+                        } else if (words[i].equals(operator)) {
                             innerEqualFound = true;
                         }
                         innerParentheses += words[i];
@@ -1861,7 +1872,7 @@ public class Translator {
                         openParentheses = 1;
                         innerParentheses = "";
                     }
-                    else if (words[i].equals("==")) {
+                    else if (words[i].equals(operator)) {
                         equalsFound = true;
                         innerParentheses = "";
                     }
@@ -1881,7 +1892,10 @@ public class Translator {
 
         if (!firstOperand.isEmpty()) {
             if (!secondOperand.isEmpty())
-                rtn += processEqualsSentence(firstOperand, secondOperand);
+                rtn += processEqualsSentence(
+                            firstOperand,
+                            secondOperand,
+                            operator);
             else
                 rtn += firstOperand;
         }
@@ -2349,7 +2363,7 @@ public class Translator {
 
     private String replaceVbWords(String expression) {
         expression = G.ltrimTab(expression);
-        String[] words = expression.split("\\s+");
+        String[] words = G.split2(expression);
         expression = "";
 
         // Public
@@ -2358,20 +2372,34 @@ public class Translator {
             if (words[i].equalsIgnoreCase("vbNullString")) {
                 words[i] = "\"\"";
             }
-            expression += words[i] + " ";
+            expression += words[i];// + " ";
         }
         return expression.trim();
     }
 
-    private String processEqualsSentence(String firstOperand, String secondOperand) {
+    private String processEqualsSentence(String firstOperand, String secondOperand, String operator) {
+        boolean isNotEquals = operator.equals("!=");
         if (isStringExpression(firstOperand)) {
-            return G.rtrim(firstOperand) + ".equals(" + secondOperand.trim() + ")";
+            if (isNotEquals)
+                return "!("
+                        + G.rtrim(firstOperand) + ".equals(" + secondOperand.trim() + ")"
+                        +")";
+            else
+                return G.rtrim(firstOperand) + ".equals(" + secondOperand.trim() + ")";
         }
         else if (isStringExpression(secondOperand)) {
-            return G.rtrim(secondOperand) + ".equals(" + firstOperand.trim() + ")";
+            if (isNotEquals)
+                return "!("
+                        + G.rtrim(secondOperand) + ".equals(" + firstOperand.trim() + ")"
+                        + ")";
+            else
+                return G.rtrim(secondOperand) + ".equals(" + firstOperand.trim() + ")";
         }
         else {
-            return firstOperand + "==" + secondOperand;
+            if (isNotEquals)
+                return firstOperand + "!=" + secondOperand;
+            else
+                return firstOperand + "==" + secondOperand;
         }
     }
 
