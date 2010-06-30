@@ -81,7 +81,8 @@ public class DBH2 implements DBConnection {
                 "fun_id int DEFAULT 0 NOT NULL," +
                 "var_id int PRIMARY KEY," +
                 "var_javaname varchar(255) DEFAULT '' NOT NULL," +
-                "var_vbname varchar(255) DEFAULT '' NOT NULL);");
+                "var_vbname varchar(255) DEFAULT '' NOT NULL," +
+                "var_datatype varchar(255) DEFAULT '' NOT NULL);");
         stat.execute("CREATE SEQUENCE IF NOT EXISTS seq_tclass_id");
         stat.execute("CREATE SEQUENCE IF NOT EXISTS seq_tfunction_id");
         stat.execute("CREATE SEQUENCE IF NOT EXISTS seq_tvariable_id");

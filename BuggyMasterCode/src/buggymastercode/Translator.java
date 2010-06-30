@@ -48,6 +48,15 @@ public class Translator {
     private boolean m_isFirstCase = false;
     private boolean m_previousWasReturn = false;
     private boolean m_addDateAuxFunction = false;
+    private String m_packageName = "";
+
+    private ClassObject m_classObject;
+    private FunctionObject m_functionObject;
+    private VariableObject m_variableObject;
+
+    public void setPackage(String packageName) {
+        m_packageName = packageName;
+    }
 
     public void setSourceFiles(ArrayList<SourceFile> sourceFiles) {
         m_collFiles = sourceFiles;
@@ -83,6 +92,11 @@ public class Translator {
                     m_attributeBlockHasStarted = true;
                     m_vbClassName = strLine.substring(21, strLine.length()-1);
                     m_javaClassName = m_vbClassName;
+                    m_classObject.setPackageName(m_packageName);
+                    m_classObject.setVbName(m_vbClassName);
+                    m_classObject.setJavaName(m_javaClassName);
+                    m_classObject.getClassIdFromClassName();
+                    m_classObject.saveClass();
                 }
                 else {
                     if (m_attributeBlockHasStarted) {
@@ -3272,6 +3286,10 @@ public class Translator {
         m_publicFunctions = new ArrayList<Function>();
         m_tabCount = 0;
         m_addDateAuxFunction = false;
+
+        m_classObject = new ClassObject();
+        m_functionObject = new FunctionObject();
+        m_variableObject = new VariableObject();
 
         if (name.contains(".")) {
             if (name.length() > 0) {

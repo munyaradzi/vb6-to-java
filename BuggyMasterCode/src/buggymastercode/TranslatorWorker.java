@@ -26,6 +26,7 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
             
     private String m_path = "";
     private String m_vbpFile = "";
+    private String m_packageName = "";
     private ArrayList<SourceFile> m_collFiles = new ArrayList<SourceFile>();
     private Translator translator = new Translator();
     private BuggyMasterCodeView m_caller = null;
@@ -54,6 +55,21 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
 
     private void doWork(String vbpFile) {
         ByRefString value = new ByRefString();
+
+        m_packageName = "";
+
+        // Get package name
+        //
+        if (G.getToken(vbpFile, "Name", 1 , value)) {
+            if (!value.text.isEmpty()) {
+                m_packageName = value.text.replaceAll("\"", "") ;
+            }
+        }
+
+        if (m_packageName.isEmpty()) {
+            G.showInfo("Package name can't be found in: " + vbpFile);
+            return;
+        }
 
         // Parse
         //
@@ -149,6 +165,7 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
             vbFullFile = m_path + vbFullFile;
 
             translator.initTranslator(vbFullFile);
+            translator.setPackage(m_packageName);
 
             if (translator.isVbSource()) {
                 fstream = new FileInputStream(getFileForOS(vbFullFile));

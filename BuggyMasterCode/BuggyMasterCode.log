@@ -2,8 +2,8 @@
 <!DOCTYPE log SYSTEM "logger.dtd">
 <log>
 <record>
-  <date>2010-06-25T16:21:08</date>
-  <millis>1277497268125</millis>
+  <date>2010-06-29T10:34:38</date>
+  <millis>1277822078828</millis>
   <sequence>3</sequence>
   <logger>ar.com.crowsoft.cvxi</logger>
   <level>INFO</level>
@@ -13,8 +13,8 @@
   <message>initializing BuggyMasterCode</message>
 </record>
 <record>
-  <date>2010-06-25T16:21:08</date>
-  <millis>1277497268125</millis>
+  <date>2010-06-29T10:34:38</date>
+  <millis>1277822078828</millis>
   <sequence>4</sequence>
   <logger>ar.com.crowsoft.cvxi</logger>
   <level>INFO</level>
@@ -23,4 +23,148 @@
   <thread>10</thread>
   <message>running in: C:\dev\proyectos.nb\BuggyMasterCode</message>
 </record>
-</log>
+<record>
+  <date>2010-06-29T10:35:13</date>
+  <millis>1277822113218</millis>
+  <sequence>5</sequence>
+  <logger>ar.com.crowsoft.cvxi</logger>
+  <level>WARNING</level>
+  <class>buggymastercode.DBH2</class>
+  <method>openRs</method>
+  <thread>11</thread>
+  <message>the execution of the query [select cl_id from tclass where cl_vbname = 'mAux' and cl_packagename = '"CSReportTDll"'] has failed</message>
+  <exception>
+    <message>org.h2.jdbc.JdbcSQLException: Column "CL_PACKAGENAME" not found; SQL statement:
+select cl_id from tclass where cl_vbname = 'mAux' and cl_packagename = '"CSReportTDll"' [42122-136]</message>
+    <frame>
+      <class>org.h2.message.DbException</class>
+      <method>getJdbcSQLException</method>
+      <line>327</line>
+    </frame>
+    <frame>
+      <class>org.h2.message.DbException</class>
+      <method>get</method>
+      <line>167</line>
+    </frame>
+    <frame>
+      <class>org.h2.message.DbException</class>
+      <method>get</method>
+      <line>144</line>
+    </frame>
+    <frame>
+      <class>org.h2.expression.ExpressionColumn</class>
+      <method>optimize</method>
+      <line>126</line>
+    </frame>
+    <frame>
+      <class>org.h2.expression.Comparison</class>
+      <method>optimize</method>
+      <line>130</line>
+    </frame>
+    <frame>
+      <class>org.h2.expression.ConditionAndOr</class>
+      <method>optimize</method>
+      <line>127</line>
+    </frame>
+    <frame>
+      <class>org.h2.command.dml.Select</class>
+      <method>prepare</method>
+      <line>741</line>
+    </frame>
+    <frame>
+      <class>org.h2.command.Parser</class>
+      <method>prepareCommand</method>
+      <line>223</line>
+    </frame>
+    <frame>
+      <class>org.h2.engine.Session</class>
+      <method>prepareLocal</method>
+      <line>420</line>
+    </frame>
+    <frame>
+      <class>org.h2.engine.Session</class>
+      <method>prepareCommand</method>
+      <line>381</line>
+    </frame>
+    <frame>
+      <class>org.h2.jdbc.JdbcConnection</class>
+      <method>prepareCommand</method>
+      <line>1071</line>
+    </frame>
+    <frame>
+      <class>org.h2.jdbc.JdbcStatement</class>
+      <method>executeQuery</method>
+      <line>70</line>
+    </frame>
+    <frame>
+      <class>buggymastercode.DBH2</class>
+      <method>openRs</method>
+      <line>100</line>
+    </frame>
+    <frame>
+      <class>buggymastercode.ClassObject</class>
+      <method>getClassIdFromClassName</method>
+      <line>80</line>
+    </frame>
+    <frame>
+      <class>buggymastercode.Translator</class>
+      <method>parse</method>
+      <line>98</line>
+    </frame>
+    <frame>
+      <class>buggymastercode.TranslatorWorker</class>
+      <method>parseFile</method>
+      <line>176</line>
+    </frame>
+    <frame>
+      <class>buggymastercode.TranslatorWorker</class>
+      <method>doWork</method>
+      <line>90</line>
+    </frame>
+    <frame>
+      <class>buggymastercode.TranslatorWorker</class>
+      <method>doInBackground</method>
+      <line>43</line>
+    </frame>
+    <frame>
+      <class>buggymastercode.TranslatorWorker</class>
+      <method>doInBackground</method>
+      <line>23</line>
+    </frame>
+    <frame>
+      <class>javax.swing.SwingWorker$1</class>
+      <method>call</method>
+      <line>278</line>
+    </frame>
+    <frame>
+      <class>java.util.concurrent.FutureTask$Sync</class>
+      <method>innerRun</method>
+      <line>303</line>
+    </frame>
+    <frame>
+      <class>java.util.concurrent.FutureTask</class>
+      <method>run</method>
+      <line>138</line>
+    </frame>
+    <frame>
+      <class>javax.swing.SwingWorker</class>
+      <method>run</method>
+      <line>317</line>
+    </frame>
+    <frame>
+      <class>java.util.concurrent.ThreadPoolExecutor$Worker</class>
+      <method>runTask</method>
+      <line>886</line>
+    </frame>
+    <frame>
+      <class>java.util.concurrent.ThreadPoolExecutor$Worker</class>
+      <method>run</method>
+      <line>908</line>
+    </frame>
+    <frame>
+      <class>java.lang.Thread</class>
+      <method>run</method>
+      <line>619</line>
+    </frame>
+  </exception>
+</record>

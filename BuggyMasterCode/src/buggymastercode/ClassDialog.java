@@ -498,7 +498,7 @@ public class ClassDialog extends javax.swing.JDialog {
 
             ClassObject cl = new ClassObject();
             cl.setId(m_id);
-            cl.setPackage(this.txPackage.getText());
+            cl.setPackageName(this.txPackage.getText());
             cl.setVbName(this.txVbName.getText());
             cl.setJavaName(this.txJavaName.getText());
             if (cl.saveClass()) {
