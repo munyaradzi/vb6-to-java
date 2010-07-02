@@ -54,6 +54,8 @@ public class Translator {
     private FunctionObject m_functionObject;
     private VariableObject m_variableObject;
 
+    private ClassObject m_typeClassObject;
+
     public void setPackage(String packageName) {
         m_packageName = packageName;
     }
@@ -82,6 +84,26 @@ public class Translator {
         return m_privateFunctions;
     }
 
+    public boolean deletePackage(String packageName) {
+        String sqlstmt = "delete from tvariable where cl_id in "
+                            + "(select cl_id from tclass where cl_packagename = "
+                            + Db.getString(packageName) + ")";
+        if (Db.db.execute(sqlstmt)) {
+
+            sqlstmt = "delete from tclass where cl_packagename = "
+                        + Db.getString(packageName);
+            if (Db.db.execute(sqlstmt)) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
+    }
+
     public void parse(String strLine) {
         if (m_isVbSource) {
             if (m_codeHasStarted) {
@@ -92,11 +114,6 @@ public class Translator {
                     m_attributeBlockHasStarted = true;
                     m_vbClassName = strLine.substring(21, strLine.length()-1);
                     m_javaClassName = m_vbClassName;
-                    m_classObject.setPackageName(m_packageName);
-                    m_classObject.setVbName(m_vbClassName);
-                    m_classObject.setJavaName(m_javaClassName);
-                    m_classObject.getClassIdFromClassName();
-                    m_classObject.saveClass();
                 }
                 else {
                     if (m_attributeBlockHasStarted) {
@@ -135,6 +152,11 @@ public class Translator {
                     String className = strLine.substring(21, strLine.length()-1);
                     m_vbClassName = className;
                     m_javaClassName = m_vbClassName;
+                    m_classObject.setPackageName(m_packageName);
+                    m_classObject.setVbName(m_vbClassName);
+                    m_classObject.setJavaName(m_javaClassName);
+                    m_classObject.getClassIdFromClassName();
+                    m_classObject.saveClass();
                     m_tabCount++;
                     rtn = "public class " + className + " {" + newline + newline;
                 }
@@ -3071,11 +3093,35 @@ public class Translator {
                 return "*TODO: (the data type can't be found for the value [" + constValue + "])" + strLine + newline;
             }
         }
+
+        String vbIdentifier = identifier;
+        identifier = identifier.toUpperCase();
+
+        saveVariable(vbIdentifier, identifier, dataType);
+
         return "private static final "
                 + dataType + " "
                 + identifier + " = "
                 + constValue + ";"
                 + comments + newline;
+    }
+
+    private void saveVariable(String vbIdentifier, String identifier, String dataType) {
+        m_variableObject.setClId(m_classObject.getId());
+        m_variableObject.setVbName(vbIdentifier);
+        m_variableObject.setJavaName(identifier);
+        m_variableObject.setFunId(m_functionObject.getId());
+        m_variableObject.getVariableIdFromVariableName();
+        m_variableObject.saveVariable();
+    }
+
+    private void saveVariableInType(String vbIdentifier, String identifier, String dataType) {
+        m_variableObject.setClId(m_typeClassObject.getId());
+        m_variableObject.setVbName(vbIdentifier);
+        m_variableObject.setJavaName(identifier);
+        m_variableObject.setFunId(Db.CS_NO_ID);
+        m_variableObject.getVariableIdFromVariableName();
+        m_variableObject.saveVariable();
     }
 
     private String translatePublicConstMember(String strLine) {
@@ -3136,6 +3182,12 @@ public class Translator {
                 return "*TODO: (the data type can't be found for the value [" + constValue + "])" + strLine + newline;
             }
         }
+
+        String vbIdentifier = identifier;
+        identifier = identifier.toUpperCase();
+
+        saveVariable(vbIdentifier, identifier, dataType);
+
         return "public static final " + dataType + " " + identifier + " = " + constValue + ";" + misc + newline;
     }
 
@@ -3146,10 +3198,12 @@ public class Translator {
         String[] words = strLine.split("\\s+");
         String dataType = "";
         String identifier = "";
+        String vbIdentifier = "";
         String misc = "";
 
         if (words.length > 1) {
-            identifier = getIdentifier(words[1]);
+            vbIdentifier = words[1];
+            identifier = getIdentifier(vbIdentifier);
             if (words.length > 3) {
                 dataType = words[3];
             }
@@ -3167,6 +3221,9 @@ public class Translator {
             dataType = "Object";
         }
         dataType = getDataType(dataType);
+
+        saveVariable(vbIdentifier, identifier, dataType);
+
         return "private " + dataType + " " + identifier + ";" + misc + newline;
     }
 
@@ -3196,10 +3253,12 @@ public class Translator {
         String[] words = strLine.split("\\s+");
         String dataType = "";
         String identifier = "";
+        String vbIdentifier = "";
         String misc = "";
 
         if (words.length > 1) {
-            identifier = getIdentifier(words[1]);
+            vbIdentifier = words[1];
+            identifier = getIdentifier(vbIdentifier);
             if (words.length > 3) {
                 dataType = words[3];
             }
@@ -3217,6 +3276,9 @@ public class Translator {
             dataType = "Object";
         }
         dataType = getDataType(dataType);
+
+        saveVariable(vbIdentifier, identifier, dataType);
+
         return "public " + dataType + " " + identifier + ";" + misc + newline;
     }
 
@@ -3269,6 +3331,13 @@ public class Translator {
         return rtn;
     }
 
+    public void initDbObjects() {
+        m_classObject = new ClassObject();
+        m_functionObject = new FunctionObject();
+        m_variableObject = new VariableObject();
+        m_typeClassObject = new ClassObject();
+    }
+
     public void initTranslator(String name) {
         m_isVbSource = false;
         m_codeHasStarted = false;
@@ -3287,10 +3356,6 @@ public class Translator {
         m_tabCount = 0;
         m_addDateAuxFunction = false;
 
-        m_classObject = new ClassObject();
-        m_functionObject = new FunctionObject();
-        m_variableObject = new VariableObject();
-
         if (name.contains(".")) {
             if (name.length() > 0) {
                 String ext = name.substring(name.length()-3).toLowerCase();
@@ -3301,26 +3366,49 @@ public class Translator {
         }
     }
 
+    private void saveTypeClassInDB(String className) {
+        int i = className.indexOf("'");
+        if (i > 0) {
+            className = className.substring(0, i - 1).trim();
+        }
+        i = className.indexOf(" ");
+        if (i > 0) {
+            className = className.substring(0, i - 1).trim();
+        }        
+        m_typeClassObject.setPackageName(m_packageName);
+        m_typeClassObject.setVbName(className);
+        m_typeClassObject.setJavaName(className);
+        m_typeClassObject.getClassIdFromClassName();
+        m_typeClassObject.saveClass();
+    }
+
     private void addToType(String strLine) {
+        String className = "";
         strLine = G.ltrim(strLine);
 
         if (strLine.length() > 5) {
             if (strLine.substring(0,5).toLowerCase().equals("type ")) {
-                m_type += "private class " + strLine.substring(5) + " {" + newline;
+                className = strLine.substring(5);
+                m_type += "private class " + className + " {" + newline;
+                saveTypeClassInDB(className);
                 return;
             }
         }
 
         if (strLine.length() > 12) {
             if (strLine.substring(0,12).toLowerCase().equals("public type ")) {
-                m_type += "public class " + strLine.substring(12) + " {" + newline;
+                className = strLine.substring(12);
+                m_type += "public class " + className + " {" + newline;
+                saveTypeClassInDB(className);
                 return;
             }
         }
 
         if (strLine.length() > 13) {
             if (strLine.substring(0,13).toLowerCase().equals("private type ")) {
-                m_type += "private class " + strLine.substring(13) + " {" + newline;
+                className = strLine.substring(13);
+                m_type += "private class " + className + " {" + newline;
+                saveTypeClassInDB(className);
                 return;
             }
         }
@@ -3420,6 +3508,9 @@ public class Translator {
                     }
                     identifier = words[0];
                 }
+
+                saveVariableInType(identifier, identifier, dataType);
+
                 m_type += "    public " + dataType + ' ' + identifier + ";" + newline;
             } 
             else {

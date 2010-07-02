@@ -108,7 +108,7 @@ public class Dictionary extends javax.swing.JDialog {
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Object.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class, java.lang.Integer.class
+                java.lang.Integer.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Integer.class, java.lang.Integer.class
             };
             boolean[] canEdit = new boolean [] {
                 false, false, false, false, false, false
@@ -124,8 +124,7 @@ public class Dictionary extends javax.swing.JDialog {
         });
         tblClasses.setName("tblClasses"); // NOI18N
         jScrollPane1.setViewportView(tblClasses);
-        tblClasses.getColumnModel().getColumn(0).setResizable(false);
-        tblClasses.getColumnModel().getColumn(0).setPreferredWidth(0);
+        tblClasses.getColumnModel().getColumn(0).setMinWidth(100);
         tblClasses.getColumnModel().getColumn(0).setHeaderValue(resourceMap.getString("tblClasses.columnModel.title4")); // NOI18N
         tblClasses.getColumnModel().getColumn(1).setMinWidth(100);
         tblClasses.getColumnModel().getColumn(1).setHeaderValue(resourceMap.getString("tblClasses.columnModel.title5")); // NOI18N
@@ -183,7 +182,7 @@ public class Dictionary extends javax.swing.JDialog {
             DefaultTableModel model = (DefaultTableModel)this.tblClasses.getModel();
             model.getDataVector().removeAllElements();
 
-            String sqlstmt = "select cl_id, cl_package, cl_vbname, cl_javaname from tclass";
+            String sqlstmt = "select cl_id, cl_packagename, cl_vbname, cl_javaname from tclass";
 
             DBRecordSet rs = new DBRecordSet();
             if (!Db.db.openRs(sqlstmt, rs)) {return false;}
@@ -192,7 +191,7 @@ public class Dictionary extends javax.swing.JDialog {
             for (Iterator<DynaBean> i = rs.getRows().iterator(); i.hasNext();) {
                 DynaBean row = i.next();
                 model.addRow(new Object[]{row.get("cl_id").toString(),
-                                          row.get("cl_package").toString(),
+                                          row.get("cl_packagename").toString(),
                                           row.get("cl_vbname").toString(),
                                           row.get("cl_javaname").toString()});
             }

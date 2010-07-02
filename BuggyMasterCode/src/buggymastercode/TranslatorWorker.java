@@ -71,6 +71,8 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
             return;
         }
 
+        translator.deletePackage(m_packageName);
+
         // Parse
         //
         int line = 1;
@@ -164,6 +166,7 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
 
             vbFullFile = m_path + vbFullFile;
 
+            translator.initDbObjects();
             translator.initTranslator(vbFullFile);
             translator.setPackage(m_packageName);
 

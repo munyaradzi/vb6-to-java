@@ -31,7 +31,7 @@ public class ClassObject {
                 return false;
             }
 
-            String sqlstmt = "insert into tclass (cl_id, cl_vbname, cl_javaname, cl_package) values ("
+            String sqlstmt = "insert into tclass (cl_id, cl_packagename, cl_vbname, cl_javaname) values ("
                             + id.getId().toString()
                             + ", " + Db.getString(m_packageName)
                             + ", " + Db.getString(m_vbName)
@@ -49,7 +49,7 @@ public class ClassObject {
         else {
 
             String sqlstmt = "update tclass set "
-                            + "cl_package = "  + Db.getString(m_packageName)
+                            + "cl_packagename = "  + Db.getString(m_packageName)
                             + ", cl_vbname = "  + Db.getString(m_vbName)
                             + ", cl_javaname = "  + Db.getString(m_javaName)
                             + " where cl_id = " + ((Integer)m_id).toString();
@@ -73,6 +73,7 @@ public class ClassObject {
 
     public boolean getClassIdFromClassName() {
         G.setHourglass();
+        setId(Db.CS_NO_ID);
         String sqlstmt = "select cl_id from tclass"
                             + " where cl_vbname = " + Db.getString(m_vbName)
                             + " and cl_packagename = " + Db.getString(m_packageName);

@@ -70,12 +70,14 @@ public class DBH2 implements DBConnection {
                 "cl_id int PRIMARY KEY, " +
                 "cl_javaname varchar(255) DEFAULT '' NOT NULL," +
                 "cl_vbname varchar(255) DEFAULT '' NOT NULL," +
-                "cl_package varchar(255) DEFAULT '' NOT NULL)");
+                "cl_packagename varchar(255) DEFAULT '' NOT NULL)");
+        stat.execute("drop table tfunction");
         stat.execute("CREATE TABLE IF NOT EXISTS tfunction (" +
                 "cl_id int DEFAULT 0 NOT NULL," +
                 "fun_id int PRIMARY KEY," +
                 "fun_javaname varchar(255) DEFAULT '' NOT NULL," +
-                "fun_vbname varchar(255) DEFAULT '' NOT NULL);");
+                "fun_vbname varchar(255) DEFAULT '' NOT NULL," +
+                "fun_datatype varchar(255) DEFAULT '' NOT NULL);");
         stat.execute("CREATE TABLE IF NOT EXISTS tvariable (" +
                 "cl_id int DEFAULT 0 NOT NULL," +
                 "fun_id int DEFAULT 0 NOT NULL," +
