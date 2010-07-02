@@ -79,7 +79,7 @@ public class DBH2 implements DBConnection {
                 "fun_javaname varchar(255) DEFAULT '' NOT NULL," +
                 "fun_vbname varchar(255) DEFAULT '' NOT NULL," +
                 "fun_datatype varchar(255) DEFAULT '' NOT NULL);");
-        stat.execute("drop table tvariable");
+        //stat.execute("drop table tvariable");
         stat.execute("CREATE TABLE IF NOT EXISTS tvariable (" +
                 "cl_id int DEFAULT 0 NOT NULL," +
                 "fun_id int DEFAULT 0 NOT NULL," +
