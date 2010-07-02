@@ -3828,17 +3828,20 @@ public class Translator {
             //if (G.endLike(strLine, " Then")) {
             //    m_tabCount--;
             //}
-            if (!m_wasSingleLineIf) m_tabCount--;
+            //if (!m_wasSingleLineIf) m_tabCount--;
+            m_tabCount--;
         }
         // Else
         //
         else if (G.beginLike(strLine, "Else ")) {
-            if (!m_wasSingleLineIf) m_tabCount--;
+            //if (!m_wasSingleLineIf) m_tabCount--;
+            m_tabCount--;
         }
         // Else
         //
         else if (strLine.trim().equalsIgnoreCase("Else")) {
-            if (!m_wasSingleLineIf) m_tabCount--;
+            //if (!m_wasSingleLineIf) m_tabCount--;
+            m_tabCount--;
         }
         // End Select
         //

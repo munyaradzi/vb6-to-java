@@ -133,14 +133,14 @@ public class FunctionDialog extends javax.swing.JDialog {
 
             },
             new String [] {
-                "id", "VB Name", "Java Name", "Data Type"
+                "id", "VB Name", "Java Name", "Data Type", "Is a Parameter"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Object.class, java.lang.String.class, java.lang.String.class, java.lang.String.class
+                java.lang.Object.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Boolean.class
             };
             boolean[] canEdit = new boolean [] {
-                false, false, false, false
+                false, false, false, false, false
             };
 
             public Class getColumnClass(int columnIndex) {
@@ -157,6 +157,7 @@ public class FunctionDialog extends javax.swing.JDialog {
         tblVariables.getColumnModel().getColumn(1).setHeaderValue(resourceMap.getString("tblVariables.columnModel.title1")); // NOI18N
         tblVariables.getColumnModel().getColumn(2).setHeaderValue(resourceMap.getString("tblVariables.columnModel.title2")); // NOI18N
         tblVariables.getColumnModel().getColumn(3).setHeaderValue(resourceMap.getString("tblVariables.columnModel.title3")); // NOI18N
+        tblVariables.getColumnModel().getColumn(4).setHeaderValue(resourceMap.getString("tblVariables.columnModel.title4")); // NOI18N
 
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
@@ -342,7 +343,9 @@ public class FunctionDialog extends javax.swing.JDialog {
             DefaultTableModel model = (DefaultTableModel)this.tblVariables.getModel();
             model.getDataVector().removeAllElements();
 
-            String sqlstmt = "select var_id, var_vbname, var_javaname, var_datatype from tvariable where fun_id = "
+            String sqlstmt = "select var_id, var_vbname, var_javaname, " 
+                                + "var_datatype, var_isparameter "
+                                + "from tvariable where fun_id = "
                                 + ((Integer)m_id).toString() ;
 
             DBRecordSet rs = new DBRecordSet();
@@ -354,7 +357,8 @@ public class FunctionDialog extends javax.swing.JDialog {
                 model.addRow(new Object[]{row.get("var_id").toString(),
                                           row.get("var_vbname").toString(),
                                           row.get("var_javaname").toString(),
-                                          row.get("var_datatype").toString()});
+                                          row.get("var_datatype").toString(),
+                                          Integer.parseInt(row.get("var_isparameter").toString()) == 0 ? false : true});
             }
             return true;
         }
