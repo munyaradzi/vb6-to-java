@@ -124,7 +124,7 @@ public class Dictionary extends javax.swing.JDialog {
         });
         tblClasses.setName("tblClasses"); // NOI18N
         jScrollPane1.setViewportView(tblClasses);
-        tblClasses.getColumnModel().getColumn(0).setMinWidth(100);
+        tblClasses.getColumnModel().getColumn(0).setMinWidth(60);
         tblClasses.getColumnModel().getColumn(0).setHeaderValue(resourceMap.getString("tblClasses.columnModel.title4")); // NOI18N
         tblClasses.getColumnModel().getColumn(1).setMinWidth(100);
         tblClasses.getColumnModel().getColumn(1).setHeaderValue(resourceMap.getString("tblClasses.columnModel.title5")); // NOI18N
@@ -141,7 +141,7 @@ public class Dictionary extends javax.swing.JDialog {
         tblClasses.getColumnModel().getColumn(5).setPreferredWidth(800);
         tblClasses.getColumnModel().getColumn(5).setHeaderValue(resourceMap.getString("tblClasses.columnModel.title3")); // NOI18N
 
-        jPanel1.add(jScrollPane1, java.awt.BorderLayout.CENTER);
+        jPanel1.add(jScrollPane1, java.awt.BorderLayout.PAGE_START);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);

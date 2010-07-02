@@ -16,6 +16,8 @@ public class VariableObject {
     private int m_fun_id = 0;
     private String m_vbName = "";
     private String m_javaName = "";
+    private String m_dataType = "";
+    private int m_isParameter = 0;
 
     public void setId(int value) {m_id = value;}
     public int getId() {return m_id;}
@@ -23,6 +25,8 @@ public class VariableObject {
     public void setFunId(int value) {m_fun_id = value;}
     public void setVbName(String value) {m_vbName = value;}
     public void setJavaName(String value) {m_javaName = value;}
+    public void setDataType(String value) {m_dataType = value;}
+    public void setIsParameter(boolean value) {m_isParameter = value ? 1: 0;}
 
     public boolean saveVariable() {
         if (m_id == Db.CS_NO_ID) {
@@ -33,12 +37,16 @@ public class VariableObject {
                 return false;
             }
 
-            String sqlstmt = "insert into tvariable (cl_id, fun_id, var_id, var_vbname, var_javaname) values ("
+            String sqlstmt = "insert into tvariable (cl_id, fun_id, var_id, " 
+                            + "var_vbname, var_javaname, var_datatype, " 
+                            + "var_isparameter) values ("
                             + Integer.toString(m_cl_id)
                             + ", " + Integer.toString(m_fun_id)
                             + ", " + id.getId().toString()
                             + ", " + Db.getString(m_vbName)
                             + ", " + Db.getString(m_javaName)
+                            + ", " + Db.getString(m_dataType)
+                            + ", " + Integer.toString(m_isParameter)
                             + ")";
 
             if (Db.db.execute(sqlstmt)) {
@@ -53,6 +61,8 @@ public class VariableObject {
             String sqlstmt = "update tvariable set "
                             + "var_vbname = "  + Db.getString(m_vbName)
                             + ", var_javaname = "  + Db.getString(m_javaName)
+                            + ", var_datatype = "  + Db.getString(m_dataType)
+                            + ", var_isparameter = "  + Integer.toString(m_isParameter)
                             + " where var_id = " + Integer.toString(m_id);
 
             if (!Db.db.execute(sqlstmt)) {

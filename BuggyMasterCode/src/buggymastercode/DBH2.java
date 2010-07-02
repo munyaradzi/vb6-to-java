@@ -66,25 +66,28 @@ public class DBH2 implements DBConnection {
         Statement stat = m_cn.createStatement();
         stat.execute("SET SCHEMA PUBLIC");
         //stat.execute("DROP TABLE tclass");
+        //stat.execute("drop table tclass");
         stat.execute("CREATE TABLE IF NOT EXISTS tclass (" +
                 "cl_id int PRIMARY KEY, " +
                 "cl_javaname varchar(255) DEFAULT '' NOT NULL," +
                 "cl_vbname varchar(255) DEFAULT '' NOT NULL," +
                 "cl_packagename varchar(255) DEFAULT '' NOT NULL)");
-        stat.execute("drop table tfunction");
+        //stat.execute("drop table tfunction");
         stat.execute("CREATE TABLE IF NOT EXISTS tfunction (" +
                 "cl_id int DEFAULT 0 NOT NULL," +
                 "fun_id int PRIMARY KEY," +
                 "fun_javaname varchar(255) DEFAULT '' NOT NULL," +
                 "fun_vbname varchar(255) DEFAULT '' NOT NULL," +
                 "fun_datatype varchar(255) DEFAULT '' NOT NULL);");
+        stat.execute("drop table tvariable");
         stat.execute("CREATE TABLE IF NOT EXISTS tvariable (" +
                 "cl_id int DEFAULT 0 NOT NULL," +
                 "fun_id int DEFAULT 0 NOT NULL," +
                 "var_id int PRIMARY KEY," +
                 "var_javaname varchar(255) DEFAULT '' NOT NULL," +
                 "var_vbname varchar(255) DEFAULT '' NOT NULL," +
-                "var_datatype varchar(255) DEFAULT '' NOT NULL);");
+                "var_datatype varchar(255) DEFAULT '' NOT NULL," +
+                "var_isparameter tinyint DEFAULT 0 NOT NULL);");
         stat.execute("CREATE SEQUENCE IF NOT EXISTS seq_tclass_id");
         stat.execute("CREATE SEQUENCE IF NOT EXISTS seq_tfunction_id");
         stat.execute("CREATE SEQUENCE IF NOT EXISTS seq_tvariable_id");

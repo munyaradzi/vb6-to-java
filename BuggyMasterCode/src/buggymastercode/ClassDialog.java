@@ -230,7 +230,7 @@ public class ClassDialog extends javax.swing.JDialog {
                 java.lang.Object.class, java.lang.String.class, java.lang.String.class, java.lang.String.class
             };
             boolean[] canEdit = new boolean [] {
-                false, false, false, true
+                false, false, false, false
             };
 
             public Class getColumnClass(int columnIndex) {
@@ -318,7 +318,7 @@ public class ClassDialog extends javax.swing.JDialog {
                 java.lang.Object.class, java.lang.String.class, java.lang.String.class, java.lang.String.class
             };
             boolean[] canEdit = new boolean [] {
-                false, false, false, true
+                false, false, false, false
             };
 
             public Class getColumnClass(int columnIndex) {
@@ -555,7 +555,7 @@ public class ClassDialog extends javax.swing.JDialog {
             DefaultTableModel model = (DefaultTableModel)this.tblVariables.getModel();
             model.getDataVector().removeAllElements();
 
-            String sqlstmt = "select var_id, var_vbname, var_javaname, var_datatype from tvariable where cl_id = "
+            String sqlstmt = "select var_id, var_vbname, var_javaname, var_datatype from tvariable where fun_id = 0 and cl_id = "
                                 + ((Integer)m_id).toString() ;
 
             DBRecordSet rs = new DBRecordSet();
@@ -567,7 +567,7 @@ public class ClassDialog extends javax.swing.JDialog {
                 model.addRow(new Object[]{row.get("var_id").toString(),
                                           row.get("var_vbname").toString(),
                                           row.get("var_javaname").toString(),
-                                          row.get("var_dataty").toString()});
+                                          row.get("var_datatype").toString()});
             }
             return true;
         }
