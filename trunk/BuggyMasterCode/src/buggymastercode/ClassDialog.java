@@ -223,14 +223,14 @@ public class ClassDialog extends javax.swing.JDialog {
 
             },
             new String [] {
-                "id", "VB Name", "Java Name"
+                "id", "VB Name", "Java Name", "Data Type"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Object.class, java.lang.String.class, java.lang.String.class
+                java.lang.Object.class, java.lang.String.class, java.lang.String.class, java.lang.String.class
             };
             boolean[] canEdit = new boolean [] {
-                false, false, false
+                false, false, false, true
             };
 
             public Class getColumnClass(int columnIndex) {
@@ -248,6 +248,8 @@ public class ClassDialog extends javax.swing.JDialog {
         tblVariables.getColumnModel().getColumn(0).setHeaderValue(resourceMap.getString("tblVariables.columnModel.title2")); // NOI18N
         tblVariables.getColumnModel().getColumn(1).setHeaderValue(resourceMap.getString("tblVariables.columnModel.title0")); // NOI18N
         tblVariables.getColumnModel().getColumn(2).setHeaderValue(resourceMap.getString("tblVariables.columnModel.title1")); // NOI18N
+        tblVariables.getColumnModel().getColumn(3).setMinWidth(100);
+        tblVariables.getColumnModel().getColumn(3).setHeaderValue(resourceMap.getString("tblVariables.columnModel.title3")); // NOI18N
 
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
@@ -309,14 +311,14 @@ public class ClassDialog extends javax.swing.JDialog {
 
             },
             new String [] {
-                "id", "VB Name", "Java Name"
+                "id", "VB Name", "Java Name", "Data Type"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Object.class, java.lang.String.class, java.lang.String.class
+                java.lang.Object.class, java.lang.String.class, java.lang.String.class, java.lang.String.class
             };
             boolean[] canEdit = new boolean [] {
-                false, false, false
+                false, false, false, true
             };
 
             public Class getColumnClass(int columnIndex) {
@@ -334,6 +336,8 @@ public class ClassDialog extends javax.swing.JDialog {
         tblFunctions.getColumnModel().getColumn(0).setHeaderValue(resourceMap.getString("tblFunctions.columnModel.title2")); // NOI18N
         tblFunctions.getColumnModel().getColumn(1).setHeaderValue(resourceMap.getString("tblFunctions.columnModel.title0")); // NOI18N
         tblFunctions.getColumnModel().getColumn(2).setHeaderValue(resourceMap.getString("tblFunctions.columnModel.title1")); // NOI18N
+        tblFunctions.getColumnModel().getColumn(3).setMinWidth(100);
+        tblFunctions.getColumnModel().getColumn(3).setHeaderValue(resourceMap.getString("tblFunctions.columnModel.title3")); // NOI18N
 
         javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
         jPanel2.setLayout(jPanel2Layout);
@@ -417,7 +421,7 @@ public class ClassDialog extends javax.swing.JDialog {
 
     public boolean edit(int id) {
         if (id != Db.CS_NO_ID) {
-            String sqlstmt = "select cl_package, cl_vbname, cl_javaname from tclass where cl_id = " + ((Integer)id).toString();
+            String sqlstmt = "select cl_packagename, cl_vbname, cl_javaname from tclass where cl_id = " + ((Integer)id).toString();
             DBRecordSet rs = new DBRecordSet();
             if (!Db.db.openRs(sqlstmt, rs)) {return false;}
 
@@ -429,7 +433,7 @@ public class ClassDialog extends javax.swing.JDialog {
             }
             else {
                 m_id = id;
-                this.txPackage.setText(rs.getRows().get(0).get("cl_package").toString());
+                this.txPackage.setText(rs.getRows().get(0).get("cl_packagename").toString());
                 this.txVbName.setText(rs.getRows().get(0).get("cl_vbname").toString());
                 this.txJavaName.setText(rs.getRows().get(0).get("cl_javaname").toString());
             }
@@ -524,7 +528,7 @@ public class ClassDialog extends javax.swing.JDialog {
             DefaultTableModel model = (DefaultTableModel)this.tblFunctions.getModel();
             model.getDataVector().removeAllElements();
 
-            String sqlstmt = "select fun_id, fun_vbname, fun_javaname from tfunction where cl_id = "
+            String sqlstmt = "select fun_id, fun_vbname, fun_javaname, fun_datatype from tfunction where cl_id = "
                                 + ((Integer)m_id).toString() ;
 
             DBRecordSet rs = new DBRecordSet();
@@ -535,7 +539,8 @@ public class ClassDialog extends javax.swing.JDialog {
                 DynaBean row = i.next();
                 model.addRow(new Object[]{row.get("fun_id").toString(),
                                           row.get("fun_vbname").toString(),
-                                          row.get("fun_javaname").toString()});
+                                          row.get("fun_javaname").toString(),
+                                          row.get("fun_datatype").toString()});
             }
             return true;
         }
@@ -550,7 +555,7 @@ public class ClassDialog extends javax.swing.JDialog {
             DefaultTableModel model = (DefaultTableModel)this.tblVariables.getModel();
             model.getDataVector().removeAllElements();
 
-            String sqlstmt = "select var_id, var_vbname, var_javaname from tvariable where cl_id = "
+            String sqlstmt = "select var_id, var_vbname, var_javaname, var_datatype from tvariable where cl_id = "
                                 + ((Integer)m_id).toString() ;
 
             DBRecordSet rs = new DBRecordSet();
@@ -561,7 +566,8 @@ public class ClassDialog extends javax.swing.JDialog {
                 DynaBean row = i.next();
                 model.addRow(new Object[]{row.get("var_id").toString(),
                                           row.get("var_vbname").toString(),
-                                          row.get("var_javaname").toString()});
+                                          row.get("var_javaname").toString(),
+                                          row.get("var_dataty").toString()});
             }
             return true;
         }
