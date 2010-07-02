@@ -39,6 +39,8 @@ public class VariableDialog extends javax.swing.JDialog {
         txVbName = new javax.swing.JTextField();
         jLabel2 = new javax.swing.JLabel();
         jButton1 = new javax.swing.JButton();
+        jLabel3 = new javax.swing.JLabel();
+        txDataType = new javax.swing.JTextField();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
         setName("Form"); // NOI18N
@@ -60,25 +62,38 @@ public class VariableDialog extends javax.swing.JDialog {
         jButton1.setText(resourceMap.getString("jButton1.text")); // NOI18N
         jButton1.setName("jButton1"); // NOI18N
 
+        jLabel3.setText(resourceMap.getString("jLabel3.text")); // NOI18N
+        jLabel3.setName("jLabel3"); // NOI18N
+
+        txDataType.setName("txDataType"); // NOI18N
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jButton1)
-                    .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                        .addGroup(layout.createSequentialGroup()
-                            .addGap(11, 11, 11)
-                            .addComponent(jLabel1)
-                            .addGap(10, 10, 10)
-                            .addComponent(txVbName, javax.swing.GroupLayout.PREFERRED_SIZE, 286, javax.swing.GroupLayout.PREFERRED_SIZE))
-                        .addGroup(layout.createSequentialGroup()
-                            .addComponent(jLabel2)
-                            .addGap(10, 10, 10)
-                            .addComponent(txJavaName, javax.swing.GroupLayout.PREFERRED_SIZE, 286, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(layout.createSequentialGroup()
+                        .addGap(11, 11, 11)
+                        .addComponent(jLabel1)
+                        .addGap(10, 10, 10)
+                        .addComponent(txVbName, javax.swing.GroupLayout.PREFERRED_SIZE, 286, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(layout.createSequentialGroup()
+                        .addComponent(jLabel2)
+                        .addGap(10, 10, 10)
+                        .addComponent(txJavaName, javax.swing.GroupLayout.PREFERRED_SIZE, 286, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap(13, Short.MAX_VALUE)
+                .addComponent(jLabel3)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(txDataType, javax.swing.GroupLayout.PREFERRED_SIZE, 286, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap(302, Short.MAX_VALUE)
+                .addComponent(jButton1)
+                .addContainerGap())
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -95,7 +110,11 @@ public class VariableDialog extends javax.swing.JDialog {
                         .addGap(3, 3, 3)
                         .addComponent(jLabel2))
                     .addComponent(txJavaName, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(18, 18, 18)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel3)
+                    .addComponent(txDataType, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addComponent(jButton1)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
@@ -108,6 +127,8 @@ public class VariableDialog extends javax.swing.JDialog {
     private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JTextField txDataType;
     private javax.swing.JTextField txJavaName;
     private javax.swing.JTextField txVbName;
     // End of variables declaration//GEN-END:variables
@@ -119,7 +140,7 @@ public class VariableDialog extends javax.swing.JDialog {
     public boolean edit(int id, int cl_id) {
         m_cl_id = cl_id;
         if (id != Db.CS_NO_ID) {
-            String sqlstmt = "select var_vbname, var_javaname from tvariable where var_id = " + ((Integer)id).toString();
+            String sqlstmt = "select var_vbname, var_javaname, var_datatype from tvariable where var_id = " + ((Integer)id).toString();
             DBRecordSet rs = new DBRecordSet();
             if (!Db.db.openRs(sqlstmt, rs)) {return false;}
 
@@ -127,17 +148,20 @@ public class VariableDialog extends javax.swing.JDialog {
                 m_id = Db.CS_NO_ID;
                 this.txVbName.setText("");
                 this.txJavaName.setText("");
+                this.txDataType.setText("");
             }
             else {
                 m_id = id;
                 this.txVbName.setText(rs.getRows().get(0).get("var_vbname").toString());
                 this.txJavaName.setText(rs.getRows().get(0).get("var_javaname").toString());
+                this.txDataType.setText(rs.getRows().get(0).get("var_datatype").toString());
             }
         }
         else {
             m_id = Db.CS_NO_ID;
             this.txVbName.setText("");
             this.txJavaName.setText("");
+            this.txDataType.setText("");
         }
         return true;
     }
@@ -151,6 +175,7 @@ public class VariableDialog extends javax.swing.JDialog {
             var.setClId(m_cl_id);
             var.setVbName(this.txVbName.getText());
             var.setJavaName(this.txJavaName.getText());
+            var.setDataType(this.txDataType.getText());
             if (var.saveVariable()) {
                 m_id = var.getId();
             }
@@ -165,6 +190,10 @@ public class VariableDialog extends javax.swing.JDialog {
         }
         if (this.txJavaName.getText().length() == 0) {
             G.showInfo("The java name field is required");
+            return false;
+        }
+        if (this.txDataType.getText().length() == 0) {
+            G.showInfo("The data type field is required");
             return false;
         }
         return true;

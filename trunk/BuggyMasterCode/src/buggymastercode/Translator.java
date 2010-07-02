@@ -2730,6 +2730,9 @@ public class Translator {
             m_vbFunctionName = "";
         }
 
+        if (!functionName.isEmpty())
+            saveFunction(m_vbFunctionName, functionName, functionType);
+
         return functionScope + " "
                 + functionType + " "
                 + functionName.substring(0,1).toLowerCase() + functionName.substring(1) + "("
@@ -2784,6 +2787,7 @@ public class Translator {
 
     private String getParam(String strParam) {
         String paramName = "";
+        String vbParamName = "";
         String dataType = "";
         String[] words = strParam.split("\\s+");
 
@@ -2795,6 +2799,7 @@ public class Translator {
         // param_name
         //
         else if (words.length == 1) {
+            vbParamName = words[0];
             paramName = getParamName(words[0]);
         }
         // byval param_name
@@ -2804,14 +2809,17 @@ public class Translator {
         else if (words.length == 2) {
             // byval param_name
             if (words[0].equalsIgnoreCase("ByVal")) {
+                vbParamName = words[1];
                 paramName = getParamName(words[1]);
             }
             // byref param_name
             else if (words[0].equalsIgnoreCase("ByRef")) {
+                vbParamName = words[1];
                 paramName = getParamName(words[1]);
             }
             // optional param_name
             else if (words[0].equalsIgnoreCase("Optional")) {
+                vbParamName = words[1];
                 paramName = getParamName(words[1]);
             }
             else
@@ -2826,11 +2834,13 @@ public class Translator {
             // param_name As param_type
             if (words[1].equalsIgnoreCase("as")) {
                 dataType = getDataType(words[2]);
+                vbParamName = words[0];
                 paramName = getParamName(words[0]);
             }
             // optional byval param_name
             // optional byref param_name
             else {
+                vbParamName = words[2];
                 paramName = getParamName(words[2]);
             }
         }
@@ -2845,10 +2855,12 @@ public class Translator {
             // optional param_name As param_type
             if (words[2].equalsIgnoreCase("as")) {
                 dataType = getDataType(words[3]);
+                vbParamName = words[1];
                 paramName = getParamName(words[1]);
             }
             // optional param_name = default_value
             else if (words[2].equalsIgnoreCase("=")) {
+                vbParamName = words[1];
                 paramName = getParamName(words[1]);
             }
             else
@@ -2866,11 +2878,13 @@ public class Translator {
             // byref optional param_name As data_type
             if (words[3].equalsIgnoreCase("as")) {
                 dataType = getDataType(words[4]);
+                vbParamName = words[2];
                 paramName = getParamName(words[2]);
             }
             // byval optional param_name = default_value
             // byref optional param_name = default_value
             else if (words[3].equalsIgnoreCase("=")) {
+                vbParamName = words[2];
                 paramName = getParamName(words[2]);
             }
             else
@@ -2886,6 +2900,7 @@ public class Translator {
             // byref optional param_name As data_type
             if (words[2].equalsIgnoreCase("as")) {
                 dataType = getDataType(words[3]);
+                vbParamName = words[1];
                 paramName = getParamName(words[1]);
             }
             else
@@ -2900,6 +2915,7 @@ public class Translator {
         else if (words.length == 7) {
             if (words[3].equalsIgnoreCase("as")) {
                 dataType = getDataType(words[4]);
+                vbParamName = words[2];
                 paramName = getParamName(words[2]);
             }
             else
@@ -2919,6 +2935,8 @@ public class Translator {
         var.name = paramName;
         var.setType(dataType);
         m_functionVariables.add(var);
+
+        saveParam(vbParamName, paramName, dataType);
 
         return dataType + " " + paramName;
     }
@@ -3106,11 +3124,34 @@ public class Translator {
                 + comments + newline;
     }
 
+    private void saveFunction(String vbIdentifier, String identifier, String dataType) {
+        m_functionObject.setClId(m_classObject.getId());
+        m_functionObject.setVbName(vbIdentifier);
+        m_functionObject.setJavaName(identifier);
+        m_functionObject.setDataType(dataType);
+        m_functionObject.getFunctionIdFromFunctionName();
+        m_functionObject.saveFunction();
+    }
+
+    private void saveParam(String vbParamName, String paramName, String dataType) {
+        saveVariable(vbParamName, paramName, dataType, true);
+    }
+    
     private void saveVariable(String vbIdentifier, String identifier, String dataType) {
+        saveVariable(vbIdentifier, identifier, dataType, false);
+    }
+
+    private void saveVariable(String vbIdentifier,
+                                String identifier,
+                                String dataType,
+                                boolean isParameter) {
+
         m_variableObject.setClId(m_classObject.getId());
         m_variableObject.setVbName(vbIdentifier);
         m_variableObject.setJavaName(identifier);
         m_variableObject.setFunId(m_functionObject.getId());
+        m_variableObject.setDataType(dataType);
+        m_variableObject.setIsParameter(isParameter);
         m_variableObject.getVariableIdFromVariableName();
         m_variableObject.saveVariable();
     }
@@ -3120,6 +3161,8 @@ public class Translator {
         m_variableObject.setVbName(vbIdentifier);
         m_variableObject.setJavaName(identifier);
         m_variableObject.setFunId(Db.CS_NO_ID);
+        m_variableObject.setDataType(dataType);
+        m_variableObject.setIsParameter(false);
         m_variableObject.getVariableIdFromVariableName();
         m_variableObject.saveVariable();
     }
