@@ -65,7 +65,6 @@ public class DBH2 implements DBConnection {
     private void initDataBase() throws Exception {
         Statement stat = m_cn.createStatement();
         stat.execute("SET SCHEMA PUBLIC");
-        //stat.execute("DROP TABLE tclass");
         //stat.execute("drop table tclass");
         stat.execute("CREATE TABLE IF NOT EXISTS tclass (" +
                 "cl_id int PRIMARY KEY, " +
