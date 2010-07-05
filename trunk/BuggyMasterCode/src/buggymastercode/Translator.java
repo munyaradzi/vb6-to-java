@@ -853,7 +853,7 @@ public class Translator {
             // Public Function ShowPrintDialog(ByVal
         if (isFunctionDeclaration(workLine)) {
             String functionDeclaration = translateFunctionDeclaration(strLine);
-            String[] words = functionDeclaration.split("\\s+");
+            String[] words = G.splitSpace(functionDeclaration);//functionDeclaration.split("\\s+");
             if (words.length >= 3) {
                 Function function = new Function();
                 function.vbDeclaration = strLine;
@@ -1142,7 +1142,7 @@ public class Translator {
             strLine = strLine.substring(0, startComment-1);
         }
 
-        String[] words = strLine.split("\\s+");
+        String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
 
         // we start in 1 because word[0] is "If"
         //
@@ -1367,7 +1367,7 @@ public class Translator {
             strLine = strLine.substring(0, startComment-1);
         }
 
-        String[] words = strLine.split("\\s+");
+        String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
 
         // we start in 1 because word[0] is "If"
         //
@@ -1493,7 +1493,7 @@ public class Translator {
             strLine = strLine.substring(0, startComment-1);
         }
 
-        String[] words = strLine.split("\\s+");
+        String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
 
         // we start in 1 because word[0] is "For"
         //
@@ -2609,7 +2609,7 @@ public class Translator {
         m_functionVariables.removeAll(m_functionVariables);
 
         strLine = G.ltrimTab(strLine);
-        String[] words = strLine.split("\\s+");
+        String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
 
         // Public
         //
@@ -2753,7 +2753,7 @@ public class Translator {
         else {
             if (strLine.length() >= endParams + 2) {
                 strLine = strLine.substring(endParams + 2);
-                String[] words = strLine.split("\\s+");
+                String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
                 if (words.length >=2) {
                     return getDataType(words[1]);
                 }
@@ -2789,7 +2789,7 @@ public class Translator {
         String paramName = "";
         String vbParamName = "";
         String dataType = "";
-        String[] words = strParam.split("\\s+");
+        String[] words = G.splitSpace(strParam);//strParam.split("\\s+");
 
         // empty string
         //
@@ -3072,7 +3072,7 @@ public class Translator {
             workLine = workLine.substring(0, startComment-1);
         }
 
-        String[] words = workLine.split("\\s+");
+        String[] words = G.splitSpace(workLine);//workLine.split("\\s+");
         String dataType = "";
         String identifier = "";
         String constValue = "";
@@ -3171,7 +3171,7 @@ public class Translator {
         // form is
             // dim variable_name as data_type
         strLine = strLine.trim();
-        String[] words = strLine.split("\\s+");
+        String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
         String dataType = "";
         String identifier = "";
         String constValue = "";
@@ -3238,7 +3238,7 @@ public class Translator {
         // form is
             // dim variable_name as data_type
         strLine = strLine.trim();
-        String[] words = strLine.split("\\s+");
+        String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
         String dataType = "";
         String identifier = "";
         String vbIdentifier = "";
@@ -3293,7 +3293,7 @@ public class Translator {
         // form is
             // dim variable_name as data_type
         strLine = strLine.trim();
-        String[] words = strLine.split("\\s+");
+        String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
         String dataType = "";
         String identifier = "";
         String vbIdentifier = "";
@@ -3329,7 +3329,7 @@ public class Translator {
         // form is
             // dim variable_name as data_type
         strLine = strLine.trim();
-        String[] words = strLine.split("\\s+");
+        String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
         String dataType = "";
         String identifier = "";
         String misc = "";
@@ -3469,7 +3469,7 @@ public class Translator {
             String identifier = "";
 
             strLine = strLine.trim();
-            String[] words = strLine.split("\\s+");
+            String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
 
             if (words.length > 0) {
 
@@ -3612,7 +3612,7 @@ public class Translator {
             String misc = "";
 
             strLine = strLine.trim();
-            String[] words = strLine.split("\\s+");
+            String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
 
             if (words.length > 0) {
 
@@ -3933,7 +3933,7 @@ public class Translator {
     private String removeLineNumbers(String strLine) {
         boolean isNumber = true;
         strLine = G.ltrimTab(strLine);
-        String[] words = strLine.split("\\s+");
+        String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
 
         if (words.length > 0) {
             for (int i = 0; i < words[0].length(); i++) {

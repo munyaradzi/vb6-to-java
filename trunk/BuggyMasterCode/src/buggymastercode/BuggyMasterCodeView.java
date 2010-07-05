@@ -120,10 +120,12 @@ public class BuggyMasterCodeView extends FrameView {
 
         mainPanel = new javax.swing.JPanel();
         jSplitPane1 = new javax.swing.JSplitPane();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        txSourceCode = new javax.swing.JTextArea();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        txSourceCodeJava = new javax.swing.JTextArea();
+        txSourceCode = new RSyntaxTextArea();
+        txSourceCode.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_VB);
+        jScrollPane1 = new RTextScrollPane(txSourceCode);
+        txSourceCodeJava = new RSyntaxTextArea();
+        txSourceCodeJava.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
+        jScrollPane2 = new RTextScrollPane(txSourceCodeJava);
         jPanel1 = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         txFileVB = new javax.swing.JTextField();
@@ -159,7 +161,7 @@ public class BuggyMasterCodeView extends FrameView {
         txSourceCode.setColumns(20);
         txSourceCode.setRows(5);
         txSourceCode.setName("txSourceCode"); // NOI18N
-        jScrollPane1.setViewportView(txSourceCode);
+        //jScrollPane1.setViewportView(txSourceCode);
 
         jSplitPane1.setLeftComponent(jScrollPane1);
 
@@ -168,7 +170,7 @@ public class BuggyMasterCodeView extends FrameView {
         txSourceCodeJava.setColumns(20);
         txSourceCodeJava.setRows(5);
         txSourceCodeJava.setName("txSourceCodeJava"); // NOI18N
-        jScrollPane2.setViewportView(txSourceCodeJava);
+        //jScrollPane2.setViewportView(txSourceCodeJava);
 
         jSplitPane1.setRightComponent(jScrollPane2);
 
@@ -182,7 +184,7 @@ public class BuggyMasterCodeView extends FrameView {
 
         txFileVB.setText(resourceMap.getString("txFileVb.text")); // NOI18N
         txFileVB.setName("txFileVb"); // NOI18N
-        jPanel2.add(txFileVB, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 10, 428, -1));
+        jPanel2.add(txFileVB, new org.netbeans.lib.awtextra.AbsoluteConstraints(49, 12, 428, -1));
 
         javax.swing.ActionMap actionMap = org.jdesktop.application.Application.getInstance(buggymastercode.BuggyMasterCodeApp.class).getContext().getActionMap(BuggyMasterCodeView.class, this);
         jButton1.setAction(actionMap.get("showChoseFileDialog")); // NOI18N
@@ -207,7 +209,7 @@ public class BuggyMasterCodeView extends FrameView {
         lbPackage.setName("lbPackage"); // NOI18N
         jPanel2.add(lbPackage, new org.netbeans.lib.awtextra.AbsoluteConstraints(64, 45, 105, -1));
 
-        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 620, 90));
+        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 540, 90));
 
         mainPanel.add(jPanel1, java.awt.BorderLayout.PAGE_START);
 
@@ -266,11 +268,11 @@ public class BuggyMasterCodeView extends FrameView {
         statusPanel.setLayout(statusPanelLayout);
         statusPanelLayout.setHorizontalGroup(
             statusPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(statusPanelSeparator, javax.swing.GroupLayout.DEFAULT_SIZE, 628, Short.MAX_VALUE)
+            .addComponent(statusPanelSeparator, javax.swing.GroupLayout.DEFAULT_SIZE, 540, Short.MAX_VALUE)
             .addGroup(statusPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(statusMessageLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 432, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 370, Short.MAX_VALUE)
                 .addComponent(progressBar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(statusAnimationLabel)
@@ -389,8 +391,8 @@ public class BuggyMasterCodeView extends FrameView {
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
-    private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
+    private RTextScrollPane jScrollPane1;
+    private RTextScrollPane jScrollPane2;
     private javax.swing.JSplitPane jSplitPane1;
     private javax.swing.JLabel lbPackage;
     private javax.swing.JPanel mainPanel;
@@ -401,8 +403,8 @@ public class BuggyMasterCodeView extends FrameView {
     private javax.swing.JPanel statusPanel;
     private javax.swing.JMenu toolMenu;
     private javax.swing.JTextField txFileVB;
-    private javax.swing.JTextArea txSourceCode;
-    private javax.swing.JTextArea txSourceCodeJava;
+    private RSyntaxTextArea txSourceCode;
+    private RSyntaxTextArea txSourceCodeJava;
     // End of variables declaration//GEN-END:variables
 
     private final Timer messageTimer;
