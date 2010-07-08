@@ -56,6 +56,8 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
     private void doWork(String vbpFile) {
         ByRefString value = new ByRefString();
 
+        m_caller.initProgress();
+
         m_packageName = "";
 
         // Get package name
@@ -148,6 +150,8 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
 
     public void parseFile(String vbFile) {
 
+        m_caller.addMessage("Parsing " + vbFile);
+
         String vbFullFile = vbFile;
 
         SourceFile sourceFile = new SourceFile();
@@ -198,6 +202,8 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
     }
 
     public void translateFile(String vbFile, int indexFile) {
+
+        m_caller.addMessage("Translating " + vbFile);
 
         SourceFile sourceFile = m_collFiles.get(indexFile);
 

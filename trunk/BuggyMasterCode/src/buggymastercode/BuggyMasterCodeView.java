@@ -15,6 +15,7 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.File;
 import java.util.ArrayList;
+import javax.swing.DefaultListModel;
 import javax.swing.Timer;
 import javax.swing.Icon;
 import javax.swing.JDialog;
@@ -119,13 +120,6 @@ public class BuggyMasterCodeView extends FrameView {
     private void initComponents() {
 
         mainPanel = new javax.swing.JPanel();
-        jSplitPane1 = new javax.swing.JSplitPane();
-        txSourceCode = new RSyntaxTextArea();
-        txSourceCode.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_VB);
-        jScrollPane1 = new RTextScrollPane(txSourceCode);
-        txSourceCodeJava = new RSyntaxTextArea();
-        txSourceCodeJava.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
-        jScrollPane2 = new RTextScrollPane(txSourceCodeJava);
         jPanel1 = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
         txFileVB = new javax.swing.JTextField();
@@ -134,6 +128,18 @@ public class BuggyMasterCodeView extends FrameView {
         cbFiles = new javax.swing.JComboBox();
         jLabel2 = new javax.swing.JLabel();
         lbPackage = new javax.swing.JLabel();
+        jTabbedPane1 = new javax.swing.JTabbedPane();
+        jPanel3 = new javax.swing.JPanel();
+        jScrollPane3 = new javax.swing.JScrollPane();
+        lsFiles = new javax.swing.JList();
+        jLabel3 = new javax.swing.JLabel();
+        jSplitPane1 = new javax.swing.JSplitPane();
+        txSourceCode = new RSyntaxTextArea();
+        txSourceCode.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_VB);
+        jScrollPane1 = new RTextScrollPane(txSourceCode);
+        txSourceCodeJava = new RSyntaxTextArea();
+        txSourceCodeJava.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
+        jScrollPane2 = new RTextScrollPane(txSourceCodeJava);
         menuBar = new javax.swing.JMenuBar();
         javax.swing.JMenu fileMenu = new javax.swing.JMenu();
         javax.swing.JMenuItem exitMenuItem = new javax.swing.JMenuItem();
@@ -153,6 +159,78 @@ public class BuggyMasterCodeView extends FrameView {
         mainPanel.setBackground(resourceMap.getColor("mainPanel.background")); // NOI18N
         mainPanel.setName("mainPanel"); // NOI18N
         mainPanel.setLayout(new java.awt.BorderLayout());
+
+        jPanel1.setName("jPanel1"); // NOI18N
+        jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        jPanel2.setName("jPanel2"); // NOI18N
+        jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+
+        txFileVB.setText(resourceMap.getString("txFileVb.text")); // NOI18N
+        txFileVB.setName("txFileVb"); // NOI18N
+        jPanel2.add(txFileVB, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 10, 428, -1));
+
+        javax.swing.ActionMap actionMap = org.jdesktop.application.Application.getInstance(buggymastercode.BuggyMasterCodeApp.class).getContext().getActionMap(BuggyMasterCodeView.class, this);
+        jButton1.setAction(actionMap.get("showChoseFileDialog")); // NOI18N
+        jButton1.setText(resourceMap.getString("jButton1.text")); // NOI18N
+        jButton1.setName("jButton1"); // NOI18N
+        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 10, -1, -1));
+
+        jLabel1.setText(resourceMap.getString("jLabel1.text")); // NOI18N
+        jLabel1.setName("jLabel1"); // NOI18N
+        jPanel2.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 15, -1, -1));
+
+        cbFiles.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        cbFiles.setName("cbFiles"); // NOI18N
+        jPanel2.add(cbFiles, new org.netbeans.lib.awtextra.AbsoluteConstraints(247, 45, 230, -1));
+
+        jLabel2.setText(resourceMap.getString("jLabel2.text")); // NOI18N
+        jLabel2.setName("jLabel2"); // NOI18N
+        jPanel2.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 48, -1, -1));
+
+        lbPackage.setFont(resourceMap.getFont("lbPackage.font")); // NOI18N
+        lbPackage.setText(resourceMap.getString("lbPackage.text")); // NOI18N
+        lbPackage.setName("lbPackage"); // NOI18N
+        jPanel2.add(lbPackage, new org.netbeans.lib.awtextra.AbsoluteConstraints(64, 45, 105, -1));
+
+        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 620, 90));
+
+        mainPanel.add(jPanel1, java.awt.BorderLayout.PAGE_START);
+
+        jTabbedPane1.setName("jTabbedPane1"); // NOI18N
+
+        jPanel3.setName("jPanel3"); // NOI18N
+
+        jScrollPane3.setName("jScrollPane3"); // NOI18N
+
+        lsFiles.setName("lsFiles"); // NOI18N
+        jScrollPane3.setViewportView(lsFiles);
+
+        jLabel3.setText(resourceMap.getString("jLabel3.text")); // NOI18N
+        jLabel3.setName("jLabel3"); // NOI18N
+
+        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
+        jPanel3.setLayout(jPanel3Layout);
+        jPanel3Layout.setHorizontalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 613, Short.MAX_VALUE)
+                    .addComponent(jLabel3))
+                .addContainerGap())
+        );
+        jPanel3Layout.setVerticalGroup(
+            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel3Layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jLabel3)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 331, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+
+        jTabbedPane1.addTab(resourceMap.getString("jPanel3.TabConstraints.tabTitle"), jPanel3); // NOI18N
 
         jSplitPane1.setName("jSplitPane1"); // NOI18N
 
@@ -174,44 +252,9 @@ public class BuggyMasterCodeView extends FrameView {
 
         jSplitPane1.setRightComponent(jScrollPane2);
 
-        mainPanel.add(jSplitPane1, java.awt.BorderLayout.CENTER);
+        jTabbedPane1.addTab(resourceMap.getString("jSplitPane1.TabConstraints.tabTitle"), jSplitPane1); // NOI18N
 
-        jPanel1.setName("jPanel1"); // NOI18N
-        jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
-
-        jPanel2.setName("jPanel2"); // NOI18N
-        jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
-
-        txFileVB.setText(resourceMap.getString("txFileVb.text")); // NOI18N
-        txFileVB.setName("txFileVb"); // NOI18N
-        jPanel2.add(txFileVB, new org.netbeans.lib.awtextra.AbsoluteConstraints(49, 12, 428, -1));
-
-        javax.swing.ActionMap actionMap = org.jdesktop.application.Application.getInstance(buggymastercode.BuggyMasterCodeApp.class).getContext().getActionMap(BuggyMasterCodeView.class, this);
-        jButton1.setAction(actionMap.get("showChoseFileDialog")); // NOI18N
-        jButton1.setText(resourceMap.getString("jButton1.text")); // NOI18N
-        jButton1.setName("jButton1"); // NOI18N
-        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(483, 11, -1, -1));
-
-        jLabel1.setText(resourceMap.getString("jLabel1.text")); // NOI18N
-        jLabel1.setName("jLabel1"); // NOI18N
-        jPanel2.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 15, -1, -1));
-
-        cbFiles.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-        cbFiles.setName("cbFiles"); // NOI18N
-        jPanel2.add(cbFiles, new org.netbeans.lib.awtextra.AbsoluteConstraints(247, 45, 230, -1));
-
-        jLabel2.setText(resourceMap.getString("jLabel2.text")); // NOI18N
-        jLabel2.setName("jLabel2"); // NOI18N
-        jPanel2.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 48, -1, -1));
-
-        lbPackage.setFont(resourceMap.getFont("lbPackage.font")); // NOI18N
-        lbPackage.setText(resourceMap.getString("lbPackage.text")); // NOI18N
-        lbPackage.setName("lbPackage"); // NOI18N
-        jPanel2.add(lbPackage, new org.netbeans.lib.awtextra.AbsoluteConstraints(64, 45, 105, -1));
-
-        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 540, 90));
-
-        mainPanel.add(jPanel1, java.awt.BorderLayout.PAGE_START);
+        mainPanel.add(jTabbedPane1, java.awt.BorderLayout.CENTER);
 
         menuBar.setName("menuBar"); // NOI18N
 
@@ -268,11 +311,11 @@ public class BuggyMasterCodeView extends FrameView {
         statusPanel.setLayout(statusPanelLayout);
         statusPanelLayout.setHorizontalGroup(
             statusPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(statusPanelSeparator, javax.swing.GroupLayout.DEFAULT_SIZE, 540, Short.MAX_VALUE)
+            .addComponent(statusPanelSeparator, javax.swing.GroupLayout.DEFAULT_SIZE, 638, Short.MAX_VALUE)
             .addGroup(statusPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(statusMessageLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 370, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 468, Short.MAX_VALUE)
                 .addComponent(progressBar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(statusAnimationLabel)
@@ -341,6 +384,15 @@ public class BuggyMasterCodeView extends FrameView {
         busyIconTimer.stop();
     }
 
+    public void initProgress() {
+        lsFiles.setModel(new DefaultListModel());
+    }
+
+    public void addMessage(String message) {
+        DefaultListModel model = (DefaultListModel)lsFiles.getModel();
+        model.add(0, message);
+    }
+
     private String getVbName(String vbpFile) {
         ByRefString value = new ByRefString();
         if (G.getToken(vbpFile, "Name", 1, value)) {
@@ -387,14 +439,19 @@ public class BuggyMasterCodeView extends FrameView {
     private javax.swing.JButton jButton1;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
+    private javax.swing.JPanel jPanel3;
     private RTextScrollPane jScrollPane1;
     private RTextScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JSplitPane jSplitPane1;
+    private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JLabel lbPackage;
+    private javax.swing.JList lsFiles;
     private javax.swing.JPanel mainPanel;
     private javax.swing.JMenuBar menuBar;
     private javax.swing.JProgressBar progressBar;
