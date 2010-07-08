@@ -16,7 +16,13 @@ public class Translator {
 
     static private final String newline = "\n";
     static private final String C_NUMBERS = "-+0123456789";
+    static private final String C_SEPARARTORS = "_._=_&&_||_+_-_*_/_==_!=_<_>_<=_>=_";
     static private final String C_SYMBOLS = " +-()*/,";
+    static private final String C_RESERVED_WORDS =
+        "_and_as_byval_byref_case_class_dim_elseif_else_end_each_for_friend_"
+     + "_function_global_goto_if_in_is_next_not_of_or_on error_on resume_print_"
+     + "_private_public_raise_select_sub_type_while_wend_char_date_double_integer_"
+     + "_long_object_short_string_variant_";
 
     private boolean m_isVbSource = false;
     private boolean m_codeHasStarted = false;
@@ -1701,8 +1707,45 @@ public class Translator {
         strLine = replaceRightSentence(strLine);
         strLine = replaceLenSentence(strLine);
         strLine = replaceVbWords(strLine);
+        strLine = translateFunctionCall(strLine);
 
         return strLine;
+    }
+
+    private String translateFunctionCall(String strLine) {
+
+        if (G.beginLike(strLine,"Call ")) {
+            strLine = strLine.substring(5);
+        }
+
+        int startComment = getStartComment(strLine);
+        String workLine = strLine;
+        String comments = "";
+        if (startComment >= 0) {
+            comments =  "//" + workLine.substring(startComment);
+            workLine = workLine.substring(0, startComment-1);
+        }
+        String[] words = getWordsFromSentence(workLine);
+        if (words.length >= 2) {
+            if (!words[0].equals("return")) {
+                if (!words[0].equals("(") && !words[1].equals("(") && !words[2].equals("(")) {
+                    if (!C_SEPARARTORS.contains("_" + words[2] + "_")) {
+                        if (!isReservedWord(words[0])) {
+                            strLine = words[0] + "(";
+                            for (int i = 1; i < words.length; i++) {
+                                strLine += words[i];
+                            }
+                            strLine += comments;
+                        }
+                    }
+                }
+            }
+        }
+        return strLine;
+    }
+
+    private boolean isReservedWord(String word) {
+        return (C_RESERVED_WORDS.contains("_" + word.toLowerCase() + "_"));
     }
 
     private String replaceMemberVariables(String strLine) {
