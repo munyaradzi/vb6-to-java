@@ -28,7 +28,7 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
     private String m_vbpFile = "";
     private String m_packageName = "";
     private ArrayList<SourceFile> m_collFiles = new ArrayList<SourceFile>();
-    private Translator translator = new Translator();
+    private Translator m_translator = new Translator();
     private BuggyMasterCodeView m_caller = null;
 
     public TranslatorWorker(BuggyMasterCodeView caller, String path, String vbpFile, ArrayList<SourceFile> collFiles) {
@@ -73,11 +73,30 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
             return;
         }
 
-        translator.deletePackage(m_packageName);
+        m_translator.deletePackage(m_packageName);
 
-        // Parse
+        // References
         //
         int line = 1;
+        int k = 0;
+        String[] references = new String[500];
+        if (G.getToken(vbpFile, "Reference", line , value)) {
+            while (!value.text.isEmpty()) {
+                references[k] = getReferenceName(value.text);
+                k++;
+                line++;
+                if (!G.getToken(vbpFile, "Reference", line , value)) {
+                    break;
+                }
+                //progressBar.setValue(line);
+            }
+        }
+        references = G.redim(references, k);
+        m_translator.setReferences(references);
+        
+        // Parse
+        //
+        line = 1;
         if (G.getToken(vbpFile, "Form", line , value)) {
             while (!value.text.isEmpty()) {
                 parseFile(value.text);
@@ -113,7 +132,7 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
 
         // Translate
         //
-        translator.setSourceFiles(m_collFiles);
+        m_translator.setSourceFiles(m_collFiles);
 
         int indexFile = 0;
         line = 1;
@@ -170,22 +189,22 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
 
             vbFullFile = m_path + vbFullFile;
 
-            translator.initDbObjects();
-            translator.initTranslator(vbFullFile);
-            translator.setPackage(m_packageName);
+            m_translator.initDbObjects();
+            m_translator.initTranslator(vbFullFile);
+            m_translator.setPackage(m_packageName);
 
-            if (translator.isVbSource()) {
+            if (m_translator.isVbSource()) {
                 fstream = new FileInputStream(getFileForOS(vbFullFile));
                 DataInputStream in = new DataInputStream(fstream);
                 BufferedReader br = new BufferedReader(new InputStreamReader(in, "ISO-8859-1"));
                 String strLine;
                 while ((strLine = br.readLine()) != null) {
-                    translator.parse(strLine);
+                    m_translator.parse(strLine);
                 }
-                sourceFile.setVbName(translator.getVbClassName());
-                sourceFile.setJavaName(translator.getJavaClassName());
-                sourceFile.setPublicFunctions(translator.getPublicFunctions());
-                sourceFile.setPrivateFunctions(translator.getPrivateFunctions());
+                sourceFile.setVbName(m_translator.getVbClassName());
+                sourceFile.setJavaName(m_translator.getJavaClassName());
+                sourceFile.setPublicFunctions(m_translator.getPublicFunctions());
+                sourceFile.setPrivateFunctions(m_translator.getPrivateFunctions());
                 sourceFile.setFileName(vbFile);
             }
         } catch (FileNotFoundException ex) {
@@ -220,7 +239,7 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
 
             vbFile = m_path + vbFile;
 
-            translator.initTranslator(vbFile);
+            m_translator.initTranslator(vbFile);
 
             fstream = new FileInputStream(getFileForOS(vbFile));
             DataInputStream in = new DataInputStream(fstream);
@@ -228,17 +247,17 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
             String strLine;
             while ((strLine = br.readLine()) != null) {
                 sourceCode.append(strLine + newline);
-                if (translator.isVbSource()) {
-                    sourceCodeJava.append(translator.translate(strLine));
+                if (m_translator.isVbSource()) {
+                    sourceCodeJava.append(m_translator.translate(strLine));
                 }
             }
-            if (translator.isVbSource()) {
-                sourceCodeJava.append(translator.getAuxFunctions());
+            if (m_translator.isVbSource()) {
+                sourceCodeJava.append(m_translator.getAuxFunctions());
                 sourceCodeJava.append("}" + newline);
             }
-            sourceCodeJava.insert(0, translator.getImportSection());
+            sourceCodeJava.insert(0, m_translator.getImportSection());
             sourceFile.setVbSource(sourceCode.toString());
-            sourceFile.setJavaSource(sourceCodeJava.toString() + newline + translator.getSubClasses());
+            sourceFile.setJavaSource(sourceCodeJava.toString() + newline + m_translator.getSubClasses());
 
         } catch (FileNotFoundException ex) {
             Logger.getLogger(BuggyMasterCodeView.class.getName()).log(Level.SEVERE, null, ex);
@@ -261,5 +280,21 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
         else {
             return file.replace("\\", "/");
         }
+    }
+
+    private String getReferenceName(String reference) {
+        boolean sharpFound = false;
+        String rtn = "";
+        for (int i = reference.length()-1; i >-1; i--) {
+            if (sharpFound) {
+                if (reference.charAt(i) == '\\')
+                    break;
+                rtn = reference.charAt(i) + rtn;
+            }
+            else if (reference.charAt(i) == '#') {
+                sharpFound = true;
+            }
+        }
+        return rtn;
     }
 }

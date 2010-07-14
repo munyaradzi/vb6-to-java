@@ -15,8 +15,11 @@ public class Variable {
     public boolean isLong = false;
     public boolean isInt = false;
     public boolean isBoolean = false;
+    public String dataType = "";
+    public String packageName = "";
 
     public void setType(String dataType) {
+        this.dataType = dataType;
         if (dataType.equals("String"))
             isString = true;
         else if (dataType.equals("long"))

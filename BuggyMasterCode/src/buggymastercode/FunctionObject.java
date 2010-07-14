@@ -5,6 +5,9 @@
 
 package buggymastercode;
 
+import java.util.Iterator;
+import org.apache.commons.beanutils.DynaBean;
+
 /**
  *
  * @author jalvarez
@@ -94,6 +97,48 @@ public class FunctionObject {
             setId(((Number)(rs.getRows().get(0).get("fun_id"))).intValue());
             G.setDefaultCursor();
             return true;
+        }
+    }
+
+    public static Function getFunctionFromName(String functionName, String[] references) {
+        G.setHourglass();
+        String sqlstmt = "select f.*, cl_packagename"
+                            + " from tfunction f inner join tclass c"
+                            + " on f.cl_id = c.cl_id"
+                            + " where"
+                            + " (fun_vbname = " + Db.getString(functionName)
+                            + " or fun_javaname = " + Db.getString(functionName)
+                            + ") and (cl_vbname = " + Db.getString(functionName)
+                            + " or cl_javaname = " + Db.getString(functionName)
+                            + ")";
+        DBRecordSet rs = new DBRecordSet();
+        if (!Db.db.openRs(sqlstmt, rs)) {
+            G.setDefaultCursor();
+            return null;
+        }
+
+        if (rs.getRows().isEmpty()) {
+            G.setDefaultCursor();
+            return null;
+        }
+        else {
+            Function fun = null;
+            for (int i = 0; i < references.length; i++) {
+                for (Iterator<DynaBean> j = rs.getRows().iterator(); j.hasNext();) {
+                    DynaBean row = j.next();
+                    if (row.get("cl_packagename").toString().equals(references[i])) {
+                        fun = new Function();
+                        fun.getReturnType().packageName = rs.getRows().get(0).get("cl_packagename").toString();
+                        fun.getReturnType().name = rs.getRows().get(0).get("fun_vbname").toString();
+                        fun.getReturnType().setType(rs.getRows().get(0).get("fun_datatype").toString());
+                        break;
+                    }
+                }
+                if (fun != null)
+                    break;
+            }
+            G.setDefaultCursor();
+            return fun;
         }
     }
 }
