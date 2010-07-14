@@ -465,4 +465,19 @@ public class G {
         j++;
         return j;
     }
+
+    public static String[] redim(String[] source, int size) {
+        if (size == 0) {
+            return null;
+        }
+        else {
+            String[] tmp = new String[size];
+            if (source != null) {
+                for (int i = 0; i < Math.min(source.length, tmp.length); i++) {
+                    tmp[i] = source[i];
+                }
+            }
+            return tmp;
+        }
+    }
 }

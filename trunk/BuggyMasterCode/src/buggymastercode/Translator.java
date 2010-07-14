@@ -22,7 +22,7 @@ public class Translator {
         "_and_as_byval_byref_case_class_dim_elseif_else_end_each_for_friend_"
      + "_function_global_goto_if_in_is_next_not_of_or_on error_on resume_print_"
      + "_private_public_raise_select_sub_type_while_wend_char_date_double_integer_"
-     + "_long_object_short_string_variant_";
+     + "_long_object_short_string_variant_#if_#end_exit_redim_on_";
 
     private boolean m_isVbSource = false;
     private boolean m_codeHasStarted = false;
@@ -41,6 +41,7 @@ public class Translator {
     private ArrayList<Function> m_publicFunctions = new ArrayList<Function>();
     private ArrayList<Function> m_privateFunctions = new ArrayList<Function>();
     private ArrayList<SourceFile> m_collFiles = new ArrayList<SourceFile>();
+    private ArrayList<Variable> m_collWiths = new ArrayList<Variable>();
 
     private String m_type = "";
     private String m_enum = "";
@@ -55,6 +56,7 @@ public class Translator {
     private boolean m_previousWasReturn = false;
     private boolean m_addDateAuxFunction = false;
     private String m_packageName = "";
+    private String[] m_references = null;
 
     private ClassObject m_classObject;
     private FunctionObject m_functionObject;
@@ -64,6 +66,10 @@ public class Translator {
 
     public void setPackage(String packageName) {
         m_packageName = packageName;
+    }
+
+    public void setReferences(String[] references) {
+        m_references = references;
     }
 
     public void setSourceFiles(ArrayList<SourceFile> sourceFiles) {
@@ -361,11 +367,11 @@ public class Translator {
             }
             else if (isBeginOfType(strLine)) {
                 addToType(strLine);
-                return "*TODO: type is translated as a new class at the end of the file " + strLine + newline;
+                return "//*TODO: type is translated as a new class at the end of the file " + strLine + newline;
             }
             else if (isBeginOfEnum(strLine)) {
                 addToEnum(strLine);
-                return "*TODO: enum is translated as a new class at the end of the file " + strLine + newline;
+                return "//*TODO: enum is translated as a new class at the end of the file " + strLine + newline;
             }
             else if (m_inEnum) {
                 addToEnum(strLine);
@@ -1707,9 +1713,63 @@ public class Translator {
         strLine = replaceRightSentence(strLine);
         strLine = replaceLenSentence(strLine);
         strLine = replaceVbWords(strLine);
+        strLine = replaceIsNothing(strLine);
+        strLine = replaceWithSentence(strLine);
         strLine = translateFunctionCall(strLine);
 
         return strLine;
+    }
+
+    private String replaceIsNothing(String strLine) {
+        return strLine.replaceAll("Is Nothing", " == null");
+    }
+
+    private String replaceWithSentence(String strLine) {
+        if (G.beginLike(strLine, "with ")) {
+            // Firs we have to get the variable
+            // and then the type of it
+            //
+            int startComment = getStartComment(strLine);
+            String workLine = strLine;
+            String comments = "";
+            if (startComment >= 0) {
+                comments =  "//" + workLine.substring(startComment);
+                workLine = workLine.substring(0, startComment-1);
+            }
+            int i = workLine.toLowerCase().indexOf("with");
+            String packageName = "";
+            String type = "";
+            String parent = "";
+            String[] words = workLine.substring(i + 5).split("\\.");
+            for (i = 0; i < words.length; i++) {
+                type = getTypeForIdentifier(words[i], parent);
+                parent = type;
+            }
+            Variable var = new Variable();
+            var.name = words[words.length-1];
+            var.packageName = packageName;
+            var.setType(type);
+            m_collWiths.add(var);
+        }
+        return strLine;
+    }
+
+    private String getTypeForIdentifier(String identifier, String parent) {
+        // - get the object from this class (member variables)
+        // if the object is not found then
+        // - get the object from the database (public variables)
+        //      -- first objects in this package then objects in
+        //         other packages in the order set in the vbp's
+        //         reference list
+        Variable var = GetVariable(identifier);
+        if (var != null)
+            return var.dataType;
+        else {
+            Function function = getFunction(identifier, parent);
+            if (function != null)
+                return function.getReturnType().dataType;
+        }
+        return "";
     }
 
     private String translateFunctionCall(String strLine) {
@@ -1732,10 +1792,11 @@ public class Translator {
                     if (!C_SEPARARTORS.contains("_" + words[2] + "_")) {
                         if (!isReservedWord(words[0])) {
                             strLine = words[0] + "(";
+                            String params = "";
                             for (int i = 1; i < words.length; i++) {
-                                strLine += words[i];
+                                params += words[i];
                             }
-                            strLine += comments;
+                            strLine += params.trim() + ")" + comments;
                         }
                     }
                 }
@@ -2502,12 +2563,21 @@ public class Translator {
         }
     }
 
+    // TODO: delete this function when all calls have been upgrade to the new
+    //       version with className param
+    //
     private Function getFunction(String expression) {
+        return getFunction(expression, "");
+    }
+
+    private Function getFunction(String expression, String className) {
         String functionName = "";
+        Iterator itrFile = null;
+
         if (expression.contains("(")) {
             int i = expression.indexOf("(");
             if (i > 0) {
-                functionName = expression.substring(0,i);
+                functionName = expression.substring(0, i);
             }
         }
         else {
@@ -2517,30 +2587,42 @@ public class Translator {
             return null;
         }
 
-        Iterator itrFile = m_collFiles.iterator();
-        while(itrFile.hasNext()) {
-            SourceFile source = (SourceFile)itrFile.next();
-            if (source.getJavaName().equals(m_javaClassName)) {
-                Iterator itrPrivateFunctions = source.getPrivateFunctions().iterator();
-                while (itrPrivateFunctions.hasNext()) {
-                    Function privateFunction = (Function)itrPrivateFunctions.next();
-                    if (privateFunction.getName().equals(functionName))
-                        return privateFunction;
+        if (className.isEmpty()
+                || className.toLowerCase().equals("this")
+                || className.toLowerCase().equals("me")) {
+            itrFile = m_collFiles.iterator();
+            while(itrFile.hasNext()) {
+                SourceFile source = (SourceFile)itrFile.next();
+                if (source.getJavaName().equals(m_javaClassName)) {
+                    Iterator itrPrivateFunctions = source.getPrivateFunctions().iterator();
+                    while (itrPrivateFunctions.hasNext()) {
+                        Function privateFunction = (Function)itrPrivateFunctions.next();
+                        if (privateFunction.getName().equals(functionName))
+                            return privateFunction;
+                    }
+                    break;
                 }
-                break;
             }
         }
 
         itrFile = m_collFiles.iterator();
         while(itrFile.hasNext()) {
             SourceFile source = (SourceFile)itrFile.next();
-            Iterator itrPublicFunctions = source.getPublicFunctions().iterator();
-            while (itrPublicFunctions.hasNext()) {
-                Function publicFunction = (Function)itrPublicFunctions.next();
-                if (publicFunction.getName().equals(functionName))
-                    return publicFunction;
+            if (className.isEmpty()
+                    || source.getJavaName().equals(className)
+                    || source.getVbName().equals(className)) {
+                Iterator itrPublicFunctions = source.getPublicFunctions().iterator();
+                while (itrPublicFunctions.hasNext()) {
+                    Function publicFunction = (Function)itrPublicFunctions.next();
+                    if (publicFunction.getName().equals(functionName))
+                        return publicFunction;
+                }
             }
         }
+
+        // if we are here, we must look in the database
+        //
+
         return null;
     }
 
@@ -3435,6 +3517,7 @@ public class Translator {
         m_javaClassName = "";
         m_collTypes.removeAll(m_collTypes);
         m_collEnums.removeAll(m_collEnums);
+        m_collWiths.removeAll(m_collWiths);
         m_memberVariables.removeAll(m_memberVariables);
         m_functionVariables.removeAll(m_functionVariables);
         m_privateFunctions = new ArrayList<Function>();
