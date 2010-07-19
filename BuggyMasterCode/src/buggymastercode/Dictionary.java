@@ -65,9 +65,18 @@ public class Dictionary extends javax.swing.JDialog {
         jPanel1 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         tblClasses = new javax.swing.JTable();
+        jPanel2 = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        lbPackages = new javax.swing.JLabel();
+        lbClasses = new javax.swing.JLabel();
+        jLabel2 = new javax.swing.JLabel();
+        lbFunctions = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        lbVariables = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        setMinimumSize(new java.awt.Dimension(528, 386));
+        setMinimumSize(new java.awt.Dimension(600, 300));
         setName("Form"); // NOI18N
 
         jToolBar1.setRollover(true);
@@ -95,7 +104,6 @@ public class Dictionary extends javax.swing.JDialog {
 
         jPanel1.setBackground(resourceMap.getColor("jPanel1.background")); // NOI18N
         jPanel1.setName("jPanel1"); // NOI18N
-        jPanel1.setLayout(new java.awt.BorderLayout());
 
         jScrollPane1.setName("jScrollPane1"); // NOI18N
 
@@ -141,7 +149,105 @@ public class Dictionary extends javax.swing.JDialog {
         tblClasses.getColumnModel().getColumn(5).setPreferredWidth(800);
         tblClasses.getColumnModel().getColumn(5).setHeaderValue(resourceMap.getString("tblClasses.columnModel.title3")); // NOI18N
 
-        jPanel1.add(jScrollPane1, java.awt.BorderLayout.PAGE_START);
+        jPanel2.setBackground(resourceMap.getColor("jPanel2.background")); // NOI18N
+        jPanel2.setName("jPanel2"); // NOI18N
+
+        jLabel1.setBackground(resourceMap.getColor("jLabel1.background")); // NOI18N
+        jLabel1.setFont(resourceMap.getFont("jLabel1.font")); // NOI18N
+        jLabel1.setText(resourceMap.getString("jLabel1.text")); // NOI18N
+        jLabel1.setName("jLabel1"); // NOI18N
+
+        lbPackages.setHorizontalAlignment(javax.swing.SwingConstants.TRAILING);
+        lbPackages.setText(resourceMap.getString("lbPackages.text")); // NOI18N
+        lbPackages.setName("lbPackages"); // NOI18N
+
+        lbClasses.setHorizontalAlignment(javax.swing.SwingConstants.TRAILING);
+        lbClasses.setText(resourceMap.getString("lbClasses.text")); // NOI18N
+        lbClasses.setName("lbClasses"); // NOI18N
+
+        jLabel2.setFont(resourceMap.getFont("jLabel2.font")); // NOI18N
+        jLabel2.setText(resourceMap.getString("jLabel2.text")); // NOI18N
+        jLabel2.setName("jLabel2"); // NOI18N
+
+        lbFunctions.setHorizontalAlignment(javax.swing.SwingConstants.TRAILING);
+        lbFunctions.setText(resourceMap.getString("lbFunctions.text")); // NOI18N
+        lbFunctions.setName("lbFunctions"); // NOI18N
+
+        jLabel3.setFont(resourceMap.getFont("jLabel3.font")); // NOI18N
+        jLabel3.setText(resourceMap.getString("jLabel3.text")); // NOI18N
+        jLabel3.setName("jLabel3"); // NOI18N
+
+        lbVariables.setHorizontalAlignment(javax.swing.SwingConstants.TRAILING);
+        lbVariables.setText(resourceMap.getString("lbVariables.text")); // NOI18N
+        lbVariables.setName("lbVariables"); // NOI18N
+
+        jLabel4.setFont(resourceMap.getFont("jLabel4.font")); // NOI18N
+        jLabel4.setText(resourceMap.getString("jLabel4.text")); // NOI18N
+        jLabel4.setName("jLabel4"); // NOI18N
+
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(30, 30, 30)
+                        .addComponent(lbVariables, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(jLabel3, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(30, 30, 30)
+                        .addComponent(lbFunctions, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(30, 30, 30)
+                        .addComponent(lbClasses, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(jPanel2Layout.createSequentialGroup()
+                        .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(30, 30, 30)
+                        .addComponent(lbPackages, javax.swing.GroupLayout.PREFERRED_SIZE, 60, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(403, Short.MAX_VALUE))
+        );
+
+        jPanel2Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {lbClasses, lbFunctions, lbPackages, lbVariables});
+
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel2Layout.createSequentialGroup()
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel1)
+                    .addComponent(lbPackages))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel2)
+                    .addComponent(lbClasses))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel3)
+                    .addComponent(lbFunctions))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel4)
+                    .addComponent(lbVariables))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addComponent(jPanel2, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 567, Short.MAX_VALUE)
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 109, Short.MAX_VALUE))
+        );
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -149,15 +255,15 @@ public class Dictionary extends javax.swing.JDialog {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jToolBar1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(453, Short.MAX_VALUE))
-            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 528, Short.MAX_VALUE)
+                .addContainerGap(492, Short.MAX_VALUE))
+            .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addComponent(jToolBar1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 347, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         pack();
@@ -166,9 +272,18 @@ public class Dictionary extends javax.swing.JDialog {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton cmdDelete;
     private javax.swing.JButton cmdNew;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
     private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JToolBar jToolBar1;
+    private javax.swing.JLabel lbClasses;
+    private javax.swing.JLabel lbFunctions;
+    private javax.swing.JLabel lbPackages;
+    private javax.swing.JLabel lbVariables;
     private javax.swing.JTable tblClasses;
     // End of variables declaration//GEN-END:variables
 
@@ -179,10 +294,15 @@ public class Dictionary extends javax.swing.JDialog {
 
     private boolean loadClasses() {
         try {
+            lbPackages.setText("0");
+            lbClasses.setText("0");
+            lbFunctions.setText("0");
+            lbVariables.setText("0");
+
             DefaultTableModel model = (DefaultTableModel)this.tblClasses.getModel();
             model.getDataVector().removeAllElements();
 
-            String sqlstmt = "select cl_id, cl_packagename, cl_vbname, cl_javaname from tclass";
+            String sqlstmt = "select cl_id, cl_packagename, cl_vbname, cl_javaname from tclass order by cl_packagename, cl_javaname";
 
             DBRecordSet rs = new DBRecordSet();
             if (!Db.db.openRs(sqlstmt, rs)) {return false;}
@@ -195,6 +315,40 @@ public class Dictionary extends javax.swing.JDialog {
                                           row.get("cl_vbname").toString(),
                                           row.get("cl_javaname").toString()});
             }
+
+            //------------------------------------------------------------------
+            // packages
+            sqlstmt = "select count(distinct cl_packagename) as count from tclass";
+            rs = new DBRecordSet();
+            if (!Db.db.openRs(sqlstmt, rs)) {return false;}
+            if (!rs.getRows().isEmpty()) {
+                lbPackages.setText(rs.getRows().get(0).get("count").toString());
+            }            
+            //------------------------------------------------------------------
+            // classes
+            sqlstmt = "select count(cl_id) as count from tclass";
+            rs = new DBRecordSet();
+            if (!Db.db.openRs(sqlstmt, rs)) {return false;}
+            if (!rs.getRows().isEmpty()) {
+                lbClasses.setText(rs.getRows().get(0).get("count").toString());
+            }
+            //------------------------------------------------------------------
+            // function
+            sqlstmt = "select count(fun_id) as count from tfunction";
+            rs = new DBRecordSet();
+            if (!Db.db.openRs(sqlstmt, rs)) {return false;}
+            if (!rs.getRows().isEmpty()) {
+                lbFunctions.setText(rs.getRows().get(0).get("count").toString());
+            }            
+            //------------------------------------------------------------------
+            // variables
+            sqlstmt = "select count(var_id) as count from tvariable";
+            rs = new DBRecordSet();
+            if (!Db.db.openRs(sqlstmt, rs)) {return false;}
+            if (!rs.getRows().isEmpty()) {
+                lbVariables.setText(rs.getRows().get(0).get("count").toString());
+            }            
+            //------------------------------------------------------------------
             return true;
         }
         catch(Exception ex) {

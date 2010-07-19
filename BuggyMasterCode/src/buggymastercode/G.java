@@ -28,6 +28,12 @@ public class G {
     static private final String C_SYMBOLS2 = " +-*/,;()[]{}";
     static private final String C_SPACES = " \t";
 
+    static private boolean m_noChangeMousePointer = false;
+
+    public static void setNoChangeMousePointer(boolean value) {
+        m_noChangeMousePointer = value;
+    }
+
     public static boolean isNumeric(Object value) {
         try {
             double d = Double.parseDouble(value.toString());
@@ -80,17 +86,21 @@ public class G {
         setHourglass(BuggyMasterCodeApp.getApplication().getMainFrame());
     }
     public static void setHourglass(JFrame frame) {
-        Cursor hourglassCursor = new Cursor(Cursor.WAIT_CURSOR);
-        if (frame.getCursor() != hourglassCursor) {
-            frame.setCursor(hourglassCursor);
+        if (!m_noChangeMousePointer) {
+            Cursor hourglassCursor = new Cursor(Cursor.WAIT_CURSOR);
+            if (frame.getCursor() != hourglassCursor) {
+                frame.setCursor(hourglassCursor);
+            }
         }
     }
     public static void setDefaultCursor() {
         setDefaultCursor(BuggyMasterCodeApp.getApplication().getMainFrame());
     }
     public static void setDefaultCursor(JFrame frame) {
-        Cursor normalCursor = new Cursor(Cursor.DEFAULT_CURSOR);
-        frame.setCursor(normalCursor);
+        if (!m_noChangeMousePointer) {
+            Cursor normalCursor = new Cursor(Cursor.DEFAULT_CURSOR);
+            frame.setCursor(normalCursor);
+        }
     }
 
     public static String ltrim(String str)
