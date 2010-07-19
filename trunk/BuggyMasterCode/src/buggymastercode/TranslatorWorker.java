@@ -40,7 +40,11 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
 
     @Override
     protected Boolean doInBackground() throws Exception {
+        G.setHourglass();
+        G.setNoChangeMousePointer(true);
         doWork(m_vbpFile);
+        G.setNoChangeMousePointer(false);
+        G.setDefaultCursor();
         return true;
     }
 

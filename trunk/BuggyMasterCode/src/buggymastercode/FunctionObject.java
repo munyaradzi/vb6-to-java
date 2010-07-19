@@ -100,7 +100,11 @@ public class FunctionObject {
         }
     }
 
-    public static Function getFunctionFromName(String functionName, String[] references) {
+    public static Function getFunctionFromName(
+            String functionName,
+            String className,
+            String[] references) {
+
         G.setHourglass();
         String sqlstmt = "select f.*, cl_packagename"
                             + " from tfunction f inner join tclass c"
@@ -108,8 +112,8 @@ public class FunctionObject {
                             + " where"
                             + " (fun_vbname = " + Db.getString(functionName)
                             + " or fun_javaname = " + Db.getString(functionName)
-                            + ") and (cl_vbname = " + Db.getString(functionName)
-                            + " or cl_javaname = " + Db.getString(functionName)
+                            + ") and (cl_vbname = " + Db.getString(className)
+                            + " or cl_javaname = " + Db.getString(className)
                             + ")";
         DBRecordSet rs = new DBRecordSet();
         if (!Db.db.openRs(sqlstmt, rs)) {

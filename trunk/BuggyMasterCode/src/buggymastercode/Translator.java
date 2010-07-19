@@ -29,6 +29,9 @@ public class Translator {
     private boolean m_attributeBlockHasStarted = false;
     private boolean m_inFunction = false;
     private boolean m_inEnum = false;
+    private boolean m_inWith = false;
+    private boolean m_withDeclaration = false;
+    private boolean m_endWithDeclaration = false;
     private boolean m_emptyLine = false;
 
     private String[] m_iterators = {"","_i","_j","_k","_t","_w","_z"};
@@ -102,10 +105,19 @@ public class Translator {
                             + Db.getString(packageName) + ")";
         if (Db.db.execute(sqlstmt)) {
 
-            sqlstmt = "delete from tclass where cl_packagename = "
-                        + Db.getString(packageName);
+            sqlstmt = "delete from tfunction where cl_id in "
+                                + "(select cl_id from tclass where cl_packagename = "
+                                + Db.getString(packageName) + ")";
             if (Db.db.execute(sqlstmt)) {
-                return true;
+
+                sqlstmt = "delete from tclass where cl_packagename = "
+                            + Db.getString(packageName);
+                if (Db.db.execute(sqlstmt)) {
+                    return true;
+                }
+                else {
+                    return false;
+                }
             }
             else {
                 return false;
@@ -603,7 +615,17 @@ public class Translator {
     }
     private String translateLineInFunction(String strLine) {
         // function expecific stuff
-        return translateCode(strLine, false);
+
+        strLine = translateCode(strLine, false);
+        if (m_inWith) {
+            if (!m_withDeclaration && !m_endWithDeclaration) {
+                if (G.beginLike(strLine, ".")) {
+                    strLine = m_collWiths.get(m_collWiths.size()-1).name
+                                + strLine;
+                }
+            }
+        }
+        return strLine;
     }
 
     private String translateCode(String strLine, boolean inDeclaration) {
@@ -1108,7 +1130,7 @@ public class Translator {
     }
 
     private String translateSelectCaseSentence(String strLine) {
-        String switchStatetment = "switch (";
+        String switchStatetment = "";
         boolean identifierHasStarted = false;
         boolean parenthesesClosed = false;
         String[] words = G.split(strLine);
@@ -1130,7 +1152,7 @@ public class Translator {
         }
         if (!parenthesesClosed)
             switchStatetment += ") {";
-        return switchStatetment + newline;
+        return "switch (" + switchStatetment.trim() + newline;
     }
 
     private String translateIfSentence(String strLine) {
@@ -1714,8 +1736,9 @@ public class Translator {
         strLine = replaceLenSentence(strLine);
         strLine = replaceVbWords(strLine);
         strLine = replaceIsNothing(strLine);
-        strLine = replaceWithSentence(strLine);
         strLine = translateFunctionCall(strLine);
+        strLine = replaceWithSentence(strLine);
+        strLine = replaceEndWithSentence(strLine);
 
         return strLine;
     }
@@ -1726,7 +1749,10 @@ public class Translator {
 
     private String replaceWithSentence(String strLine) {
         if (G.beginLike(strLine, "with ")) {
-            // Firs we have to get the variable
+
+            m_withDeclaration = true;
+
+            // First we have to get the variable
             // and then the type of it
             //
             int startComment = getStartComment(strLine);
@@ -1741,17 +1767,76 @@ public class Translator {
             String type = "";
             String parent = "";
             String[] words = workLine.substring(i + 5).split("\\.");
+            if (m_collWiths.size() > 0) {
+                parent = m_collWiths.get(m_collWiths.size()-1).dataType;
+            }
             for (i = 0; i < words.length; i++) {
                 type = getTypeForIdentifier(words[i], parent);
                 parent = type;
             }
+            String prefix = "";
+            if (type.length() == 0) {
+                type = "__TYPE_NO_FOUND";
+                prefix = "//*TODO: can't found type for with block"
+                            + newline
+                            + getTabs()
+                            + "//*"
+                            + strLine
+                            + newline
+                            + getTabs();
+            }
+
             Variable var = new Variable();
-            var.name = words[words.length-1];
-            var.packageName = packageName;
             var.setType(type);
+            var.name = "w_" + var.dataType.substring(0,1).toLowerCase()
+                        + var.dataType.substring(1);
+            var.packageName = packageName;
+
+            if (m_inWith) {
+                strLine = prefix
+                            + var.dataType
+                            + " "
+                            + var.name
+                            + " = "
+                            + m_collWiths.get(m_collWiths.size()-1).name
+                            + strLine.substring(5);
+            }
+            else {
+                strLine = prefix
+                            + var.dataType
+                            + " "
+                            + var.name
+                            + " = " + strLine.substring(5);
+                m_inWith = true;
+            }
             m_collWiths.add(var);
         }
+        else {
+            m_withDeclaration = false;
+        }
         return strLine;
+    }
+
+    private String replaceEndWithSentence(String strLine) {
+        boolean isEndWith = false;
+        if (strLine.equalsIgnoreCase("end with")) {
+            isEndWith = true;
+        }
+        if (G.beginLike(strLine, "end with ")) {
+            isEndWith = true;
+        }
+        m_endWithDeclaration = isEndWith;
+        if (isEndWith) {
+            String withName = "";
+            if (m_collWiths.size() > 0) {
+                withName = m_collWiths.get(m_collWiths.size()-1).name;
+                m_collWiths.remove(m_collWiths.size()-1);
+            }
+            m_inWith = m_collWiths.size() > 0;
+            return "// {end with: " + withName + "}";
+        }
+        else
+            return strLine;
     }
 
     private String getTypeForIdentifier(String identifier, String parent) {
@@ -1773,6 +1858,12 @@ public class Translator {
     }
 
     private String translateFunctionCall(String strLine) {
+
+        // we will process with later
+        //
+        if (G.beginLike(strLine,"With ")) {
+            return strLine;
+        }
 
         if (G.beginLike(strLine,"Call ")) {
             strLine = strLine.substring(5);
@@ -2622,8 +2713,12 @@ public class Translator {
 
         // if we are here, we must look in the database
         //
+        Function publicFunction = FunctionObject.getFunctionFromName(
+                                                    expression,
+                                                    className,
+                                                    m_references);
 
-        return null;
+        return publicFunction;
     }
 
     private String getCastToString(String identifier) {
@@ -2855,7 +2950,7 @@ public class Translator {
             m_vbFunctionName = "";
         }
 
-        if (!functionName.isEmpty())
+        if (!functionName.isEmpty() && functionScope.equals("public"))
             saveFunction(m_vbFunctionName, functionName, functionType);
 
         return functionScope + " "
@@ -3512,6 +3607,9 @@ public class Translator {
         m_attributeBlockHasStarted = false;
         m_inFunction = false;
         m_inEnum = false;
+        m_inWith = false;
+        m_withDeclaration = false;
+        m_endWithDeclaration = false;
         m_type = "";
         m_vbClassName = "";
         m_javaClassName = "";
