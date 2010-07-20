@@ -17,8 +17,12 @@ public class Function {
     public String vbDeclaration = "";
     public String javaDeclaration = "";
 
-    public String getName() {
-        return returnType.name;
+    public String getJavaName() {
+        return returnType.javaName;
+    }
+
+    public String getVbName() {
+        return returnType.vbName;
     }
 
     public Variable getReturnType() {
@@ -31,6 +35,6 @@ public class Function {
 
     @Override
     public String toString() {
-        return getName();
+        return getJavaName();
     }
 }

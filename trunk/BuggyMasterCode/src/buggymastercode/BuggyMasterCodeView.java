@@ -128,12 +128,12 @@ public class BuggyMasterCodeView extends FrameView {
         cbFiles = new javax.swing.JComboBox();
         jLabel2 = new javax.swing.JLabel();
         lbPackage = new javax.swing.JLabel();
-        jTabbedPane1 = new javax.swing.JTabbedPane();
-        jPanel3 = new javax.swing.JPanel();
+        tabMain = new javax.swing.JTabbedPane();
+        pnProgress = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
         lsFiles = new javax.swing.JList();
         jLabel3 = new javax.swing.JLabel();
-        jSplitPane1 = new javax.swing.JSplitPane();
+        pnCode = new javax.swing.JSplitPane();
         txSourceCode = new RSyntaxTextArea();
         txSourceCode.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_VB);
         jScrollPane1 = new RTextScrollPane(txSourceCode);
@@ -197,9 +197,9 @@ public class BuggyMasterCodeView extends FrameView {
 
         mainPanel.add(jPanel1, java.awt.BorderLayout.PAGE_START);
 
-        jTabbedPane1.setName("jTabbedPane1"); // NOI18N
+        tabMain.setName("tabMain"); // NOI18N
 
-        jPanel3.setName("jPanel3"); // NOI18N
+        pnProgress.setName("pnProgress"); // NOI18N
 
         jScrollPane3.setName("jScrollPane3"); // NOI18N
 
@@ -209,20 +209,20 @@ public class BuggyMasterCodeView extends FrameView {
         jLabel3.setText(resourceMap.getString("jLabel3.text")); // NOI18N
         jLabel3.setName("jLabel3"); // NOI18N
 
-        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
-        jPanel3.setLayout(jPanel3Layout);
-        jPanel3Layout.setHorizontalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel3Layout.createSequentialGroup()
+        javax.swing.GroupLayout pnProgressLayout = new javax.swing.GroupLayout(pnProgress);
+        pnProgress.setLayout(pnProgressLayout);
+        pnProgressLayout.setHorizontalGroup(
+            pnProgressLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pnProgressLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                .addGroup(pnProgressLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 613, Short.MAX_VALUE)
                     .addComponent(jLabel3))
                 .addContainerGap())
         );
-        jPanel3Layout.setVerticalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(jPanel3Layout.createSequentialGroup()
+        pnProgressLayout.setVerticalGroup(
+            pnProgressLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pnProgressLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jLabel3)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
@@ -230,31 +230,31 @@ public class BuggyMasterCodeView extends FrameView {
                 .addContainerGap())
         );
 
-        jTabbedPane1.addTab(resourceMap.getString("jPanel3.TabConstraints.tabTitle"), jPanel3); // NOI18N
+        tabMain.addTab(resourceMap.getString("pnProgress.TabConstraints.tabTitle"), pnProgress); // NOI18N
 
-        jSplitPane1.setName("jSplitPane1"); // NOI18N
+        pnCode.setName("pnCode"); // NOI18N
 
         jScrollPane1.setName("jScrollPane1"); // NOI18N
 
         txSourceCode.setColumns(20);
         txSourceCode.setRows(5);
         txSourceCode.setName("txSourceCode"); // NOI18N
-        //jScrollPane1.setViewportView(txSourceCode);
+        jScrollPane1.setViewportView(txSourceCode);
 
-        jSplitPane1.setLeftComponent(jScrollPane1);
+        pnCode.setLeftComponent(jScrollPane1);
 
         jScrollPane2.setName("jScrollPane2"); // NOI18N
 
         txSourceCodeJava.setColumns(20);
         txSourceCodeJava.setRows(5);
         txSourceCodeJava.setName("txSourceCodeJava"); // NOI18N
-        //jScrollPane2.setViewportView(txSourceCodeJava);
+        jScrollPane2.setViewportView(txSourceCodeJava);
 
-        jSplitPane1.setRightComponent(jScrollPane2);
+        pnCode.setRightComponent(jScrollPane2);
 
-        jTabbedPane1.addTab(resourceMap.getString("jSplitPane1.TabConstraints.tabTitle"), jSplitPane1); // NOI18N
+        tabMain.addTab(resourceMap.getString("pnCode.TabConstraints.tabTitle"), pnCode); // NOI18N
 
-        mainPanel.add(jTabbedPane1, java.awt.BorderLayout.CENTER);
+        mainPanel.add(tabMain, java.awt.BorderLayout.CENTER);
 
         menuBar.setName("menuBar"); // NOI18N
 
@@ -367,6 +367,8 @@ public class BuggyMasterCodeView extends FrameView {
             progressBar.setVisible(true);
             progressBar.setIndeterminate(true);
 
+            tabMain.setSelectedComponent(pnProgress);
+
             TranslatorWorker tw = new TranslatorWorker(this, m_path, vbpFile, m_collFiles);
             tw.execute();
 
@@ -382,6 +384,7 @@ public class BuggyMasterCodeView extends FrameView {
         }
         progressBar.setVisible(false);
         busyIconTimer.stop();
+        tabMain.setSelectedComponent(pnCode);
     }
 
     public void initProgress() {
@@ -444,20 +447,20 @@ public class BuggyMasterCodeView extends FrameView {
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
-    private javax.swing.JPanel jPanel3;
     private RTextScrollPane jScrollPane1;
     private RTextScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
-    private javax.swing.JSplitPane jSplitPane1;
-    private javax.swing.JTabbedPane jTabbedPane1;
     private javax.swing.JLabel lbPackage;
     private javax.swing.JList lsFiles;
     private javax.swing.JPanel mainPanel;
     private javax.swing.JMenuBar menuBar;
+    private javax.swing.JSplitPane pnCode;
+    private javax.swing.JPanel pnProgress;
     private javax.swing.JProgressBar progressBar;
     private javax.swing.JLabel statusAnimationLabel;
     private javax.swing.JLabel statusMessageLabel;
     private javax.swing.JPanel statusPanel;
+    private javax.swing.JTabbedPane tabMain;
     private javax.swing.JMenu toolMenu;
     private javax.swing.JTextField txFileVB;
     private RSyntaxTextArea txSourceCode;

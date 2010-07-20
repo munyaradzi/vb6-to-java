@@ -45,6 +45,7 @@ public class Translator {
     private ArrayList<Function> m_privateFunctions = new ArrayList<Function>();
     private ArrayList<SourceFile> m_collFiles = new ArrayList<SourceFile>();
     private ArrayList<Variable> m_collWiths = new ArrayList<Variable>();
+    private ArrayList<Type> m_types = new ArrayList<Type>();
 
     private String m_type = "";
     private String m_enum = "";
@@ -65,7 +66,13 @@ public class Translator {
     private FunctionObject m_functionObject;
     private VariableObject m_variableObject;
 
+    private TranslatorWorker m_caller = null;
+
     private ClassObject m_typeClassObject;
+
+    public void setCaller(TranslatorWorker caller) {
+        m_caller = caller;
+    }
 
     public void setPackage(String packageName) {
         m_packageName = packageName;
@@ -620,7 +627,7 @@ public class Translator {
         if (m_inWith) {
             if (!m_withDeclaration && !m_endWithDeclaration) {
                 if (G.beginLike(strLine, ".")) {
-                    strLine = m_collWiths.get(m_collWiths.size()-1).name
+                    strLine = m_collWiths.get(m_collWiths.size()-1).javaName
                                 + strLine;
                 }
             }
@@ -894,10 +901,11 @@ public class Translator {
                 function.javaDeclaration = functionDeclaration;
                 if (words[2].contains("(")) {
                     int i = words[2].indexOf("(");
-                    function.getReturnType().name = words[2].substring(0,i);
+                    function.getReturnType().javaName = words[2].substring(0,i);
                 }
                 else
-                    function.getReturnType().name = words[2];
+                    function.getReturnType().javaName = words[2];
+                function.getReturnType().vbName = m_vbFunctionName;
                 function.getReturnType().setType(words[1]);
                 if (words[0].equals("private")) {
                     m_privateFunctions.add(function);
@@ -1759,19 +1767,36 @@ public class Translator {
             String workLine = strLine;
             String comments = "";
             if (startComment >= 0) {
-                comments =  "//" + workLine.substring(startComment);
+                comments =  "; //" + workLine.substring(startComment);
                 workLine = workLine.substring(0, startComment-1);
             }
             int i = workLine.toLowerCase().indexOf("with");
+            IdentifierInfo info = null;
             String packageName = "";
             String type = "";
             String parent = "";
-            String[] words = workLine.substring(i + 5).split("\\.");
+            workLine = workLine.substring(i + 5).trim();
+            if (workLine.charAt(0) == '.') {
+                if (workLine.length() > 1) {
+                    workLine = workLine.substring(1);
+                }
+                else {
+                    workLine = "";
+                }
+            }
+            String[] words = workLine.split("\\.");
             if (m_collWiths.size() > 0) {
                 parent = m_collWiths.get(m_collWiths.size()-1).dataType;
             }
             for (i = 0; i < words.length; i++) {
-                type = getTypeForIdentifier(words[i], parent);
+                info = getIdentifierInfo(words[i], parent);
+                if (info == null)
+                    type = "";
+                else if (info.isFunction)
+                    type = info.function.getReturnType().dataType;
+                else
+                    type = info.variable.dataType;
+
                 parent = type;
             }
             String prefix = "";
@@ -1788,26 +1813,73 @@ public class Translator {
 
             Variable var = new Variable();
             var.setType(type);
-            var.name = "w_" + var.dataType.substring(0,1).toLowerCase()
-                        + var.dataType.substring(1);
             var.packageName = packageName;
 
-            if (m_inWith) {
-                strLine = prefix
-                            + var.dataType
-                            + " "
-                            + var.name
-                            + " = "
-                            + m_collWiths.get(m_collWiths.size()-1).name
-                            + strLine.substring(5);
+            if (info == null) {
+                var.javaName = "w_" + var.dataType.substring(0,1).toLowerCase()
+                            + var.dataType.substring(1);
+
+                if (m_inWith) {
+                    strLine = prefix
+                                + var.dataType
+                                + " "
+                                + var.javaName
+                                + " = "
+                                + m_collWiths.get(m_collWiths.size()-1).javaName
+                                + workLine.substring(5)
+                                + comments;
+                }
+                else {
+                    strLine = prefix
+                                + var.dataType
+                                + " "
+                                + var.javaName
+                                + " = " + workLine.substring(5)
+                                + comments;
+                    m_inWith = true;
+                }
             }
             else {
-                strLine = prefix
-                            + var.dataType
-                            + " "
-                            + var.name
-                            + " = " + strLine.substring(5);
-                m_inWith = true;
+                if (info.isFunction) {
+                    var.javaName = "w_" + info.function.getVbName().substring(0,1).toLowerCase()
+                                + info.function.getVbName().substring(1);
+                    String params = "";
+                    int startParams = workLine.indexOf("(");
+                    if (startParams >= 0) {
+                        params = workLine.substring(startParams);
+                    }
+                    else {
+                        params = "()";
+                    }
+                    if (m_inWith) {
+                        strLine = prefix
+                                    + var.dataType
+                                    + " "
+                                    + var.javaName
+                                    + " = "
+                                    + m_collWiths.get(m_collWiths.size()-1).javaName
+                                    + "."
+                                    + info.function.getJavaName()
+                                    + params
+                                    + comments;
+                    }
+                    else {
+                        strLine = prefix
+                                    + var.dataType
+                                    + " "
+                                    + var.javaName
+                                    + " = "
+                                    + info.function.getJavaName()
+                                    + params
+                                    + comments;
+                        m_inWith = true;
+                    }
+                }
+                else {
+                    var.javaName = info.variable.javaName;
+                    strLine = "// " + strLine;
+                    m_inWith = true;
+                }
             }
             m_collWiths.add(var);
         }
@@ -1829,7 +1901,7 @@ public class Translator {
         if (isEndWith) {
             String withName = "";
             if (m_collWiths.size() > 0) {
-                withName = m_collWiths.get(m_collWiths.size()-1).name;
+                withName = m_collWiths.get(m_collWiths.size()-1).javaName;
                 m_collWiths.remove(m_collWiths.size()-1);
             }
             m_inWith = m_collWiths.size() > 0;
@@ -1839,22 +1911,29 @@ public class Translator {
             return strLine;
     }
 
-    private String getTypeForIdentifier(String identifier, String parent) {
+    private IdentifierInfo getIdentifierInfo(String identifier, String parent) {
         // - get the object from this class (member variables)
         // if the object is not found then
         // - get the object from the database (public variables)
         //      -- first objects in this package then objects in
         //         other packages in the order set in the vbp's
         //         reference list
+        IdentifierInfo info = null;
         Variable var = GetVariable(identifier);
-        if (var != null)
-            return var.dataType;
+        if (var != null) {
+            info = new IdentifierInfo();
+            info.isFunction = false;
+            info.variable = var;
+        }
         else {
             Function function = getFunction(identifier, parent);
-            if (function != null)
-                return function.getReturnType().dataType;
+            if (function != null) {
+                info = new IdentifierInfo();
+                info.isFunction = true;
+                info.function = function;
+            }
         }
-        return "";
+        return info;
     }
 
     private String translateFunctionCall(String strLine) {
@@ -1911,8 +1990,8 @@ public class Translator {
                 /*System.out.println(m_memberVariables.get(j)
                         + "    " + words[i]
                         );*/
-                if (words[i].equalsIgnoreCase(m_memberVariables.get(j).name)) {
-                    rtn += m_memberVariables.get(j).name;
+                if (words[i].equalsIgnoreCase(m_memberVariables.get(j).javaName)) {
+                    rtn += m_memberVariables.get(j).javaName;
                     found = true;
                     break;
                 }
@@ -1935,8 +2014,8 @@ public class Translator {
                 /*System.out.println(m_functionVariables.get(j)
                         + "    " + words[i]
                         );*/
-                if (words[i].equalsIgnoreCase(m_functionVariables.get(j).name)) {
-                    rtn += m_functionVariables.get(j).name;
+                if (words[i].equalsIgnoreCase(m_functionVariables.get(j).javaName)) {
+                    rtn += m_functionVariables.get(j).javaName;
                     found = true;
                     break;
                 }
@@ -2663,7 +2742,6 @@ public class Translator {
 
     private Function getFunction(String expression, String className) {
         String functionName = "";
-        Iterator itrFile = null;
 
         if (expression.contains("(")) {
             int i = expression.indexOf("(");
@@ -2678,6 +2756,10 @@ public class Translator {
             return null;
         }
 
+        Iterator itrFile = null;
+
+        // first we search in private functions
+        //
         if (className.isEmpty()
                 || className.toLowerCase().equals("this")
                 || className.toLowerCase().equals("me")) {
@@ -2688,7 +2770,9 @@ public class Translator {
                     Iterator itrPrivateFunctions = source.getPrivateFunctions().iterator();
                     while (itrPrivateFunctions.hasNext()) {
                         Function privateFunction = (Function)itrPrivateFunctions.next();
-                        if (privateFunction.getName().equals(functionName))
+                        if (privateFunction.getJavaName().equals(functionName))
+                            return privateFunction;
+                        else if (privateFunction.getVbName().equals(functionName))
                             return privateFunction;
                     }
                     break;
@@ -2696,6 +2780,33 @@ public class Translator {
             }
         }
 
+        // now we search in private types and public types
+        // declared in this class
+        //
+        Iterator itrTypes = null;
+
+        if (!className.isEmpty()) {
+            itrTypes = m_types.iterator();
+            while(itrTypes.hasNext()) {
+                Type type = (Type)itrTypes.next();
+                if (type.javaName.equals(className)
+                        || type.vbName.equals(className)) {
+                    Iterator itrMembers = type.getMembersVariables().iterator();
+                    while (itrMembers.hasNext()) {
+                        Function member = (Function)itrMembers.next();
+                        if (member.getJavaName().equals(functionName))
+                            return member;
+                        else if (member.getVbName().equals(functionName))
+                            return member;
+                    }
+                }
+            }
+        }
+
+        // here we search for public function, public properties
+        // and members of public types because this are translated
+        // as public members of extremely simple classes
+        //
         itrFile = m_collFiles.iterator();
         while(itrFile.hasNext()) {
             SourceFile source = (SourceFile)itrFile.next();
@@ -2705,7 +2816,9 @@ public class Translator {
                 Iterator itrPublicFunctions = source.getPublicFunctions().iterator();
                 while (itrPublicFunctions.hasNext()) {
                     Function publicFunction = (Function)itrPublicFunctions.next();
-                    if (publicFunction.getName().equals(functionName))
+                    if (publicFunction.getJavaName().equals(functionName))
+                        return publicFunction;
+                    else if (publicFunction.getVbName().equals(functionName))
                         return publicFunction;
                 }
             }
@@ -2741,12 +2854,12 @@ public class Translator {
 
     private Variable GetVariable(String identifier) {
         for (int i = 0; i < m_functionVariables.size(); i++) {
-            if (identifier.equals(m_functionVariables.get(i).name)) {
+            if (identifier.equals(m_functionVariables.get(i).javaName)) {
                 return m_functionVariables.get(i);
             }
         }
         for (int i = 0; i < m_memberVariables.size(); i++) {
-            if (identifier.equals(m_memberVariables.get(i).name)) {
+            if (identifier.equals(m_memberVariables.get(i).javaName)) {
                 return m_memberVariables.get(i);
             }
         }
@@ -3152,7 +3265,7 @@ public class Translator {
                     + words[4]+ " " + words[5] + "]";
 
         Variable var = new Variable();
-        var.name = paramName;
+        var.javaName = paramName;
         var.setType(dataType);
         m_functionVariables.add(var);
 
@@ -3476,7 +3589,7 @@ public class Translator {
         }
         if (!identifier.isEmpty()) {
             Variable var = new Variable();
-            var.name = identifier;
+            var.javaName = identifier;
             var.isString = dataType.equals("String");
             m_memberVariables.add(var);
         }
@@ -3531,7 +3644,7 @@ public class Translator {
         }
         if (!identifier.isEmpty()) {
             Variable var = new Variable();
-            var.name = identifier;
+            var.javaName = identifier;
             var.setType(dataType);
             m_memberVariables.add(var);
         }
@@ -3569,7 +3682,7 @@ public class Translator {
         dataType = getDataType(dataType);
 
         Variable var = new Variable();
-        var.name = identifier;
+        var.javaName = identifier;
         var.setType(dataType);
         m_functionVariables.add(var);
 
@@ -3620,6 +3733,7 @@ public class Translator {
         m_functionVariables.removeAll(m_functionVariables);
         m_privateFunctions = new ArrayList<Function>();
         m_publicFunctions = new ArrayList<Function>();
+        m_types = new ArrayList<Type>();
         m_tabCount = 0;
         m_addDateAuxFunction = false;
 
@@ -3655,7 +3769,12 @@ public class Translator {
 
         if (strLine.length() > 5) {
             if (strLine.substring(0,5).toLowerCase().equals("type ")) {
-                className = strLine.substring(5);
+                Type type = new Type();
+                type.vbName = strLine.substring(5);
+                className = type.vbName;
+                type.javaName = className;
+                type.getVbCode().append(strLine);
+                m_types.add(type);
                 m_type += "private class " + className + " {" + newline;
                 saveTypeClassInDB(className);
                 return;
@@ -3664,7 +3783,13 @@ public class Translator {
 
         if (strLine.length() > 12) {
             if (strLine.substring(0,12).toLowerCase().equals("public type ")) {
-                className = strLine.substring(12);
+                Type type = new Type();
+                type.isPublic = true;
+                type.vbName = strLine.substring(12);
+                className = type.vbName;
+                type.javaName = className;
+                type.getVbCode().append(strLine);
+                m_types.add(type);
                 m_type += "public class " + className + " {" + newline;
                 saveTypeClassInDB(className);
                 return;
@@ -3673,7 +3798,12 @@ public class Translator {
 
         if (strLine.length() > 13) {
             if (strLine.substring(0,13).toLowerCase().equals("private type ")) {
-                className = strLine.substring(13);
+                Type type = new Type();
+                type.vbName = strLine.substring(13);
+                className = type.vbName;
+                type.javaName = className;
+                type.getVbCode().append(strLine);
+                m_types.add(type);
                 m_type += "private class " + className + " {" + newline;
                 saveTypeClassInDB(className);
                 return;
@@ -3685,12 +3815,20 @@ public class Translator {
                 m_inType = false;
                 m_type += "}" + newline + newline;
                 m_collTypes.add(m_type);
+                Type type = m_types.get(m_types.size()-1);
+                type.getVbCode().append(strLine);
+                type.getJavaCode().append(m_type);
                 m_type = "";
+                if (type.isPublic)
+                    m_caller.addPublicType(type);
             }
         }
         else {
             String dataType = "";
             String identifier = "";
+
+            Type type = m_types.get(m_types.size()-1);
+            type.getVbCode().append(strLine);
 
             strLine = strLine.trim();
             String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
@@ -3778,6 +3916,13 @@ public class Translator {
 
                 saveVariableInType(identifier, identifier, dataType);
 
+                Function member = new Function();
+                Variable var = member.getReturnType();
+                var.vbName = identifier;
+                var.javaName = identifier;
+                var.dataType = dataType;
+                type.getMembersVariables().add(member);
+
                 m_type += "    public " + dataType + ' ' + identifier + ";" + newline;
             } 
             else {
@@ -3790,28 +3935,28 @@ public class Translator {
         strLine = G.ltrim(strLine);
 
         if (strLine.length() > 5) {
-            if (strLine.substring(0,5).toLowerCase().equals("enum ")) {
+            if (strLine.substring(0, 5).toLowerCase().equals("enum ")) {
                 m_enum += "private class " + strLine.substring(5) + " {" + newline;
                 return;
             }
         }
 
         if (strLine.length() > 12) {
-            if (strLine.substring(0,12).toLowerCase().equals("public enum ")) {
+            if (strLine.substring(0, 12).toLowerCase().equals("public enum ")) {
                 m_enum += "public class " + strLine.substring(12) + " {" + newline;
                 return;
             }
         }
 
         if (strLine.length() > 13) {
-            if (strLine.substring(0,13).toLowerCase().equals("private enum ")) {
+            if (strLine.substring(0, 13).toLowerCase().equals("private enum ")) {
                 m_enum += "private class " + strLine.substring(13) + " {" + newline;
                 return;
             }
         }
 
         if (strLine.trim().length() == 8) {
-            if (strLine.substring(0,8).toLowerCase().equals("end enum")) {
+            if (strLine.substring(0, 8).toLowerCase().equals("end enum")) {
                 m_inEnum = false;
                 int lastColon = 0;
                 for (int i = 0; i < m_enum.length(); i++) {
@@ -3863,7 +4008,7 @@ public class Translator {
                     m_enum += "    " + identifier.toUpperCase() + "," + misc + newline;
                 else
                     if (constValue.length() > 2) {
-                        if (constValue.substring(0,2).equalsIgnoreCase("&h")) {
+                        if (constValue.substring(0, 2).equalsIgnoreCase("&h")) {
                             constValue = "0x" + constValue.substring(2);
                         }
                     }
@@ -4177,6 +4322,12 @@ public class Translator {
             return strLine;
         }
     }
+}
+
+class IdentifierInfo {
+    boolean isFunction = false;
+    Function function = null;
+    Variable variable = null;
 }
 
 /*
