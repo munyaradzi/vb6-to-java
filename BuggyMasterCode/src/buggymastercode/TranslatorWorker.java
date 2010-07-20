@@ -78,6 +78,7 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
         }
 
         m_translator.deletePackage(m_packageName);
+        m_translator.setCaller(this);
 
         // References
         //
@@ -222,6 +223,17 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
                 Logger.getLogger(BuggyMasterCodeView.class.getName()).log(Level.SEVERE, null, ex);
             }
         }
+    }
+
+    public void addPublicType(Type type) {
+        SourceFile sourceFile = new SourceFile();
+        m_collFiles.add(sourceFile);
+        sourceFile.setVbName(type.vbName);
+        sourceFile.setJavaName(type.javaName);
+        sourceFile.setPublicFunctions(type.getMembersVariables());
+        sourceFile.setFileName("PUBLIC TYPE: " + type.javaName);
+        sourceFile.setVbSource(type.getVbCode().toString());
+        sourceFile.setJavaSource(type.getJavaCode().toString());
     }
 
     public void translateFile(String vbFile, int indexFile) {

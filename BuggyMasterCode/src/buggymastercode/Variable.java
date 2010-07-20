@@ -10,7 +10,8 @@ package buggymastercode;
  * @author jalvarez
  */
 public class Variable {
-    public String name = "";
+    public String javaName = "";
+    public String vbName = "";
     public boolean isString = false;
     public boolean isLong = false;
     public boolean isInt = false;

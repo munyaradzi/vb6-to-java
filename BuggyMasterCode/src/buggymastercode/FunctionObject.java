@@ -133,7 +133,7 @@ public class FunctionObject {
                     if (row.get("cl_packagename").toString().equals(references[i])) {
                         fun = new Function();
                         fun.getReturnType().packageName = rs.getRows().get(0).get("cl_packagename").toString();
-                        fun.getReturnType().name = rs.getRows().get(0).get("fun_vbname").toString();
+                        fun.getReturnType().javaName = rs.getRows().get(0).get("fun_vbname").toString();
                         fun.getReturnType().setType(rs.getRows().get(0).get("fun_datatype").toString());
                         break;
                     }
