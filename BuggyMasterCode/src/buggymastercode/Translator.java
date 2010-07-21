@@ -1799,6 +1799,11 @@ public class Translator {
 
                 parent = type;
             }
+            String parentWithCall = ""; // for example: "tBi." in "With tBI.bmiHeader"
+            for (i = 0; i < words.length-1; i++) {
+                parentWithCall += words[i] + ".";
+            }
+
             String prefix = "";
             if (type.length() == 0) {
                 type = "__TYPE_NO_FOUND";
@@ -1869,6 +1874,7 @@ public class Translator {
                                     + " "
                                     + var.javaName
                                     + " = "
+                                    + parentWithCall
                                     + info.function.getJavaName()
                                     + params
                                     + comments;
