@@ -27,7 +27,6 @@ public class Db {
 
     public static String getString(Object value) {
         String rtn = (String)value;
-        rtn.replaceAll("'", "''");
-        return "'" + rtn + "'";
+        return "'" + rtn.replaceAll("'", "''") + "'";
     }
 }

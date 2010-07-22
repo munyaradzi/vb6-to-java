@@ -16,6 +16,7 @@ public class Variable {
     public boolean isLong = false;
     public boolean isInt = false;
     public boolean isBoolean = false;
+    public boolean isPublic = false;
     public String dataType = "";
     public String packageName = "";
 

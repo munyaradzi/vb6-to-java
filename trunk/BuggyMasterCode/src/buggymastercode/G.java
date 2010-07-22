@@ -24,16 +24,34 @@ import javax.swing.JTable;
  */
 public class G {
 
+    /**
+     * value = " +-/*,;"
+     */
     static private final String C_SYMBOLS = " +-*/,;";
+    /**
+     * value = " +-/*,;()[]{}"
+     */
     static private final String C_SYMBOLS2 = " +-*/,;()[]{}";
+    /**
+     * value = " \t"
+     */
     static private final String C_SPACES = " \t";
 
     static private boolean m_noChangeMousePointer = false;
 
+    /**
+     *
+     * @param value
+     */
     public static void setNoChangeMousePointer(boolean value) {
         m_noChangeMousePointer = value;
     }
 
+    /**
+     *
+     * @param value
+     * @return
+     */
     public static boolean isNumeric(Object value) {
         try {
             double d = Double.parseDouble(value.toString());
@@ -43,11 +61,21 @@ public class G {
         return true;
     }
 
+    /**
+     *
+     * @param msg
+     */
     public static void showInfo(String msg) {
         JFrame mainFrame = BuggyMasterCodeApp.getApplication().getMainFrame();
         JOptionPane.showMessageDialog(mainFrame,msg);
     }
 
+    /**
+     *
+     * @param table
+     * @param id
+     * @return
+     */
     public static boolean setRowSelectedById(JTable table, int id) {
         int rows = table.getModel().getRowCount();
         if (rows > 0) {
@@ -69,6 +97,12 @@ public class G {
         }
     }
 
+    /**
+     *
+     * @param table
+     * @param indexRow
+     * @return
+     */
     public static boolean setRowSelected(JTable table, int indexRow) {
         if (indexRow >= 0 && indexRow < table.getModel().getRowCount()) {
             // The following row selection methods work only if these
@@ -82,9 +116,16 @@ public class G {
         }
     }
 
+    /**
+     *
+     */
     public static void setHourglass() {
         setHourglass(BuggyMasterCodeApp.getApplication().getMainFrame());
     }
+    /**
+     *
+     * @param frame
+     */
     public static void setHourglass(JFrame frame) {
         if (!m_noChangeMousePointer) {
             Cursor hourglassCursor = new Cursor(Cursor.WAIT_CURSOR);
@@ -93,9 +134,16 @@ public class G {
             }
         }
     }
+    /**
+     *
+     */
     public static void setDefaultCursor() {
         setDefaultCursor(BuggyMasterCodeApp.getApplication().getMainFrame());
     }
+    /**
+     *
+     * @param frame
+     */
     public static void setDefaultCursor(JFrame frame) {
         if (!m_noChangeMousePointer) {
             Cursor normalCursor = new Cursor(Cursor.DEFAULT_CURSOR);
@@ -103,6 +151,11 @@ public class G {
         }
     }
 
+    /**
+     *
+     * @param str
+     * @return
+     */
     public static String ltrim(String str)
     {
         //If the argument is null then return empty string
@@ -121,6 +174,11 @@ public class G {
         return str;
     }
 
+    /**
+     *
+     * @param str
+     * @return
+     */
     public static String rtrim(String str) {
         //If the argument is null then return empty string
         if(str==null) return "";
@@ -138,6 +196,11 @@ public class G {
         return str;
     }
 
+    /**
+     *
+     * @param str
+     * @return
+     */
     public static String ltrimTab(String str)
     {
         //If the argument is null then return empty string
@@ -161,6 +224,12 @@ public class G {
         return str;
     }
 
+    /**
+     *
+     * @param source
+     * @param begin
+     * @return
+     */
     public static boolean beginLike(String source, String begin) {
         int len = begin.length();
         if (source.length() < len)
@@ -168,6 +237,12 @@ public class G {
         return (source.substring(0,len).equalsIgnoreCase(begin));
     }
 
+    /**
+     *
+     * @param source
+     * @param end
+     * @return
+     */
     public static boolean endLike(String source, String end) {
         int len = end.length();
         if (source.length() < len)
@@ -175,6 +250,12 @@ public class G {
         return (source.substring(source.length()-len).equalsIgnoreCase(end));
     }
 
+    /**
+     *
+     * @param c
+     * @param count
+     * @return
+     */
     public final static String rep(char c, int count) {
         char[] s = new char[count];
         for (int i = 0; i < count; i++) {
@@ -183,6 +264,14 @@ public class G {
         return new String(s).intern();
     } // end rep
 
+    /**
+     *
+     * @param vbpFile
+     * @param token
+     * @param line
+     * @param value
+     * @return
+     */
     public static boolean getToken(String vbpFile, String token, int line, ByRefString value) {
         int currLine=0;
         int lenToken = token.length();
@@ -226,6 +315,12 @@ public class G {
         }
     }
 
+    /**
+     *
+     * @param source
+     * @param toFind
+     * @return
+     */
     public static boolean contains(String source, String toFind) {
         boolean literalFlag = false;
         String expression = "";
@@ -259,14 +354,107 @@ public class G {
         return expression.contains(toFind);
     }
 
+    /**
+     * split a string using {@link buggymastercode.G#C_SYMBOLS C_SYMBOLS} as separators
+     *
+     * <p>the resulting array contains the characters
+     * defined by the C_SYMBOLS constant
+     *
+     * <p>the text sourronded by parenthesis is not
+     * splitted eg:
+     *
+     *<p>      "var1.var2.var3.var4.var5 (var.var.var) "var.var.var""
+     *
+     *<p>  is translated as
+     *
+     *<p>      return[0] = "var1.var2.var3.var4.var5"
+     *<br>     return[1] = " "
+     *<br>     return[2] = "("
+     *<br>     return[3] = "var.var.var"
+     *<br>     return[4] = ")"
+     *<br>     return[5] = " "
+     *<br>     return[6] = ""var.var.var""
+     *
+     * @param strLine
+     * @return
+     */
     public static String[] split(String strLine) {
         return split(strLine, C_SYMBOLS);
     }
 
+    /**
+     * split a string using {@link buggymastercode.G#C_SYMBOLS2 C_SYMBOLS2} as separators
+     *
+     * <p>the resulting array contains the characters
+     * defined by the C_SYMBOLS constant
+     *
+     * <p>the text sourronded by parenthesis IS splitted eg:
+     *
+     *<p>      "var1,var2,var3,var4,var5 (var,var,var) "var,var,var""
+     *
+     *<p>  is translated as
+     *
+     *<p>      return[0] = "var1"
+     *<br>     return[1] = ","
+     *<br>     return[2] = "var2"
+     *<br>     return[3] = ","
+     *<br>     return[4] = "var3"
+     *<br>     return[5] = ","
+     *<br>     return[6] = "var4"
+     *<br>     return[7] = ","
+     *<br>     return[8] = "var5"
+     *<br>     return[9] = " "
+     *<br>     return[10] = "("
+     *<br>     return[11] = "var"
+     *<br>     return[12] = ","
+     *<br>     return[13] = "var"
+     *<br>     return[14] = ","
+     *<br>     return[15] = "var"
+     *<br>     return[16] = ")"
+     *<br>     return[17] = " "
+     *<br>     return[18] = ""var,var,var""
+     *
+     * @param strLine
+     * @return
+     */
     public static String[] split2(String strLine) {
         return split2(strLine, C_SYMBOLS2);
     }
 
+    /**
+     * split a string using the characters given in
+     * the symbols parameter as separators
+     *
+     * <p>the resulting array contains the characters
+     * defined by the symbols parameter
+     *
+     * <p>the text sourronded by parenthesis IS splitted eg:
+     *
+     *<p>      "var1.var2.var3.var4.var5 (var.var.var) "var.var.var""
+     *
+     *<p>with a "(.)" as a separator is translated as
+     *
+     *<p>      return[0] = "var1"
+     *<br>     return[1] = "."
+     *<br>     return[2] = "var2"
+     *<br>     return[3] = "."
+     *<br>     return[4] = "var3"
+     *<br>     return[5] = "."
+     *<br>     return[6] = "var4"
+     *<br>     return[7] = "."
+     *<br>     return[8] = "var5"
+     *<br>     return[9] = "("
+     *<br>     return[10] = "var"
+     *<br>     return[11] = "."
+     *<br>     return[12] = "var"
+     *<br>     return[13] = "."
+     *<br>     return[14] = "var"
+     *<br>     return[15] = ")"
+     *<br>     return[16] = " "var.var.var""
+     *
+     * @param strLine
+     * @return
+     */
     public static String[] split2(String strLine, String symbols) {
         boolean literalFlag = false;
         boolean numberFlag = false;
@@ -320,6 +508,38 @@ public class G {
         return rtn;
     }
 
+    /**
+     * split a string using the characters given in
+     * the symbols parameter as separators
+     *
+     * <p>the resulting array contains the characters
+     * defined by the symbols parameter
+     *
+     * <p>the text sourronded by parenthesis is not
+     * splitted eg:
+     *
+     *<p>      "var1.var2.var3.var4.var5 (var.var.var) "var.var.var""
+     *
+     *<p>  with a "." as a separator is translated as
+     *
+     *<p>      return[0] = "var1"
+     *<br>     return[1] = "."
+     *<br>     return[2] = "var2"
+     *<br>     return[3] = "."
+     *<br>     return[4] = "var3"
+     *<br>     return[5] = "."
+     *<br>     return[6] = "var4"
+     *<br>     return[7] = "."
+     *<br>     return[8] = "var5"
+     *<br>     return[9] = "("
+     *<br>     return[10] = "var.var.var"
+     *<br>     return[11] = ")"
+     *<br>     return[12] = ""var.var.var""
+     *
+     * @param strLine   is the string to split
+     * @param symbols   an string with the character to be used as separators
+     * @return
+     */
     public static String[] split(String strLine, String symbols) {
         boolean literalFlag = false;
         boolean numberFlag = false;
@@ -402,7 +622,61 @@ public class G {
         return rtn;
     }
 
+    /**
+     * split a string using the spaces and tabs
+     * as separators {@link buggymastercode.G#C_SPACES C_SPACES}
+     *
+     * <p>the resulting array doesn't contain the spaces
+     * nither the tabs
+     *
+     * <p>This function doesn't recognize parenthesis as separators eg:
+     *
+     *<p>      "var1 var2 var3     var4 var5( var var ) "var var var""
+     *
+     *<p>  is translated as
+     *
+     *<p>      return[0] = "var1"
+     *<br>     return[1] = "var2"
+     *<br>     return[2] = "var3"
+     *<br>     return[3] = "var4"
+     *<br>     return[4] = "var5("
+     *<br>     return[5] = "var"
+     *<br>     return[6] = "var"
+     *<br>     return[7] = ")"
+     *<br>     return[8] = ""var var var""
+     *
+     * @param strLine
+     * @return
+     */
     public static String[] splitSpace(String strLine) {
+        return split3(strLine, C_SPACES);
+    }
+
+    /**
+     * split a string using the characters given in
+     * the symbols parameter as separators
+     *
+     * <p>the resulting array doesn't contain the characters
+     * defined by the symbols parameter
+     *
+     *<p>      "var1.var2.var3.var4.var5 (var.var.var) "var.var.var""
+     *
+     *<p>with a "(.)" as a separator is translated as
+     *
+     *<p>      return[0] = "var1"
+     *<br>     return[1] = "var2"
+     *<br>     return[2] = "var3"
+     *<br>     return[3] = "var4"
+     *<br>     return[4] = "var5 "
+     *<br>     return[5] = "var"
+     *<br>     return[6] = "var"
+     *<br>     return[7] = "var"
+     *<br>     return[8] = " "var var var""
+     *
+     * @param strLine
+     * @return
+     */
+    public static String[] split3(String strLine, String symbols) {
         boolean literalFlag = false;
         boolean numberFlag = false;
         String[] words = new String[500];
@@ -422,7 +696,7 @@ public class G {
 
                 if (!numberFlag) {
 
-                    if (C_SPACES.contains(String.valueOf(strLine.charAt(i)))) {
+                    if (symbols.contains(String.valueOf(strLine.charAt(i)))) {
                         wordEnded = true;
                     }
                     if (wordEnded) {
@@ -476,6 +750,12 @@ public class G {
         return j;
     }
 
+    /**
+     *
+     * @param source
+     * @param size
+     * @return
+     */
     public static String[] redim(String[] source, int size) {
         if (size == 0) {
             return null;

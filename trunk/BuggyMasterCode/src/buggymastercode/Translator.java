@@ -43,6 +43,7 @@ public class Translator {
     private ArrayList<Variable> m_functionVariables = new ArrayList<Variable>();
     private ArrayList<Function> m_publicFunctions = new ArrayList<Function>();
     private ArrayList<Function> m_privateFunctions = new ArrayList<Function>();
+    private ArrayList<Variable> m_publicVariables = new ArrayList<Variable>();
     private ArrayList<SourceFile> m_collFiles = new ArrayList<SourceFile>();
     private ArrayList<Variable> m_collWiths = new ArrayList<Variable>();
     private ArrayList<Type> m_types = new ArrayList<Type>();
@@ -104,6 +105,10 @@ public class Translator {
 
     public ArrayList<Function> getPrivateFunctions() {
         return m_privateFunctions;
+    }
+
+    public ArrayList<Variable> getPublicVariables() {
+        return m_publicVariables;
     }
 
     public boolean deletePackage(String packageName) {
@@ -1747,7 +1752,42 @@ public class Translator {
         strLine = translateFunctionCall(strLine);
         strLine = replaceWithSentence(strLine);
         strLine = replaceEndWithSentence(strLine);
+        strLine = replaceVbNameWithJavaName(strLine);
 
+        return strLine;
+    }
+
+    private String replaceVbNameWithJavaName(String strLine) {
+
+        /*
+        int startComment = getStartComment(strLine);
+        String workLine = strLine;
+        String comments = "";
+        if (startComment >= 0) {
+            comments =  "; //" + workLine.substring(startComment);
+            workLine = workLine.substring(0, startComment-1);
+        }
+        IdentifierInfo info = null;
+        String packageName = "";
+        String type = "";
+        String parent = "";
+        String[] words = G.split("\\.");
+        if (m_collWiths.size() > 0) {
+            parent = m_collWiths.get(m_collWiths.size()-1).dataType;
+        }
+        for (i = 0; i < words.length; i++) {
+            info = getIdentifierInfo(words[i], parent);
+            if (info == null)
+                type = "";
+            else if (info.isFunction)
+                type = info.function.getReturnType().dataType;
+            else
+                type = info.variable.dataType;
+
+            parent = type;
+        }
+         *
+         */
         return strLine;
     }
 
@@ -1760,7 +1800,7 @@ public class Translator {
 
             m_withDeclaration = true;
 
-            // First we have to get the variable
+            // first we have to get the variable
             // and then the type of it
             //
             int startComment = getStartComment(strLine);
@@ -1784,7 +1824,7 @@ public class Translator {
                     workLine = "";
                 }
             }
-            String[] words = workLine.split("\\.");
+            String[] words = G.split3(workLine,".");
             if (m_collWiths.size() > 0) {
                 parent = m_collWiths.get(m_collWiths.size()-1).dataType;
             }
@@ -1882,7 +1922,7 @@ public class Translator {
                     }
                 }
                 else {
-                    var.javaName = info.variable.javaName;
+                    var.javaName = parentWithCall + info.variable.javaName;
                     strLine = "// " + strLine;
                     m_inWith = true;
                 }
@@ -1925,7 +1965,7 @@ public class Translator {
         //         other packages in the order set in the vbp's
         //         reference list
         IdentifierInfo info = null;
-        Variable var = GetVariable(identifier);
+        Variable var = getVariable(identifier, parent);
         if (var != null) {
             info = new IdentifierInfo();
             info.isFunction = false;
@@ -2721,7 +2761,7 @@ public class Translator {
 
     private boolean isStringExpression(String expression) {
         expression = expression.trim();
-        Variable var = GetVariable(expression);
+        Variable var = getVariable(expression);
         if (var != null)
             return var.isString;
         else {
@@ -2786,32 +2826,7 @@ public class Translator {
             }
         }
 
-        // now we search in private types and public types
-        // declared in this class
-        //
-        Iterator itrTypes = null;
-
-        if (!className.isEmpty()) {
-            itrTypes = m_types.iterator();
-            while(itrTypes.hasNext()) {
-                Type type = (Type)itrTypes.next();
-                if (type.javaName.equals(className)
-                        || type.vbName.equals(className)) {
-                    Iterator itrMembers = type.getMembersVariables().iterator();
-                    while (itrMembers.hasNext()) {
-                        Function member = (Function)itrMembers.next();
-                        if (member.getJavaName().equals(functionName))
-                            return member;
-                        else if (member.getVbName().equals(functionName))
-                            return member;
-                    }
-                }
-            }
-        }
-
         // here we search for public function, public properties
-        // and members of public types because this are translated
-        // as public members of extremely simple classes
         //
         itrFile = m_collFiles.iterator();
         while(itrFile.hasNext()) {
@@ -2841,7 +2856,7 @@ public class Translator {
     }
 
     private String getCastToString(String identifier) {
-        Variable var = GetVariable(identifier);
+        Variable var = getVariable(identifier);
         if (var != null) {
             if (var.isString)
                 return identifier;
@@ -2858,7 +2873,11 @@ public class Translator {
             return identifier;
     }
 
-    private Variable GetVariable(String identifier) {
+    private Variable getVariable(String identifier) {
+        return getVariable(identifier, "");
+    }
+
+    private Variable getVariable(String identifier, String className) {
         for (int i = 0; i < m_functionVariables.size(); i++) {
             if (identifier.equals(m_functionVariables.get(i).javaName)) {
                 return m_functionVariables.get(i);
@@ -2869,7 +2888,38 @@ public class Translator {
                 return m_memberVariables.get(i);
             }
         }
-        return null;
+
+        // now we search in private types and public types
+        // declared in this class
+        //
+        Iterator itrTypes = null;
+
+        if (!className.isEmpty()) {
+            itrTypes = m_types.iterator();
+            while(itrTypes.hasNext()) {
+                Type type = (Type)itrTypes.next();
+                if (type.javaName.equals(className)
+                        || type.vbName.equals(className)) {
+                    Iterator itrMembers = type.getMembersVariables().iterator();
+                    while (itrMembers.hasNext()) {
+                        Variable member = (Variable)itrMembers.next();
+                        if (member.javaName.equals(identifier))
+                            return member;
+                        else if (member.vbName.equals(identifier))
+                            return member;
+                    }
+                }
+            }
+        }
+
+        // if we are here, we must look in the database
+        //
+        Variable publicVariable = VariableObject.getVariableFromName(
+                                                    identifier,
+                                                    className,
+                                                    m_references);
+
+        return publicVariable;
     }
 
     private String[] getWordsFromSentence(String strLine) {
@@ -3110,7 +3160,7 @@ public class Translator {
 
         if (endParams - startParams > 0) {
             String params = strLine.substring(startParams + 1, endParams);
-            String[] words = params.split(",");
+            String[] words = G.split3(params, ",");
             params = "";
             for (int i = 0; i < words.length; i++) {
                 params += getParam(words[i]) + ", ";
@@ -3270,6 +3320,11 @@ public class Translator {
                     + words[2]+ " " + words[3]
                     + words[4]+ " " + words[5] + "]";
 
+        if (G.endLike(paramName,"()")) {
+            dataType += "[]";
+            paramName = paramName.substring(0,paramName.length()-2);
+        }
+
         Variable var = new Variable();
         var.javaName = paramName;
         var.setType(dataType);
@@ -3384,13 +3439,22 @@ public class Translator {
 
     private int getEndParams(String strLine) {
         boolean literalFlag = false;
+        int openParentheses = 0;
         for (int i = 0; i < strLine.length(); i++) {
             if (strLine.charAt(i) == '"') {
                 literalFlag = !literalFlag;
             }
-            else if (strLine.charAt(i) == ')') {
-                if (!literalFlag) {
-                    return i;
+            if (!literalFlag) {
+                if (strLine.charAt(i) == '(') {
+                    openParentheses++;
+                }
+                else if (strLine.charAt(i) == ')') {
+                    if (openParentheses > 1) {
+                        openParentheses--;
+                    }
+                    else {
+                        return i;
+                    }
                 }
             }
         }
@@ -3473,17 +3537,18 @@ public class Translator {
     }
 
     private void saveParam(String vbParamName, String paramName, String dataType) {
-        saveVariable(vbParamName, paramName, dataType, true);
+        saveVariable(vbParamName, paramName, dataType, true, false);
     }
     
     private void saveVariable(String vbIdentifier, String identifier, String dataType) {
-        saveVariable(vbIdentifier, identifier, dataType, false);
+        saveVariable(vbIdentifier, identifier, dataType, false, false);
     }
 
     private void saveVariable(String vbIdentifier,
                                 String identifier,
                                 String dataType,
-                                boolean isParameter) {
+                                boolean isParameter,
+                                boolean isPublic) {
 
         m_variableObject.setClId(m_classObject.getId());
         m_variableObject.setVbName(vbIdentifier);
@@ -3491,6 +3556,7 @@ public class Translator {
         m_variableObject.setFunId(m_functionObject.getId());
         m_variableObject.setDataType(dataType);
         m_variableObject.setIsParameter(isParameter);
+        m_variableObject.setIsPublic(isPublic);
         m_variableObject.getVariableIdFromVariableName();
         m_variableObject.saveVariable();
     }
@@ -3502,6 +3568,7 @@ public class Translator {
         m_variableObject.setFunId(Db.CS_NO_ID);
         m_variableObject.setDataType(dataType);
         m_variableObject.setIsParameter(false);
+        m_variableObject.setIsPublic(true);
         m_variableObject.getVariableIdFromVariableName();
         m_variableObject.saveVariable();
     }
@@ -3659,7 +3726,14 @@ public class Translator {
         }
         dataType = getDataType(dataType);
 
-        saveVariable(vbIdentifier, identifier, dataType);
+        saveVariable(vbIdentifier, identifier, dataType, false, true);
+        Variable var = new Variable();
+        var.vbName = vbIdentifier;
+        var.javaName = identifier;
+        var.packageName = m_packageName;
+        var.setType(dataType);
+        var.isPublic = true;
+        m_publicVariables.add(var);
 
         return "public " + dataType + " " + identifier + ";" + misc + newline;
     }
@@ -3739,6 +3813,7 @@ public class Translator {
         m_functionVariables.removeAll(m_functionVariables);
         m_privateFunctions = new ArrayList<Function>();
         m_publicFunctions = new ArrayList<Function>();
+        m_publicVariables = new ArrayList<Variable>();
         m_types = new ArrayList<Type>();
         m_tabCount = 0;
         m_addDateAuxFunction = false;
@@ -3922,12 +3997,12 @@ public class Translator {
 
                 saveVariableInType(identifier, identifier, dataType);
 
-                Function member = new Function();
-                Variable var = member.getReturnType();
+                Variable var = new Variable();
                 var.vbName = identifier;
                 var.javaName = identifier;
-                var.dataType = dataType;
-                type.getMembersVariables().add(member);
+                var.setType(dataType);
+                var.isPublic = true;
+                type.getMembersVariables().add(var);
 
                 m_type += "    public " + dataType + ' ' + identifier + ";" + newline;
             } 

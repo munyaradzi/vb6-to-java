@@ -20,6 +20,7 @@ public class SourceFile {
 
     private ArrayList<Function> m_publicFunctions = null;
     private ArrayList<Function> m_privateFunctions = null;
+    private ArrayList<Variable> m_publicVariables = null;
 
     public String getVbSource() {
         return m_vbSource;
@@ -75,6 +76,14 @@ public class SourceFile {
 
     public void setPrivateFunctions(ArrayList<Function> list) {
         m_privateFunctions = list;
+    }
+
+    public ArrayList<Variable> getPublicVariables() {
+        return m_publicVariables;
+    }
+
+    public void setPublicVariables(ArrayList<Variable> list) {
+        m_publicVariables = list;
     }
 
     @Override

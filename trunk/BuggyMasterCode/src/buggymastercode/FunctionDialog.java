@@ -133,14 +133,14 @@ public class FunctionDialog extends javax.swing.JDialog {
 
             },
             new String [] {
-                "id", "VB Name", "Java Name", "Data Type", "Is a Parameter"
+                "id", "VB Name", "Java Name", "Data Type", "Is a Parameter", "Public"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Object.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Boolean.class
+                java.lang.Object.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Boolean.class, java.lang.Boolean.class
             };
             boolean[] canEdit = new boolean [] {
-                false, false, false, false, false
+                false, false, false, false, false, false
             };
 
             public Class getColumnClass(int columnIndex) {
@@ -158,6 +158,7 @@ public class FunctionDialog extends javax.swing.JDialog {
         tblVariables.getColumnModel().getColumn(2).setHeaderValue(resourceMap.getString("tblVariables.columnModel.title2")); // NOI18N
         tblVariables.getColumnModel().getColumn(3).setHeaderValue(resourceMap.getString("tblVariables.columnModel.title3")); // NOI18N
         tblVariables.getColumnModel().getColumn(4).setHeaderValue(resourceMap.getString("tblVariables.columnModel.title4")); // NOI18N
+        tblVariables.getColumnModel().getColumn(5).setHeaderValue(resourceMap.getString("tblVariables.columnModel.title5")); // NOI18N
 
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
@@ -167,7 +168,7 @@ public class FunctionDialog extends javax.swing.JDialog {
                 .addContainerGap()
                 .addComponent(jPanel8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(30, 30, 30))
-            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 445, Short.MAX_VALUE)
+            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 447, Short.MAX_VALUE)
         );
         jPanel6Layout.setVerticalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -344,7 +345,7 @@ public class FunctionDialog extends javax.swing.JDialog {
             model.getDataVector().removeAllElements();
 
             String sqlstmt = "select var_id, var_vbname, var_javaname, " 
-                                + "var_datatype, var_isparameter "
+                                + "var_datatype, var_isparameter, var_ispublic "
                                 + "from tvariable where fun_id = "
                                 + ((Integer)m_id).toString() ;
 
@@ -358,7 +359,8 @@ public class FunctionDialog extends javax.swing.JDialog {
                                           row.get("var_vbname").toString(),
                                           row.get("var_javaname").toString(),
                                           row.get("var_datatype").toString(),
-                                          Integer.parseInt(row.get("var_isparameter").toString()) == 0 ? false : true});
+                                          (Byte)row.get("var_isparameter") != 0 ? true : false,
+                                          (Byte)row.get("var_ispublic") != 0 ? true : false});
             }
             return true;
         }
