@@ -210,6 +210,7 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
                 sourceFile.setJavaName(m_translator.getJavaClassName());
                 sourceFile.setPublicFunctions(m_translator.getPublicFunctions());
                 sourceFile.setPrivateFunctions(m_translator.getPrivateFunctions());
+                sourceFile.setPublicVariables(m_translator.getPublicVariables());
                 sourceFile.setFileName(vbFile);
             }
         } catch (FileNotFoundException ex) {
@@ -230,7 +231,9 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
         m_collFiles.add(sourceFile);
         sourceFile.setVbName(type.vbName);
         sourceFile.setJavaName(type.javaName);
-        sourceFile.setPublicFunctions(type.getMembersVariables());
+        sourceFile.setPublicFunctions(new ArrayList<Function>());
+        sourceFile.setPrivateFunctions(new ArrayList<Function>());
+        sourceFile.setPublicVariables(type.getMembersVariables());
         sourceFile.setFileName("PUBLIC TYPE: " + type.javaName);
         sourceFile.setVbSource(type.getVbCode().toString());
         sourceFile.setJavaSource(type.getJavaCode().toString());
@@ -277,12 +280,12 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
 
         } catch (FileNotFoundException ex) {
             Logger.getLogger(BuggyMasterCodeView.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (IOException ex) {
+        } catch (Exception ex) {
             Logger.getLogger(BuggyMasterCodeView.class.getName()).log(Level.SEVERE, null, ex);
         } finally {
             try {
                 fstream.close();
-            } catch (IOException ex) {
+            } catch (Exception ex) {
                 Logger.getLogger(BuggyMasterCodeView.class.getName()).log(Level.SEVERE, null, ex);
             }
         }

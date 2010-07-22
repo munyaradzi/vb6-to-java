@@ -22,7 +22,7 @@ public class Type {
     // the members variables of a type are like property get
     // so they are functions
     //
-    private ArrayList<Function> m_memberVariables = new ArrayList<Function>();
+    private ArrayList<Variable> m_memberVariables = new ArrayList<Variable>();
 
     public StringBuilder getJavaCode() {
         return m_javaCode;
@@ -32,7 +32,7 @@ public class Type {
         return m_vbCode;
     }
 
-    public ArrayList<Function> getMembersVariables() {
+    public ArrayList<Variable> getMembersVariables() {
         return m_memberVariables;
     }
 

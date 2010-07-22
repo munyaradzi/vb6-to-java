@@ -223,14 +223,14 @@ public class ClassDialog extends javax.swing.JDialog {
 
             },
             new String [] {
-                "id", "VB Name", "Java Name", "Data Type"
+                "id", "VB Name", "Java Name", "Data Type", "Public"
             }
         ) {
             Class[] types = new Class [] {
-                java.lang.Object.class, java.lang.String.class, java.lang.String.class, java.lang.String.class
+                java.lang.Object.class, java.lang.String.class, java.lang.String.class, java.lang.String.class, java.lang.Boolean.class
             };
             boolean[] canEdit = new boolean [] {
-                false, false, false, false
+                false, false, false, false, false
             };
 
             public Class getColumnClass(int columnIndex) {
@@ -250,6 +250,7 @@ public class ClassDialog extends javax.swing.JDialog {
         tblVariables.getColumnModel().getColumn(2).setHeaderValue(resourceMap.getString("tblVariables.columnModel.title1")); // NOI18N
         tblVariables.getColumnModel().getColumn(3).setMinWidth(100);
         tblVariables.getColumnModel().getColumn(3).setHeaderValue(resourceMap.getString("tblVariables.columnModel.title3")); // NOI18N
+        tblVariables.getColumnModel().getColumn(4).setHeaderValue(resourceMap.getString("tblVariables.columnModel.title4")); // NOI18N
 
         javax.swing.GroupLayout jPanel6Layout = new javax.swing.GroupLayout(jPanel6);
         jPanel6.setLayout(jPanel6Layout);
@@ -259,14 +260,14 @@ public class ClassDialog extends javax.swing.JDialog {
                 .addContainerGap()
                 .addComponent(jPanel8, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addGap(30, 30, 30))
-            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 445, Short.MAX_VALUE)
+            .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 447, Short.MAX_VALUE)
         );
         jPanel6Layout.setVerticalGroup(
             jPanel6Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel6Layout.createSequentialGroup()
                 .addComponent(jPanel8, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE))
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 167, Short.MAX_VALUE))
         );
 
         tabbedPane.addTab(resourceMap.getString("jPanel6.TabConstraints.tabTitle"), jPanel6); // NOI18N
@@ -347,14 +348,14 @@ public class ClassDialog extends javax.swing.JDialog {
                 .addGap(10, 10, 10)
                 .addComponent(jPanel7, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
-            .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 445, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, 447, Short.MAX_VALUE)
         );
         jPanel2Layout.setVerticalGroup(
             jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addComponent(jPanel7, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE))
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 167, Short.MAX_VALUE))
         );
 
         tabbedPane.addTab(resourceMap.getString("jPanel2.TabConstraints.tabTitle"), jPanel2); // NOI18N
@@ -366,7 +367,7 @@ public class ClassDialog extends javax.swing.JDialog {
             .addComponent(jPanel3, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 430, Short.MAX_VALUE)
+                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, 432, Short.MAX_VALUE)
                 .addContainerGap())
             .addComponent(tabbedPane)
         );
@@ -555,7 +556,9 @@ public class ClassDialog extends javax.swing.JDialog {
             DefaultTableModel model = (DefaultTableModel)this.tblVariables.getModel();
             model.getDataVector().removeAllElements();
 
-            String sqlstmt = "select var_id, var_vbname, var_javaname, var_datatype from tvariable where fun_id = 0 and cl_id = "
+            String sqlstmt = "select var_id, var_vbname, var_javaname, " 
+                                + "var_datatype, var_ispublic "
+                                + "from tvariable where fun_id = 0 and cl_id = "
                                 + ((Integer)m_id).toString() ;
 
             DBRecordSet rs = new DBRecordSet();
@@ -567,7 +570,8 @@ public class ClassDialog extends javax.swing.JDialog {
                 model.addRow(new Object[]{row.get("var_id").toString(),
                                           row.get("var_vbname").toString(),
                                           row.get("var_javaname").toString(),
-                                          row.get("var_datatype").toString()});
+                                          row.get("var_datatype").toString(),
+                                          (Byte)row.get("var_ispublic") != 0 ? true : false});
             }
             return true;
         }
