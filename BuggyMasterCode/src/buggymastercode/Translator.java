@@ -33,6 +33,7 @@ public class Translator {
     private boolean m_withDeclaration = false;
     private boolean m_endWithDeclaration = false;
     private boolean m_emptyLine = false;
+    private String m_returnValue = ""; // default value for function return
 
     private String[] m_iterators = {"","_i","_j","_k","_t","_w","_z"};
     private int m_iteratorIndex = 0;
@@ -592,6 +593,7 @@ public class Translator {
         strLine = strLine.toLowerCase();
         strLine = strLine.replaceAll("public", "");
         strLine = strLine.replaceAll("private", "");
+        strLine = strLine.replaceAll("friend", "");
         strLine = G.ltrimTab(strLine);
         if (strLine.length() > 10) {
             if (strLine.substring(0,9).toLowerCase().equals("function ")) {
@@ -623,17 +625,54 @@ public class Translator {
 
     private String translateLineInDeclaration(String strLine) {
         // declaration expecific stuff
+        //
         return translateCode(strLine, true);
     }
     private String translateLineInFunction(String strLine) {
         // function expecific stuff
-
+        //
         strLine = translateCode(strLine, false);
+
+        // translate inner with block
+        //
         if (m_inWith) {
             if (!m_withDeclaration && !m_endWithDeclaration) {
-                if (G.beginLike(strLine, ".")) {
-                    strLine = m_collWiths.get(m_collWiths.size()-1).javaName
-                                + strLine;
+                boolean evalWith = false;
+                if (strLine.contains(" ."))
+                    evalWith = true;
+                else if (strLine.contains("(."))
+                    evalWith = true;
+                else if (strLine.contains("\t."))
+                    evalWith = true;
+                if (evalWith) {
+                    String withVariable = m_collWiths.get(m_collWiths.size()-1).javaName;
+                    String workLine = "";
+                    boolean literalFlag = false;
+                    for (int i = 0; i < strLine.length(); i++) {
+                        if (strLine.charAt(i) == '"') {
+                            literalFlag = !literalFlag;
+                        }
+                        else if (!literalFlag) {
+                            if (strLine.charAt(i) == '.') {
+                                if (i > 0) {
+                                    if (strLine.charAt(i - 1) == ' ') {
+                                        workLine += withVariable;
+                                    }
+                                    else if (strLine.charAt(i - 1) == '(') {
+                                        workLine += withVariable;
+                                    }
+                                    else if (strLine.charAt(i - 1) == '\t') {
+                                        workLine += withVariable;
+                                    }
+                                }
+                                else {
+                                    workLine += withVariable;
+                                }
+                            }
+                        }
+                        workLine += strLine.charAt(i);
+                    }
+                    strLine = workLine;
                 }
             }
         }
@@ -641,11 +680,26 @@ public class Translator {
     }
 
     private String translateCode(String strLine, boolean inDeclaration) {
-        String rtn = translateCodeAux(strLine, inDeclaration);
+        // first we extract comments
+        // so the code only works over executable code
+        //
+        int startComment = getStartComment(strLine);
+        String workLine = strLine;
+        String comments = "";
+        if (startComment >= 0) {
+            comments =  "//" + workLine.substring(startComment);
+            workLine = workLine.substring(0, startComment-1);
+        }
+
+        String rtn = translateCodeAux(workLine, inDeclaration);
         rtn = translateDateConstant(rtn);
         rtn = translateUbound(rtn);
         rtn = translateIsNull(rtn);
-        rtn = translateComments(rtn);
+
+        if (!comments.isEmpty())
+            rtn = comments + newline + getTabs() + rtn;
+
+        //rtn = translateComments(rtn);
         return rtn;
     }
 
@@ -1637,7 +1691,7 @@ public class Translator {
             collection = collection.trim();
             iterator = iterator.trim();
             return "for (int " + m_iterators[m_iteratorIndex] + " = 0;"
-                            + " " + m_iterators[m_iteratorIndex] + " < " + collection + ".count();"
+                            + " " + m_iterators[m_iteratorIndex] + " < " + translateSentence(collection) + ".size();"
                             + " " + m_iterators[m_iteratorIndex] + "++) {"
                             + comments + newline
                             + getTabs() + "    "
@@ -1652,13 +1706,16 @@ public class Translator {
             else if (step.replace(" ","").equals("-1")) {
                 increment = "--";
             }
+            else if (step.isEmpty()) {
+                increment = "++";
+            }
             else {
                 increment = " = " + iterator + step;
             }
-            iterator.trim();
-            startValue.trim();
-            return "for (" + iterator + " = " + startValue + ";"
-                            + iterator + " < " + endValue + ";"
+            iterator = iterator.trim();
+            startValue = startValue.trim();
+            return "for (" + iterator + " = " + translateSentence(startValue) + "; "
+                            + iterator + " <= " + translateSentence(endValue) + "; "
                             + iterator + increment + ") {"
                             + comments + newline;
         }
@@ -1746,6 +1803,8 @@ public class Translator {
         strLine = replaceMidSentence(strLine);
         strLine = replaceLeftSentence(strLine);
         strLine = replaceRightSentence(strLine);
+        strLine = replaceLCaseSentence(strLine);
+        strLine = replaceUCaseSentence(strLine);
         strLine = replaceLenSentence(strLine);
         strLine = replaceVbWords(strLine);
         strLine = replaceIsNothing(strLine);
@@ -1753,41 +1812,84 @@ public class Translator {
         strLine = replaceWithSentence(strLine);
         strLine = replaceEndWithSentence(strLine);
         strLine = replaceVbNameWithJavaName(strLine);
+        strLine = replaceExitSentence(strLine);
+        strLine = replaceSlashInLiterals(strLine);
 
         return strLine;
     }
 
-    private String replaceVbNameWithJavaName(String strLine) {
-
-        /*
-        int startComment = getStartComment(strLine);
-        String workLine = strLine;
-        String comments = "";
-        if (startComment >= 0) {
-            comments =  "; //" + workLine.substring(startComment);
-            workLine = workLine.substring(0, startComment-1);
+    private String replaceSlashInLiterals(String strLine) {
+        boolean literalFlag = false;
+        String workLine = "";
+        for (int i = 0; i < strLine.length(); i++) {
+            if (strLine.charAt(i) == '"') {
+                literalFlag = !literalFlag;
+            }
+            if (literalFlag) {
+                if (strLine.charAt(i) == '\\') {
+                    workLine += "\\\\";
+                }
+                else {
+                    workLine += String.valueOf(strLine.charAt(i));
+                }
+            }
+            else {
+                workLine += String.valueOf(strLine.charAt(i));
+            }
         }
+        return workLine;
+    }
+
+    private String replaceExitSentence(String strLine) {
+        if (G.endLike(strLine, "Exit Function")) {
+            return "return " + m_returnValue;
+        }
+        else if (G.endLike(strLine, "Exit Sub")) {
+            return "return";
+        }
+        else if (G.endLike(strLine, "Exit For")) {
+            return "break";
+        }
+        else if (G.endLike(strLine, "Exit Do")) {
+            return "break";
+        }
+        else {
+            return strLine;
+        }
+    }
+
+    private String replaceVbNameWithJavaName(String strLine) {
         IdentifierInfo info = null;
         String packageName = "";
         String type = "";
         String parent = "";
-        String[] words = G.split("\\.");
-        if (m_collWiths.size() > 0) {
-            parent = m_collWiths.get(m_collWiths.size()-1).dataType;
-        }
-        for (i = 0; i < words.length; i++) {
-            info = getIdentifierInfo(words[i], parent);
-            if (info == null)
-                type = "";
-            else if (info.isFunction)
-                type = info.function.getReturnType().dataType;
-            else
-                type = info.variable.dataType;
+        String[] words = G.split2(strLine, "\t/*-+ .(");
+        strLine = "";
 
-            parent = type;
+        for (int i = 0; i < words.length; i++) {
+            if (!(",.()\"'".contains(words[i]))) {
+                info = getIdentifierInfo(words[i], parent);
+                if (info == null)
+                    type = "";
+                else if (info.isFunction) {
+                    type = info.function.getReturnType().dataType;
+                    words[i] = info.function.getJavaName();
+                    if (i + 1 < words.length) {
+                        if (!words[i + 1].equals("("))
+                            words[i] += "()";
+                    }
+                    else {
+                        words[i] += "()";
+                    }
+                }
+                else {
+                    type = info.variable.dataType;
+                    words[i] = info.variable.javaName;
+                }
+                parent = type;
+            }
+            strLine += words[i];
         }
-         *
-         */
         return strLine;
     }
 
@@ -1846,7 +1948,7 @@ public class Translator {
 
             String prefix = "";
             if (type.length() == 0) {
-                type = "__TYPE_NO_FOUND";
+                type = "__TYPE_NOT_FOUND";
                 prefix = "//*TODO: can't found type for with block"
                             + newline
                             + getTabs()
@@ -1871,7 +1973,7 @@ public class Translator {
                                 + var.javaName
                                 + " = "
                                 + m_collWiths.get(m_collWiths.size()-1).javaName
-                                + workLine.substring(5)
+                                + workLine//.substring(5)
                                 + comments;
                 }
                 else {
@@ -1879,7 +1981,7 @@ public class Translator {
                                 + var.dataType
                                 + " "
                                 + var.javaName
-                                + " = " + workLine.substring(5)
+                                + " = " + workLine//.substring(5)
                                 + comments;
                     m_inWith = true;
                 }
@@ -2013,6 +2115,22 @@ public class Translator {
                                 params += words[i];
                             }
                             strLine += params.trim() + ")" + comments;
+                        }
+                    }
+                }
+                // special case when in vb whe have a SUB call
+                // with only one parameter sourronded by parentheses
+                // like Col.Remove (Ctrl.Key)
+                //
+                else if (words[1].equals(" ") && words[2].equals("(")) {
+                    if (!C_SEPARARTORS.contains("_" + words[2] + "_")) {
+                        if (!isReservedWord(words[0])) {
+                            strLine = words[0];
+                            String params = "";
+                            for (int i = 2; i < words.length; i++) {
+                                params += words[i];
+                            }
+                            strLine += params.trim() + comments;
                         }
                     }
                 }
@@ -2543,6 +2661,182 @@ public class Translator {
         return expression.trim();
     }
 
+    private String replaceLCaseSentence(String expression) {
+        boolean lcaseFound = false;
+
+        expression = G.ltrimTab(expression);
+
+        if (containsLCase(expression)) {
+
+            int openParentheses = 0;
+            String[] words = G.split(expression);
+            String params = "";
+            expression = "";
+            lcaseFound = false;
+
+            for (int i = 0; i < words.length; i++) {
+                if (lcaseFound) {
+                    if (words[i].equals("(")) {
+                        openParentheses++;
+                        if (openParentheses > 1) {
+                            params += words[i];
+                        }
+                    }
+                    // look for a close parentheses without an open parentheses
+                    else if (words[i].equals(")")) {
+                        openParentheses--;
+                        if (openParentheses == 0) {
+                            if (containsLCase(params)) {
+                                params = replaceLCaseSentence(params);
+                            }
+                            String[] vparams = G.split(params);
+                            String identifier = "";
+
+                            int colons = 0;
+                            identifier = "";
+                            for (int t = 0; t < vparams.length; t++) {
+                                if (vparams[t].equals(",")) {
+                                    colons++;
+                                }
+                                else {
+
+                                    if (colons == 0) {
+                                        identifier += vparams[t];
+                                    }
+                                    else {
+                                        G.showInfo("Unexpected colon found in LCase function's params: " + params);
+                                    }
+                                }
+                            }
+                            // identifier can be a complex expresion
+                            // like ' "an string plus" + a_var '
+                            //
+                            if (G.contains(identifier, " ")) {
+                                identifier = "(" + identifier + ")";
+                            }
+                            expression += identifier
+                                            + ".toLowerCase()";
+                            lcaseFound = false;
+                            params = "";
+                        }
+                        else {
+                            params = params.trim() + words[i];
+                        }
+                    }
+                    else {
+                        params += words[i];
+                    }
+                }
+                else {
+                    if (words[i].equalsIgnoreCase("lcase")) {
+                        lcaseFound = true;
+                    }
+                    else if (words[i].equalsIgnoreCase("lcase$")) {
+                        lcaseFound = true;
+                    }
+                    else if (G.beginLike(words[i],"lcase(")) {
+                        expression += replaceLCaseSentence(words[i]);
+                    }
+                    else if (G.beginLike(words[i],"lcase$(")) {
+                        expression += replaceLCaseSentence(words[i]);
+                    }
+                    else {
+                        expression += words[i];
+                    }
+                }
+            }
+        }
+        return expression.trim();
+    }
+
+    private String replaceUCaseSentence(String expression) {
+        boolean ucaseFound = false;
+
+        expression = G.ltrimTab(expression);
+
+        if (containsUCase(expression)) {
+
+            int openParentheses = 0;
+            String[] words = G.split(expression);
+            String params = "";
+            expression = "";
+            ucaseFound = false;
+
+            for (int i = 0; i < words.length; i++) {
+                if (ucaseFound) {
+                    if (words[i].equals("(")) {
+                        openParentheses++;
+                        if (openParentheses > 1) {
+                            params += words[i];
+                        }
+                    }
+                    // look for a close parentheses without an open parentheses
+                    else if (words[i].equals(")")) {
+                        openParentheses--;
+                        if (openParentheses == 0) {
+                            if (containsUCase(params)) {
+                                params = replaceUCaseSentence(params);
+                            }
+                            String[] vparams = G.split(params);
+                            String identifier = "";
+
+                            int colons = 0;
+                            identifier = "";
+                            for (int t = 0; t < vparams.length; t++) {
+                                if (vparams[t].equals(",")) {
+                                    colons++;
+                                }
+                                else {
+
+                                    if (colons == 0) {
+                                        identifier += vparams[t];
+                                    }
+                                    else {
+                                        G.showInfo("Unexpected colon found in UCase function's params: " + params);
+                                    }
+                                }
+                            }
+                            // identifier can be a complex expresion
+                            // like ' "an string plus" + a_var '
+                            //
+                            if (G.contains(identifier, " ")) {
+                                identifier = "(" + identifier + ")";
+                            }
+                            expression += identifier
+                                            + ".toUpperCase()";
+                            ucaseFound = false;
+                            params = "";
+                        }
+                        else {
+                            params = params.trim() + words[i];
+                        }
+                    }
+                    else {
+                        params += words[i];
+                    }
+                }
+                else {
+                    if (words[i].equalsIgnoreCase("ucase")) {
+                        ucaseFound = true;
+                    }
+                    else if (words[i].equalsIgnoreCase("ucase$")) {
+                        ucaseFound = true;
+                    }
+                    else if (G.beginLike(words[i],"ucase(")) {
+                        expression += replaceUCaseSentence(words[i]);
+                    }
+                    else if (G.beginLike(words[i],"ucase$(")) {
+                        expression += replaceUCaseSentence(words[i]);
+                    }
+                    else {
+                        expression += words[i];
+                    }
+                }
+            }
+        }
+        return expression.trim();
+    }
+
     private String replaceLenSentence(String expression) {
         boolean lenFound = false;
 
@@ -2695,6 +2989,54 @@ public class Translator {
             return true;
         }
         else if (G.beginLike(expression,"right$(")) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    private boolean containsLCase(String expression) {
+        if (expression.toLowerCase().contains(" lcase(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains("(lcase(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains(" lcase$(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains("(lcase$(")) {
+            return true;
+        }
+        else if (G.beginLike(expression,"lcase(")) {
+            return true;
+        }
+        else if (G.beginLike(expression,"lcase$(")) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    private boolean containsUCase(String expression) {
+        if (expression.toLowerCase().contains(" ucase(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains("(ucase(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains(" ucase$(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains("(ucase$(")) {
+            return true;
+        }
+        else if (G.beginLike(expression,"ucase(")) {
+            return true;
+        }
+        else if (G.beginLike(expression,"ucase$(")) {
             return true;
         }
         else {
@@ -2879,6 +3221,9 @@ public class Translator {
 
     private Variable getVariable(String identifier, String className) {
         for (int i = 0; i < m_functionVariables.size(); i++) {
+            if (identifier.equals(m_functionVariables.get(i).vbName)) {
+                return m_functionVariables.get(i);
+            }
             if (identifier.equals(m_functionVariables.get(i).javaName)) {
                 return m_functionVariables.get(i);
             }
@@ -3122,6 +3467,8 @@ public class Translator {
         if (!functionName.isEmpty() && functionScope.equals("public"))
             saveFunction(m_vbFunctionName, functionName, functionType);
 
+        m_returnValue = getDefaultForReturnType(functionType);
+
         return functionScope + " "
                 + functionType + " "
                 + functionName.substring(0,1).toLowerCase() + functionName.substring(1) + "("
@@ -3322,11 +3669,15 @@ public class Translator {
 
         if (G.endLike(paramName,"()")) {
             dataType += "[]";
-            paramName = paramName.substring(0,paramName.length()-2);
+            paramName = paramName.substring(0, paramName.length()-2);
+        }
+        if (G.endLike(vbParamName, "()")) {
+            vbParamName = vbParamName.substring(0, vbParamName.length()-2);
         }
 
         Variable var = new Variable();
         var.javaName = paramName;
+        var.vbName = vbParamName;
         var.setType(dataType);
         m_functionVariables.add(var);
 
@@ -3387,6 +3738,40 @@ public class Translator {
         // the same value we received
         //
         return dataType;
+    }
+
+    private String getDefaultForReturnType(String dataType) {
+        if (dataType.equalsIgnoreCase("byte")) {
+            return "0";
+        }
+        else if (dataType.equalsIgnoreCase("boolean")) {
+            return "false";
+        }
+        else if (dataType.equalsIgnoreCase("double")) {
+            return "0";
+        }
+        else if (dataType.equalsIgnoreCase("int")) {
+            return "0";
+        }
+        else if (dataType.equalsIgnoreCase("long")) {
+            return "0";
+        }
+        else if (dataType.equalsIgnoreCase("float")) {
+            return "0";
+        }
+        else if (dataType.equalsIgnoreCase("Date")) {
+            return "null";
+        }
+        else if (dataType.equalsIgnoreCase("String")) {
+            return "\"\"";
+        }
+        else if (dataType.equalsIgnoreCase("Object")) {
+            return "null";
+        }
+        // else: if is not one of the above list we return
+        // a null string
+        //
+        return "";
     }
 
     private String getZeroValueForDataType(String dataType) {
@@ -3744,10 +4129,12 @@ public class Translator {
         strLine = strLine.trim();
         String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
         String dataType = "";
+        String vbIdentifier = "";
         String identifier = "";
         String misc = "";
 
         if (words.length > 1) {
+            vbIdentifier = words[1];
             identifier = getVariableName(words[1]);
             if (words.length > 3) {
                 dataType = words[3];
@@ -3763,6 +4150,7 @@ public class Translator {
 
         Variable var = new Variable();
         var.javaName = identifier;
+        var.vbName = vbIdentifier;
         var.setType(dataType);
         m_functionVariables.add(var);
 
@@ -3817,6 +4205,7 @@ public class Translator {
         m_types = new ArrayList<Type>();
         m_tabCount = 0;
         m_addDateAuxFunction = false;
+        m_returnValue = "";
 
         if (name.contains(".")) {
             if (name.length() > 0) {
