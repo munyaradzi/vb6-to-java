@@ -77,6 +77,7 @@ public class DBOracle implements DBConnection {
                 RowSetDynaClass rsdc = new RowSetDynaClass(rset);
                 rs.setRows((List<DynaBean>) rsdc.getRows());
 
+                rset.close();
                 stmt.close();
                 return true;
             } catch (SQLException ex) {
@@ -103,7 +104,8 @@ public class DBOracle implements DBConnection {
 
                 RowSetDynaClass rsdc = new RowSetDynaClass(rset);
                 rs.setRows((List<DynaBean>) rsdc.getRows());
-
+                
+                rset.close();
                 sqlstmt.close();
                 return true;
             } catch (SQLException ex) {
