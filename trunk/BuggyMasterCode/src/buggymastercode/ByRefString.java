@@ -15,5 +15,4 @@ public class ByRefString {
 
     public ByRefString() {}
     public ByRefString(String text) {this.text = text;}
-
 }
