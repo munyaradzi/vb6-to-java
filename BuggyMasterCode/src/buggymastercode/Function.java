@@ -18,11 +18,11 @@ public class Function {
     public String javaDeclaration = "";
 
     public String getJavaName() {
-        return returnType.javaName;
+        return returnType.getJavaName();
     }
 
     public String getVbName() {
-        return returnType.vbName;
+        return returnType.getVbName();
     }
 
     public Variable getReturnType() {

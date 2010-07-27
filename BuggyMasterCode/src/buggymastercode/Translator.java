@@ -45,9 +45,14 @@ public class Translator {
     private ArrayList<Function> m_publicFunctions = new ArrayList<Function>();
     private ArrayList<Function> m_privateFunctions = new ArrayList<Function>();
     private ArrayList<Variable> m_publicVariables = new ArrayList<Variable>();
+    // files (frm, bas, cls) in this vbp
+    //
     private ArrayList<SourceFile> m_collFiles = new ArrayList<SourceFile>();
     private ArrayList<Variable> m_collWiths = new ArrayList<Variable>();
     private ArrayList<Type> m_types = new ArrayList<Type>();
+    // classes in java (String, Date, etc.)
+    //
+    private ArrayList<SourceFile> m_collJavaClassess = new ArrayList<SourceFile>();
 
     private String m_type = "";
     private String m_enum = "";
@@ -71,6 +76,50 @@ public class Translator {
     private TranslatorWorker m_caller = null;
 
     private ClassObject m_typeClassObject;
+
+    public Translator() {
+        m_collJavaClassess = new ArrayList<SourceFile>();
+        SourceFile source = null;
+        Function fun = null;
+
+        // String
+        //
+        source = new SourceFile();
+        source.setJavaName("String");
+        source.setPublicFunctions(new ArrayList<Function>());
+
+            // substring
+            //
+            fun = new Function();
+            fun.getReturnType().setJavaName("substring");
+            fun.getReturnType().setType("String");
+            source.getPublicFunctions().add(fun);
+            m_collJavaClassess.add(source);
+
+            // toLowerCase
+            //
+            fun = new Function();
+            fun.getReturnType().setJavaName("toLowerCase");
+            fun.getReturnType().setType("String");
+            source.getPublicFunctions().add(fun);
+            m_collJavaClassess.add(source);
+
+            // toUpperCase
+            //
+            fun = new Function();
+            fun.getReturnType().setJavaName("toUpperCase");
+            fun.getReturnType().setType("String");
+            source.getPublicFunctions().add(fun);
+            m_collJavaClassess.add(source);
+
+            // trim
+            //
+            fun = new Function();
+            fun.getReturnType().setJavaName("trim");
+            fun.getReturnType().setType("String");
+            source.getPublicFunctions().add(fun);
+            m_collJavaClassess.add(source);
+    }
 
     public void setCaller(TranslatorWorker caller) {
         m_caller = caller;
@@ -644,8 +693,10 @@ public class Translator {
                     evalWith = true;
                 else if (strLine.contains("\t."))
                     evalWith = true;
+                else if (strLine.contains("!."))
+                    evalWith = true;
                 if (evalWith) {
-                    String withVariable = m_collWiths.get(m_collWiths.size()-1).javaName;
+                    String withVariable = m_collWiths.get(m_collWiths.size()-1).getJavaName();
                     String workLine = "";
                     boolean literalFlag = false;
                     for (int i = 0; i < strLine.length(); i++) {
@@ -662,6 +713,9 @@ public class Translator {
                                         workLine += withVariable;
                                     }
                                     else if (strLine.charAt(i - 1) == '\t') {
+                                        workLine += withVariable;
+                                    }
+                                    else if (strLine.charAt(i - 1) == '!') {
                                         workLine += withVariable;
                                     }
                                 }
@@ -960,11 +1014,11 @@ public class Translator {
                 function.javaDeclaration = functionDeclaration;
                 if (words[2].contains("(")) {
                     int i = words[2].indexOf("(");
-                    function.getReturnType().javaName = words[2].substring(0,i);
+                    function.getReturnType().setJavaName(words[2].substring(0,i));
                 }
                 else
-                    function.getReturnType().javaName = words[2];
-                function.getReturnType().vbName = m_vbFunctionName;
+                    function.getReturnType().setJavaName(words[2]);
+                function.getReturnType().setVbName(m_vbFunctionName);
                 function.getReturnType().setType(words[1]);
                 if (words[0].equals("private")) {
                     m_privateFunctions.add(function);
@@ -1798,14 +1852,14 @@ public class Translator {
         strLine = replaceMemberVariables(strLine);
         strLine = replaceFunctionVariables(strLine);
         strLine = replaceAmpersand(strLine);
-        strLine = replaceStringComparison(strLine, "==");
-        strLine = replaceStringComparison(strLine, "!=");
         strLine = replaceMidSentence(strLine);
         strLine = replaceLeftSentence(strLine);
         strLine = replaceRightSentence(strLine);
         strLine = replaceLCaseSentence(strLine);
         strLine = replaceUCaseSentence(strLine);
         strLine = replaceLenSentence(strLine);
+        strLine = replaceStringComparison(strLine, "==");
+        strLine = replaceStringComparison(strLine, "!=");
         strLine = replaceVbWords(strLine);
         strLine = replaceIsNothing(strLine);
         strLine = translateFunctionCall(strLine);
@@ -1860,11 +1914,12 @@ public class Translator {
 
     private String replaceVbNameWithJavaName(String strLine) {
         IdentifierInfo info = null;
-        String packageName = "";
         String type = "";
         String parent = "";
-        String[] words = G.split2(strLine, "\t/*-+ .(");
+        String[] words = G.split2(strLine, "\t/*-+ .()");
         strLine = "";
+        String[] parents = new String[30]; // why 30? how nows :P, 30 should be enough :)
+        int openParentheses = 0;
 
         for (int i = 0; i < words.length; i++) {
             if (!(",.()\"'".contains(words[i]))) {
@@ -1883,10 +1938,40 @@ public class Translator {
                     }
                 }
                 else {
+                    if (info.variable.isArray) {
+                        int arrayParentheses = 0;
+                        for (int k = i + 1; k < words.length; k++) {
+                            if (words[k].equals("(")) {
+                                if (arrayParentheses == 0) {
+                                    words[k] = "[";
+                                }
+                                arrayParentheses++;
+                            }
+                            else if (words[k].equals(")")) {
+                                arrayParentheses--;
+                                if (arrayParentheses == 0) {
+                                    words[k] = "]";
+                                    break;
+                                }
+                            }
+                            else if (arrayParentheses == 0
+                                    && !"\t ".contains(words[k])) {
+                                break;
+                            }
+                        }
+                    }
                     type = info.variable.dataType;
-                    words[i] = info.variable.javaName;
+                    words[i] = info.variable.getJavaName();
                 }
                 parent = type;
+            }
+            else if (words[i].equals("(")) {
+                parents[openParentheses] = parent;
+                openParentheses++;
+            }
+            else if (words[i].equals(")")) {
+                openParentheses--;
+                parent = parents[openParentheses];
             }
             strLine += words[i];
         }
@@ -1894,12 +1979,11 @@ public class Translator {
     }
 
     private String replaceIsNothing(String strLine) {
-        return strLine.replaceAll("Is Nothing", " == null");
+        return strLine.replaceAll("Is Nothing", "== null");
     }
 
     private String replaceWithSentence(String strLine) {
         if (G.beginLike(strLine, "with ")) {
-
             m_withDeclaration = true;
 
             // first we have to get the variable
@@ -1938,7 +2022,6 @@ public class Translator {
                     type = info.function.getReturnType().dataType;
                 else
                     type = info.variable.dataType;
-
                 parent = type;
             }
             String parentWithCall = ""; // for example: "tBi." in "With tBI.bmiHeader"
@@ -1963,16 +2046,16 @@ public class Translator {
             var.packageName = packageName;
 
             if (info == null) {
-                var.javaName = "w_" + var.dataType.substring(0,1).toLowerCase()
-                            + var.dataType.substring(1);
+                var.setJavaName("w_" + var.dataType.substring(0,1).toLowerCase()
+                            + var.dataType.substring(1));
 
                 if (m_inWith) {
                     strLine = prefix
                                 + var.dataType
                                 + " "
-                                + var.javaName
+                                + var.getJavaName()
                                 + " = "
-                                + m_collWiths.get(m_collWiths.size()-1).javaName
+                                + m_collWiths.get(m_collWiths.size()-1).getJavaName()
                                 + workLine//.substring(5)
                                 + comments;
                 }
@@ -1980,7 +2063,7 @@ public class Translator {
                     strLine = prefix
                                 + var.dataType
                                 + " "
-                                + var.javaName
+                                + var.getJavaName()
                                 + " = " + workLine//.substring(5)
                                 + comments;
                     m_inWith = true;
@@ -1988,8 +2071,8 @@ public class Translator {
             }
             else {
                 if (info.isFunction) {
-                    var.javaName = "w_" + info.function.getVbName().substring(0,1).toLowerCase()
-                                + info.function.getVbName().substring(1);
+                    var.setJavaName("w_" + info.function.getVbName().substring(0,1).toLowerCase()
+                                + info.function.getVbName().substring(1));
                     String params = "";
                     int startParams = workLine.indexOf("(");
                     if (startParams >= 0) {
@@ -2002,9 +2085,9 @@ public class Translator {
                         strLine = prefix
                                     + var.dataType
                                     + " "
-                                    + var.javaName
+                                    + var.getJavaName()
                                     + " = "
-                                    + m_collWiths.get(m_collWiths.size()-1).javaName
+                                    + m_collWiths.get(m_collWiths.size()-1).getJavaName()
                                     + "."
                                     + info.function.getJavaName()
                                     + params
@@ -2014,7 +2097,7 @@ public class Translator {
                         strLine = prefix
                                     + var.dataType
                                     + " "
-                                    + var.javaName
+                                    + var.getJavaName()
                                     + " = "
                                     + parentWithCall
                                     + info.function.getJavaName()
@@ -2024,7 +2107,14 @@ public class Translator {
                     }
                 }
                 else {
-                    var.javaName = parentWithCall + info.variable.javaName;
+                    String arrayIndex = "";
+                    if (info.variable.isArray) {
+                        int startArrayIndex = workLine.indexOf("(");
+                        if (startArrayIndex >= 0) {
+                            arrayIndex = workLine.substring(startArrayIndex).replace("(","[").replace(")","]");
+                        }
+                    }
+                    var.setJavaName(parentWithCall + info.variable.getJavaName() + arrayIndex);
                     strLine = "// " + strLine;
                     m_inWith = true;
                 }
@@ -2049,7 +2139,7 @@ public class Translator {
         if (isEndWith) {
             String withName = "";
             if (m_collWiths.size() > 0) {
-                withName = m_collWiths.get(m_collWiths.size()-1).javaName;
+                withName = m_collWiths.get(m_collWiths.size()-1).getJavaName();
                 m_collWiths.remove(m_collWiths.size()-1);
             }
             m_inWith = m_collWiths.size() > 0;
@@ -2154,8 +2244,8 @@ public class Translator {
                 /*System.out.println(m_memberVariables.get(j)
                         + "    " + words[i]
                         );*/
-                if (words[i].equalsIgnoreCase(m_memberVariables.get(j).javaName)) {
-                    rtn += m_memberVariables.get(j).javaName;
+                if (words[i].equalsIgnoreCase(m_memberVariables.get(j).getJavaName())) {
+                    rtn += m_memberVariables.get(j).getJavaName();
                     found = true;
                     break;
                 }
@@ -2178,8 +2268,8 @@ public class Translator {
                 /*System.out.println(m_functionVariables.get(j)
                         + "    " + words[i]
                         );*/
-                if (words[i].equalsIgnoreCase(m_functionVariables.get(j).javaName)) {
-                    rtn += m_functionVariables.get(j).javaName;
+                if (words[i].equalsIgnoreCase(m_functionVariables.get(j).getJavaName())) {
+                    rtn += m_functionVariables.get(j).getJavaName();
                     found = true;
                     break;
                 }
@@ -3102,22 +3192,48 @@ public class Translator {
     }
 
     private boolean isStringExpression(String expression) {
+        IdentifierInfo info = null;
+        String type = "";
+        String parent = "";
         expression = expression.trim();
-        Variable var = getVariable(expression);
-        if (var != null)
-            return var.isString;
-        else {
-            Function function = getFunction(expression);
-            if (function != null)
-                return function.getReturnType().isString;
-            else if (!expression.isEmpty()) {
-                if (expression.charAt(0) == '"') {
-                    if (expression.charAt(expression.length()-1) == '"') {
-                        return true;
-                    }
+        if (expression.charAt(0) == '.') {
+            if (expression.length() > 1) {
+                expression = expression.substring(1);
+            }
+            else {
+                expression = "";
+            }
+        }
+        String[] words = G.split3(expression,".");
+        if (m_collWiths.size() > 0) {
+            parent = m_collWiths.get(m_collWiths.size()-1).dataType;
+        }
+        for (int i = 0; i < words.length; i++) {
+            info = getIdentifierInfo(words[i], parent);
+            if (info == null)
+                type = "";
+            else if (info.isFunction)
+                type = info.function.getReturnType().dataType;
+            else
+                type = info.variable.dataType;
+            parent = type;
+        }
+
+        if (info == null) {
+            if (expression.charAt(0) == '"') {
+                if (expression.charAt(expression.length()-1) == '"') {
+                    return true;
                 }
             }
             return false;
+        }
+        else {
+            if (info.isFunction) {
+                return info.function.getReturnType().isString;
+            }
+            else {
+                return info.variable.isString;
+            }
         }
     }
 
@@ -3168,7 +3284,7 @@ public class Translator {
             }
         }
 
-        // here we search for public function, public properties
+        // here we search for public functions, public properties
         //
         itrFile = m_collFiles.iterator();
         while(itrFile.hasNext()) {
@@ -3182,6 +3298,22 @@ public class Translator {
                     if (publicFunction.getJavaName().equals(functionName))
                         return publicFunction;
                     else if (publicFunction.getVbName().equals(functionName))
+                        return publicFunction;
+                }
+            }
+        }
+
+        // here we search for public functions in java
+        //
+        itrFile = m_collJavaClassess.iterator();
+        while(itrFile.hasNext()) {
+            SourceFile source = (SourceFile)itrFile.next();
+            if (className.isEmpty()
+                    || source.getJavaName().equals(className)) {
+                Iterator itrPublicFunctions = source.getPublicFunctions().iterator();
+                while (itrPublicFunctions.hasNext()) {
+                    Function publicFunction = (Function)itrPublicFunctions.next();
+                    if (publicFunction.getJavaName().equals(functionName))
                         return publicFunction;
                 }
             }
@@ -3219,17 +3351,38 @@ public class Translator {
         return getVariable(identifier, "");
     }
 
-    private Variable getVariable(String identifier, String className) {
+    private Variable getVariable(String expression, String className) {
+        String identifier = "";
+
+        // in vb arrays use parentheses to define the index
+        // eg: m_vGroups(i)
+        //
+        if (expression.contains("(")) {
+            int i = expression.indexOf("(");
+            if (i > 0) {
+                identifier = expression.substring(0, i);
+            }
+        }
+        else {
+            identifier = expression;
+        }
+        if (identifier.isEmpty()) {
+            return null;
+        }
+
         for (int i = 0; i < m_functionVariables.size(); i++) {
-            if (identifier.equals(m_functionVariables.get(i).vbName)) {
+            if (identifier.equals(m_functionVariables.get(i).getVbName())) {
                 return m_functionVariables.get(i);
             }
-            if (identifier.equals(m_functionVariables.get(i).javaName)) {
+            if (identifier.equals(m_functionVariables.get(i).getJavaName())) {
                 return m_functionVariables.get(i);
             }
         }
         for (int i = 0; i < m_memberVariables.size(); i++) {
-            if (identifier.equals(m_memberVariables.get(i).javaName)) {
+            if (identifier.equals(m_memberVariables.get(i).getVbName())) {
+                return m_memberVariables.get(i);
+            }
+            if (identifier.equals(m_memberVariables.get(i).getJavaName())) {
                 return m_memberVariables.get(i);
             }
         }
@@ -3248,9 +3401,9 @@ public class Translator {
                     Iterator itrMembers = type.getMembersVariables().iterator();
                     while (itrMembers.hasNext()) {
                         Variable member = (Variable)itrMembers.next();
-                        if (member.javaName.equals(identifier))
+                        if (member.getJavaName().equals(identifier))
                             return member;
-                        else if (member.vbName.equals(identifier))
+                        else if (member.getVbName().equals(identifier))
                             return member;
                     }
                 }
@@ -3676,8 +3829,8 @@ public class Translator {
         }
 
         Variable var = new Variable();
-        var.javaName = paramName;
-        var.vbName = vbParamName;
+        var.setJavaName(paramName);
+        var.setVbName(vbParamName);
         var.setType(dataType);
         m_functionVariables.add(var);
 
@@ -4047,8 +4200,9 @@ public class Translator {
         }
         if (!identifier.isEmpty()) {
             Variable var = new Variable();
-            var.javaName = identifier;
-            var.isString = dataType.equals("String");
+            var.setVbName(vbIdentifier);
+            var.setJavaName(identifier);
+            var.setType(dataType);
             m_memberVariables.add(var);
         }
         if (dataType.isEmpty()) {
@@ -4102,7 +4256,8 @@ public class Translator {
         }
         if (!identifier.isEmpty()) {
             Variable var = new Variable();
-            var.javaName = identifier;
+            var.setVbName(vbIdentifier);
+            var.setJavaName(identifier);
             var.setType(dataType);
             m_memberVariables.add(var);
         }
@@ -4113,8 +4268,8 @@ public class Translator {
 
         saveVariable(vbIdentifier, identifier, dataType, false, true);
         Variable var = new Variable();
-        var.vbName = vbIdentifier;
-        var.javaName = identifier;
+        var.setVbName(vbIdentifier);
+        var.setJavaName(identifier);
         var.packageName = m_packageName;
         var.setType(dataType);
         var.isPublic = true;
@@ -4149,8 +4304,8 @@ public class Translator {
         dataType = getDataType(dataType);
 
         Variable var = new Variable();
-        var.javaName = identifier;
-        var.vbName = vbIdentifier;
+        var.setJavaName(identifier);
+        var.setVbName(vbIdentifier);
         var.setType(dataType);
         m_functionVariables.add(var);
 
@@ -4387,8 +4542,8 @@ public class Translator {
                 saveVariableInType(identifier, identifier, dataType);
 
                 Variable var = new Variable();
-                var.vbName = identifier;
-                var.javaName = identifier;
+                var.setVbName(identifier);
+                var.setJavaName(identifier);
                 var.setType(dataType);
                 var.isPublic = true;
                 type.getMembersVariables().add(var);

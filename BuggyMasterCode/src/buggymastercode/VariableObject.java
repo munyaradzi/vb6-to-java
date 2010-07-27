@@ -146,8 +146,8 @@ public class VariableObject {
                     if (row.get("cl_packagename").toString().equals(references[i])) {
                         var = new Variable();
                         var.packageName = rs.getRows().get(0).get("cl_packagename").toString();
-                        var.javaName = rs.getRows().get(0).get("var_javaname").toString();
-                        var.vbName = rs.getRows().get(0).get("var_vbname").toString();
+                        var.setJavaName(rs.getRows().get(0).get("var_javaname").toString());
+                        var.setVbName(rs.getRows().get(0).get("var_vbname").toString());
                         var.isPublic = (Integer)rs.getRows().get(0).get("var_vbname") != 0 ? true : false;
                         var.setType(rs.getRows().get(0).get("var_datatype").toString());
                         break;
