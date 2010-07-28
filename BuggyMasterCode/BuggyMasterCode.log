@@ -2,9 +2,9 @@
 <!DOCTYPE log SYSTEM "logger.dtd">
 <log>
 <record>
-  <date>2010-07-27T16:28:03</date>
-  <millis>1280262483625</millis>
-  <sequence>3</sequence>
+  <date>2010-07-28T16:41:52</date>
+  <millis>1280349712593</millis>
+  <sequence>2</sequence>
   <logger>ar.com.crowsoft.cvxi</logger>
   <level>INFO</level>
   <class>buggymastercode.BuggyMasterCodeApp</class>
@@ -13,9 +13,9 @@
   <message>initializing BuggyMasterCode</message>
 </record>
 <record>
-  <date>2010-07-27T16:28:03</date>
-  <millis>1280262483640</millis>
-  <sequence>4</sequence>
+  <date>2010-07-28T16:41:52</date>
+  <millis>1280349712593</millis>
+  <sequence>3</sequence>
   <logger>ar.com.crowsoft.cvxi</logger>
   <level>INFO</level>
   <class>buggymastercode.BuggyMasterCodeApp</class>

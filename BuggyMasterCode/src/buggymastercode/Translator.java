@@ -30,6 +30,7 @@ public class Translator {
     private boolean m_inFunction = false;
     private boolean m_inEnum = false;
     private boolean m_inWith = false;
+    private boolean m_inType = false;
     private boolean m_withDeclaration = false;
     private boolean m_endWithDeclaration = false;
     private boolean m_emptyLine = false;
@@ -37,13 +38,30 @@ public class Translator {
 
     private String[] m_iterators = {"","_i","_j","_k","_t","_w","_z"};
     private int m_iteratorIndex = 0;
-    
-    private ArrayList<String> m_collTypes = new ArrayList<String>();
-    private ArrayList<String> m_collEnums = new ArrayList<String>();
+
+    // member variables of the class which we are translating
+    //
     private ArrayList<Variable> m_memberVariables = new ArrayList<Variable>();
+    // parameters and local variables of the function which we are translating
+    //
     private ArrayList<Variable> m_functionVariables = new ArrayList<Variable>();
+    // public functions, subs and properties of the class which we are 
+    // translating
+    //
     private ArrayList<Function> m_publicFunctions = new ArrayList<Function>();
+    // private functions, subs and properties of the class which we are
+    // translating
+    //
     private ArrayList<Function> m_privateFunctions = new ArrayList<Function>();
+    // this is used to build the dictionary of public variables of every
+    // class in this project. this collection is used to found identifiers
+    // in the code which references to public member of objects of other
+    // classes.
+    // public variables are accessed by the dot operator and assigned using the
+    // equal sign (=) eg: "m_objmember.publicVariable = 1;" by the other
+    // hand public properties are translated as setters and getters and the
+    // assignment doesn't use the equals sign but the setter method.
+    //
     private ArrayList<Variable> m_publicVariables = new ArrayList<Variable>();
     // files (frm, bas, cls) in this vbp
     //
@@ -54,9 +72,33 @@ public class Translator {
     //
     private ArrayList<SourceFile> m_collJavaClassess = new ArrayList<SourceFile>();
 
+    // the current type which we are translaing
+    //
     private String m_type = "";
+    // the collection of every type public and private declared
+    // in the class which we are translating
+    //
+    private ArrayList<String> m_collTypes = new ArrayList<String>();
+    // the current enum which we are translating
+    //
     private String m_enum = "";
-    private boolean m_inType = false;
+    // the collection of every enum public and private declared
+    // in the class which we are translating
+    //
+    private ArrayList<String> m_collEnums = new ArrayList<String>();
+
+    // member variables which can raize events
+    //
+    private ArrayList<EventListener> m_eventListeners = new ArrayList<EventListener>();
+    // the resulting interface declaration of add every public event declaration
+    // in the class which we are translating
+    //
+    private String m_listenerInterface = "";
+    // the resulting class declaration of add every public event declaration
+    // in the class which we are translating with a null implementation
+    // of every method
+    //
+    private String m_adapterClass = "";
     private boolean m_wasSingleLineIf = false;
     private String m_strBuffer = "";
     private int m_tabCount = 0;
@@ -441,11 +483,11 @@ public class Translator {
             }
             else if (isBeginOfType(strLine)) {
                 addToType(strLine);
-                return "//*TODO: type is translated as a new class at the end of the file " + strLine + newline;
+                return "//*TODO:** type is translated as a new class at the end of the file " + strLine + newline;
             }
             else if (isBeginOfEnum(strLine)) {
                 addToEnum(strLine);
-                return "//*TODO: enum is translated as a new class at the end of the file " + strLine + newline;
+                return "//*TODO:** enum is translated as a new class at the end of the file " + strLine + newline;
             }
             else if (m_inEnum) {
                 addToEnum(strLine);
@@ -2032,7 +2074,7 @@ public class Translator {
             String prefix = "";
             if (type.length() == 0) {
                 type = "__TYPE_NOT_FOUND";
-                prefix = "//*TODO: can't found type for with block"
+                prefix = "//*TODO:** can't found type for with block"
                             + newline
                             + getTabs()
                             + "//*"
@@ -3237,13 +3279,6 @@ public class Translator {
         }
     }
 
-    // TODO: delete this function when all calls have been upgrade to the new
-    //       version with className param
-    //
-    private Function getFunction(String expression) {
-        return getFunction(expression, "");
-    }
-
     private Function getFunction(String expression, String className) {
         String functionName = "";
 
@@ -4190,12 +4225,30 @@ public class Translator {
 
         if (words.length > 1) {
             vbIdentifier = words[1];
-            identifier = getIdentifier(vbIdentifier);
-            if (words.length > 3) {
-                dataType = words[3];
+
+            // with events eg:
+            //      private with events my_obj_with_events as CObjetWithEvents ' some comments
+            //      0       1       2       3               4       5          >= 6
+            //
+            if (vbIdentifier.equalsIgnoreCase("with")) {
+                vbIdentifier = words[3];
+                identifier = getIdentifier(vbIdentifier);
+                if (words.length > 5) {
+                    dataType = words[5];
+                }
+                for (int i = 6; i < words.length; i++) {
+                    misc += " " + words[i] ;
+                }
+                addToEventListeners(vbIdentifier, dataType);
             }
-            for (int i = 4; i < words.length; i++) {
-                misc += " " + words[i] ;
+            else {
+                identifier = getIdentifier(vbIdentifier);
+                if (words.length > 3) {
+                    dataType = words[3];
+                }
+                for (int i = 4; i < words.length; i++) {
+                    misc += " " + words[i] ;
+                }
             }
         }
         if (!identifier.isEmpty()) {
@@ -4213,6 +4266,68 @@ public class Translator {
         saveVariable(vbIdentifier, identifier, dataType);
 
         return "private " + dataType + " " + identifier + ";" + misc + newline;
+    }
+
+    private String translatePublicMember(String strLine) {
+        // form is
+            // dim variable_name as data_type
+        strLine = strLine.trim();
+        String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
+        String dataType = "";
+        String identifier = "";
+        String vbIdentifier = "";
+        String misc = "";
+
+        if (words.length > 1) {
+            vbIdentifier = words[1];
+            // with events eg:
+            //      private with events my_obj_with_events as CObjetWithEvents ' some comments
+            //      0       1       2       3               4       5          >= 6
+            //
+            if (vbIdentifier.equalsIgnoreCase("with")) {
+                vbIdentifier = words[3];
+                identifier = getIdentifier(vbIdentifier);
+                if (words.length > 5) {
+                    dataType = words[5];
+                }
+                for (int i = 6; i < words.length; i++) {
+                    misc += " " + words[i] ;
+                }
+                addToEventListeners(vbIdentifier, dataType);
+            }
+            else {
+                identifier = getIdentifier(vbIdentifier);
+                if (words.length > 3) {
+                    dataType = words[3];
+                }
+                for (int i = 4; i < words.length; i++) {
+                    misc += " " + words[i] ;
+                }
+            }
+        }
+        if (!identifier.isEmpty()) {
+            Variable var = new Variable();
+            var.setVbName(vbIdentifier);
+            var.setJavaName(identifier);
+            var.setType(dataType);
+            m_memberVariables.add(var);
+        }
+        if (dataType.isEmpty()) {
+            dataType = "Object";
+        }
+        dataType = getDataType(dataType);
+
+        saveVariable(vbIdentifier, identifier, dataType, false, true);
+
+        Variable var = new Variable();
+        var.setVbName(vbIdentifier);
+        var.setJavaName(identifier);
+        var.packageName = m_packageName;
+        var.setType(dataType);
+        var.isPublic = true;
+        m_publicVariables.add(var);
+
+        return "public " + dataType + " " + identifier + ";" + misc + newline;
     }
 
     private String getIdentifier(String word) {
@@ -4234,48 +4349,58 @@ public class Translator {
         return identifier;
     }
 
-    private String translatePublicMember(String strLine) {
-        // form is
-            // dim variable_name as data_type
-        strLine = strLine.trim();
-        String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
-        String dataType = "";
-        String identifier = "";
-        String vbIdentifier = "";
-        String misc = "";
-
-        if (words.length > 1) {
-            vbIdentifier = words[1];
-            identifier = getIdentifier(vbIdentifier);
-            if (words.length > 3) {
-                dataType = words[3];
-            }
-            for (int i = 4; i < words.length; i++) {
-                misc += " " + words[i] ;
-            }
-        }
-        if (!identifier.isEmpty()) {
-            Variable var = new Variable();
-            var.setVbName(vbIdentifier);
-            var.setJavaName(identifier);
-            var.setType(dataType);
-            m_memberVariables.add(var);
-        }
-        if (dataType.isEmpty()) {
-            dataType = "Object";
-        }
-        dataType = getDataType(dataType);
-
-        saveVariable(vbIdentifier, identifier, dataType, false, true);
-        Variable var = new Variable();
-        var.setVbName(vbIdentifier);
-        var.setJavaName(identifier);
-        var.packageName = m_packageName;
-        var.setType(dataType);
-        var.isPublic = true;
-        m_publicVariables.add(var);
-
-        return "public " + dataType + " " + identifier + ";" + misc + newline;
+    // we need three elements in custom events
+    //  -- event class
+    //  -- event listener interface
+    //  -- event generator
+    //
+    // a) when the class which we are translating has public events
+    // (private events doesn't have sense) we have to create the
+    // event listener interface with a method for every public event and
+    // a class which implements the event listener interface as and adapter
+    // class (to free the listener to implement all the methods of the interface).
+    // the listeners will extend the adapter class as an inner anonymous class.
+    // the interface name will be named as the class plus the
+    // postfix EventI eg: for a class named in vb6 code as cReport the interface
+    // will be CReportEventI (remeber that every class will be capitalized)
+    // and the adapter will be CReportEventA
+    //
+    // b) when the class which we are translating is the event listener
+    // it has to declare anonymous inner classes which extend
+    // the adapter class (which implement the event listener
+    // interface) for every variable which raizes events.
+    //
+    // c) in visual basic 6 you need to instantiate the member variable
+    // which generate events with an explicit assignment like
+    //
+    //      set m_event_generator = new ClassEventGenerator
+    // or
+    //      set m_event_generator = already_instantiated_event_generator
+    //
+    // we have to add after that point a call to the addListener method of the
+    // event generator object.
+    //
+    // the problem is that we are translating in one read of the content
+    // line by line from up to down and so at the point of this asignment
+    // line we can't be sure that we know every event our class is
+    // intrested to listen to. for this reason we need to reach the end
+    // of the file to be sure we know all the code related to events of 
+    // a "with events variable".
+    //
+    // to fix it we will add a macro to be replace after translating the class
+    // with the definition of the anonymous inner class for every "with events
+    // variable". this macro will be:
+    //          __ADD_TO_LISTENER_name_of_the_generator_variable__
+    //
+    //  eg: if the generetor is m_report the macro will be
+    //
+    //          __ADD_TO_LISTENER_m_report__
+    //
+    private void addToEventListeners(String eventGenerator, String className) {
+        EventListener eventListener = new EventListener();
+        eventListener.setGenerator(eventGenerator);
+        eventListener.setAdapter(className);
+        m_eventListeners.add(eventListener);
     }
 
     private String translateDim(String strLine) {
@@ -4352,6 +4477,7 @@ public class Translator {
         m_collTypes.removeAll(m_collTypes);
         m_collEnums.removeAll(m_collEnums);
         m_collWiths.removeAll(m_collWiths);
+        m_eventListeners.removeAll(m_eventListeners);
         m_memberVariables.removeAll(m_memberVariables);
         m_functionVariables.removeAll(m_functionVariables);
         m_privateFunctions = new ArrayList<Function>();
@@ -4985,10 +5111,27 @@ class IdentifierInfo {
  If..Else..ElseIf..Then
  */
 
-/* TODO: file mError.bas line 72 {s = Replace(s, "$" & i + 1, X(i))}
+/*
+ * TODO: file mError.bas line 72 {s = Replace(s, "$" & i + 1, X(i))}
  *       the code is translated as
  *              {s = Replace(s, "$" + ((Integer) i).ToString() + 1, X(i));}
  *       it is wrong because i + 1 must to be evaluated first and then has to apply
  *       the cast to Integer:
  *              {s = Replace(s, "$" + ((Integer) (i + 1)).ToString(), X(i));}
+ */
+
+/*
+ * TODO: manage events
+ * TODO: manage byref params that actually aren't byref because are not asigned to a value
+ *       by the function code
+ * TODO: change getters in assignment eg:
+ *              m_obj.getProperty() = ...;
+ *       must be
+ *              m_obj.setProperty(...);
+ * TODO: translate byref for strings
+ * TODO: translate byref for arrays. this is for params of array type that are resized
+ *       by the code of the function. we have to search for redim
+ * TODO: translate redim
+ * TODO: translate instr
+ * TODO: translate database access. replace recordsets.
  */
