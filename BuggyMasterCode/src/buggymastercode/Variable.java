@@ -20,6 +20,7 @@ public class Variable {
     public boolean isBoolean = false;
     public boolean isPublic = false;
     public boolean isArray = false;
+    public boolean isEventGenerator = false;
     public String dataType = "";
     public String packageName = "";
 

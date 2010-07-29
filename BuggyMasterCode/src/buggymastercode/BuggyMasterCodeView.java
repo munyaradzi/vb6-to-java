@@ -133,6 +133,11 @@ public class BuggyMasterCodeView extends FrameView {
         jScrollPane3 = new javax.swing.JScrollPane();
         lsFiles = new javax.swing.JList();
         jLabel3 = new javax.swing.JLabel();
+        jSplitPane1 = new javax.swing.JSplitPane();
+        jScrollPane5 = new javax.swing.JScrollPane();
+        lsJavaSource = new javax.swing.JList();
+        jScrollPane4 = new javax.swing.JScrollPane();
+        lsVbSource = new javax.swing.JList();
         pnCode = new javax.swing.JSplitPane();
         txSourceCode = new RSyntaxTextArea();
         txSourceCode.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_VB);
@@ -209,15 +214,32 @@ public class BuggyMasterCodeView extends FrameView {
         jLabel3.setText(resourceMap.getString("jLabel3.text")); // NOI18N
         jLabel3.setName("jLabel3"); // NOI18N
 
+        jSplitPane1.setName("jSplitPane1"); // NOI18N
+
+        jScrollPane5.setName("jScrollPane5"); // NOI18N
+
+        lsJavaSource.setName("lsJavaSource"); // NOI18N
+        jScrollPane5.setViewportView(lsJavaSource);
+
+        jSplitPane1.setRightComponent(jScrollPane5);
+
+        jScrollPane4.setName("jScrollPane4"); // NOI18N
+
+        lsVbSource.setName("lsVbSource"); // NOI18N
+        jScrollPane4.setViewportView(lsVbSource);
+
+        jSplitPane1.setLeftComponent(jScrollPane4);
+
         javax.swing.GroupLayout pnProgressLayout = new javax.swing.GroupLayout(pnProgress);
         pnProgress.setLayout(pnProgressLayout);
         pnProgressLayout.setHorizontalGroup(
             pnProgressLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(pnProgressLayout.createSequentialGroup()
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pnProgressLayout.createSequentialGroup()
                 .addContainerGap()
-                .addGroup(pnProgressLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 613, Short.MAX_VALUE)
-                    .addComponent(jLabel3))
+                .addGroup(pnProgressLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 595, Short.MAX_VALUE)
+                    .addComponent(jSplitPane1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 595, Short.MAX_VALUE)
+                    .addComponent(jLabel3, javax.swing.GroupLayout.Alignment.LEADING))
                 .addContainerGap())
         );
         pnProgressLayout.setVerticalGroup(
@@ -226,7 +248,9 @@ public class BuggyMasterCodeView extends FrameView {
                 .addContainerGap()
                 .addComponent(jLabel3)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 331, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 197, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jSplitPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
         );
 
@@ -311,11 +335,11 @@ public class BuggyMasterCodeView extends FrameView {
         statusPanel.setLayout(statusPanelLayout);
         statusPanelLayout.setHorizontalGroup(
             statusPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(statusPanelSeparator, javax.swing.GroupLayout.DEFAULT_SIZE, 638, Short.MAX_VALUE)
+            .addComponent(statusPanelSeparator, javax.swing.GroupLayout.DEFAULT_SIZE, 620, Short.MAX_VALUE)
             .addGroup(statusPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(statusMessageLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 468, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 446, Short.MAX_VALUE)
                 .addComponent(progressBar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(statusAnimationLabel)
@@ -389,11 +413,36 @@ public class BuggyMasterCodeView extends FrameView {
 
     public void initProgress() {
         lsFiles.setModel(new DefaultListModel());
+        lsVbSource.setModel(new DefaultListModel());
+        lsJavaSource.setModel(new DefaultListModel());
     }
 
     public void addMessage(String message) {
         DefaultListModel model = (DefaultListModel)lsFiles.getModel();
         model.add(0, message);
+    }
+
+    public void updateLastMessage(String message) {
+        DefaultListModel model = (DefaultListModel)lsFiles.getModel();
+        model.setElementAt(message, 0);
+    }
+
+    public synchronized void addVbLine(String message) {
+        if (message.isEmpty())
+            return;
+        DefaultListModel model = (DefaultListModel)lsVbSource.getModel();
+        if (model.size() > 200)
+            model.removeElementAt(0);
+        model.addElement(message);
+    }
+
+    public synchronized void addJavaLine(String message) {
+        if (message.isEmpty())
+            return;
+        DefaultListModel model = (DefaultListModel)lsJavaSource.getModel();
+        if (model.size() > 200)
+            model.removeElementAt(0);
+        model.addElement(message);
     }
 
     private String getVbName(String vbpFile) {
@@ -450,8 +499,13 @@ public class BuggyMasterCodeView extends FrameView {
     private RTextScrollPane jScrollPane1;
     private RTextScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
+    private javax.swing.JScrollPane jScrollPane4;
+    private javax.swing.JScrollPane jScrollPane5;
+    private javax.swing.JSplitPane jSplitPane1;
     private javax.swing.JLabel lbPackage;
     private javax.swing.JList lsFiles;
+    private javax.swing.JList lsJavaSource;
+    private javax.swing.JList lsVbSource;
     private javax.swing.JPanel mainPanel;
     private javax.swing.JMenuBar menuBar;
     private javax.swing.JSplitPane pnCode;

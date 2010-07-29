@@ -290,11 +290,13 @@ public class G {
             BufferedReader br = new BufferedReader(new InputStreamReader(in));
             String strLine;
             while ((strLine = br.readLine()) != null) {
-                if (strLine.substring(0,lenToken).equals(token)) {
-                    currLine++;
-                    if (currLine == line) {
-                        value.text = strLine.substring(lenToken);
-                        break;
+                if (strLine.length() >= lenToken) {
+                    if (strLine.substring(0,lenToken).equals(token)) {
+                        currLine++;
+                        if (currLine == line) {
+                            value.text = strLine.substring(lenToken);
+                            break;
+                        }
                     }
                 }
             }

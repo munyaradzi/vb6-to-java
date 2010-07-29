@@ -87,7 +87,7 @@ public class Translator {
     //
     private ArrayList<String> m_collEnums = new ArrayList<String>();
 
-    // member variables which can raize events
+    // member variables which can raise events
     //
     private ArrayList<EventListener> m_eventListeners = new ArrayList<EventListener>();
     // the resulting interface declaration of add every public event declaration
@@ -518,7 +518,11 @@ public class Translator {
         }
         // split sentences
         else {
-            m_strBuffer += G.rtrim(strLine.substring(0, strLine.length()-1)) + " ";
+            // TODO: delete after confirm the change is ok
+            //
+            //m_strBuffer += G.rtrim(strLine.substring(0, strLine.length()-1)) + " ";
+            //
+            m_strBuffer += strLine.substring(0, strLine.length()-1).trim() + " ";
             return "";
         }
     }
@@ -841,7 +845,9 @@ public class Translator {
             // a function declaration is like this
                 // Public Function ShowPrintDialog(ByVal
             if (isFunctionDeclaration(workLine)) {
-                return translateFunctionDeclaration(strLine);
+                strLine = translateFunctionDeclaration(strLine);
+                checkEventHandler(strLine);
+                return strLine;
             }
             else {
                 if (isEndFunction(workLine)) {
@@ -1787,7 +1793,8 @@ public class Translator {
             collection = collection.trim();
             iterator = iterator.trim();
             return "for (int " + m_iterators[m_iteratorIndex] + " = 0;"
-                            + " " + m_iterators[m_iteratorIndex] + " < " + translateSentence(collection) + ".size();"
+                            + " " + m_iterators[m_iteratorIndex] + " < "
+                            + translateSentence(collection) + ".size();"
                             + " " + m_iterators[m_iteratorIndex] + "++) {"
                             + comments + newline
                             + getTabs() + "    "
@@ -1911,6 +1918,104 @@ public class Translator {
         strLine = replaceExitSentence(strLine);
         strLine = replaceSlashInLiterals(strLine);
 
+        // this call has to be the last sentences in this function
+        // all the changes have to be done before this call
+        //
+        strLine = checkEventVariableInitialization(strLine);
+
+        return strLine;
+    }
+
+    // if the function is an event handler we will call
+    // to this function in the anonymous inner class
+    // which extends the adapter class of the event listener
+    //
+    private void checkEventHandler(String strLine) {
+        // in vb all event handler functions have an
+        // underscore which divide the name of the
+        // variable and the name of the event
+        //
+        if (m_vbFunctionName.indexOf("_") > 0) {
+            int i = 0;
+            for (i = m_vbFunctionName.length() - 1; i > 0; i--) {
+                if (m_vbFunctionName.charAt(i) == '_') {
+                    break;
+                }
+            }
+            if (i > 0) {
+                String variable = m_vbFunctionName.substring(0, i);
+                Iterator itrListener = null;
+                itrListener = m_eventListeners.iterator();
+                while(itrListener.hasNext()) {
+                    EventListener listener = (EventListener)itrListener.next();
+                    if (variable.equals(listener.getGenerator())) {
+                        listener.getSourceCode().append(
+                                getEventHandlerDeclaration(strLine));
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    private String getEventHandlerDeclaration(String strLine) {
+        String handler = "";
+        int i = strLine.indexOf("(");
+        if (i > 0) {
+            int j = 0;
+            for (j = i; j > 0; j--) {
+                if (strLine.charAt(j) == ' ') {
+                    break;
+                }
+            }
+            if (j > 0) {
+                String functionCall = strLine.substring(j + 1, i);
+                for (j = functionCall.length() - 1; j > 0; j--) {
+                    if (functionCall.charAt(j) == '_') {
+                        break;
+                    }
+                }
+                String functionName = functionCall.substring(j + 1);
+                j = strLine.indexOf(")");
+                String params = "";
+                String paramsCall = "";
+                // check for empty params eg: function()
+                if (j - i > 1) {
+                    params = strLine.substring(i, j);
+                    String[] words = G.split(params, ",");
+                    for (i = 0; i < words.length; i++) {
+                        j = words[i].trim().indexOf(" ");
+                        paramsCall += words[i].substring(j) + ",";
+                    }
+                    if (paramsCall.length() > 0)
+                        paramsCall = paramsCall.substring(0, paramsCall.length() - 1);
+                }
+                handler = "public void " + functionName + "(" + params  + ") {"
+                            + newline
+                            + "    " + functionCall + "(" + paramsCall + ");"
+                            + newline
+                            + "}" + newline;
+            }
+        }
+        if (handler.isEmpty())
+            handler = "//*TODO:**the event handler couldn't be translated: "
+                            + strLine + newline;
+        return handler;
+    }
+
+    private String checkEventVariableInitialization(String strLine) {
+        int i = strLine.toLowerCase().indexOf(" = new ");
+        if (i > 0) {
+            String variable = strLine.substring(0, i).trim();
+            Variable var = getMemberVariable(variable);
+            if (var != null) {
+                if (var.isEventGenerator) {
+                    strLine += newline 
+                                + getTabs()
+                                + getEventMacroName(var.getJavaName());
+                }
+            }
+        }
         return strLine;
     }
 
@@ -2759,7 +2864,8 @@ public class Translator {
                                 identifier = "(" + identifier + ")";
                             }
                             expression += identifier
-                                            + ".substring(" + identifier + ".length() - " + lenght.trim() + ")";
+                                            + ".substring(" + identifier
+                                            + ".length() - " + lenght.trim() + ")";
                             rightFound = false;
                             params = "";
                         }
@@ -3455,6 +3561,36 @@ public class Translator {
         return publicVariable;
     }
 
+    private Variable getMemberVariable(String expression) {
+        String identifier = "";
+
+        // in vb arrays use parentheses to define the index
+        // eg: m_vGroups(i)
+        //
+        if (expression.contains("(")) {
+            int i = expression.indexOf("(");
+            if (i > 0) {
+                identifier = expression.substring(0, i);
+            }
+        }
+        else {
+            identifier = expression;
+        }
+        if (identifier.isEmpty()) {
+            return null;
+        }
+
+        for (int i = 0; i < m_memberVariables.size(); i++) {
+            if (identifier.equals(m_memberVariables.get(i).getVbName())) {
+                return m_memberVariables.get(i);
+            }
+            if (identifier.equals(m_memberVariables.get(i).getJavaName())) {
+                return m_memberVariables.get(i);
+            }
+        }
+        return null;
+    }
+
     private String[] getWordsFromSentence(String strLine) {
         boolean literalFlag = false;
         String[] words = new String[500];
@@ -3549,12 +3685,16 @@ public class Translator {
             //
             else {
                 if (functionName.equalsIgnoreCase("get")) {
-                    functionName = "get" + words[3].substring(0,1).toUpperCase() + words[3].substring(1);
+                    functionName = "get" 
+                                    + words[3].substring(0,1).toUpperCase()
+                                    + words[3].substring(1);
                     m_vbFunctionName = words[3];
                     functionType = getPropertyType(strLine);
                 }
                 else {
-                    functionName = "set" + words[3].substring(0,1).toUpperCase() + words[3].substring(1);
+                    functionName = "set" 
+                                    + words[3].substring(0,1).toUpperCase()
+                                    + words[3].substring(1);
                     m_vbFunctionName = words[3];
                     functionType = "void";
                 }
@@ -3576,12 +3716,16 @@ public class Translator {
             //
             else {
                 if (functionName.equalsIgnoreCase("get")) {
-                    functionName = "get" + words[3].substring(0,1).toUpperCase() + words[3].substring(1);
+                    functionName = "get" 
+                                    + words[3].substring(0,1).toUpperCase()
+                                    + words[3].substring(1);
                     m_vbFunctionName = words[3];
                     functionType = getPropertyType(strLine);
                 }
                 else {
-                    functionName = "set" + words[3].substring(0,1).toUpperCase() + words[3].substring(1);
+                    functionName = "set" 
+                                    + words[3].substring(0,1).toUpperCase()
+                                    + words[3].substring(1);
                     m_vbFunctionName = words[3];
                     functionType = "void";
                 }
@@ -3603,12 +3747,16 @@ public class Translator {
             //
             else {
                 if (functionName.equalsIgnoreCase("get")) {
-                    functionName = "get" + words[3].substring(0,1).toUpperCase() + words[3].substring(1);
+                    functionName = "get" 
+                                    + words[3].substring(0,1).toUpperCase()
+                                    + words[3].substring(1);
                     m_vbFunctionName = words[3];
                     functionType = getPropertyType(strLine);
                 }
                 else {
-                    functionName = "set" + words[3].substring(0,1).toUpperCase() + words[3].substring(1);
+                    functionName = "set" 
+                                    + words[3].substring(0,1).toUpperCase()
+                                    + words[3].substring(1);
                     m_vbFunctionName = words[3];
                     functionType = "void";
                 }
@@ -3631,12 +3779,16 @@ public class Translator {
             functionName = words[1];
             m_vbFunctionName = words[1];
             if (functionName.equalsIgnoreCase("get")) {
-                functionName = "get" + words[2].substring(0,1).toUpperCase() + words[2].substring(1);
+                functionName = "get" 
+                                + words[2].substring(0,1).toUpperCase()
+                                + words[2].substring(1);
                 m_vbFunctionName = words[2];
                 functionType = getPropertyType(strLine);
             }
             else {
-                functionName = "set" + words[2].substring(0,0).toUpperCase() + words[2].substring(1);
+                functionName = "set" 
+                                + words[2].substring(0,0).toUpperCase()
+                                + words[2].substring(1);
                 m_vbFunctionName = words[2];
                 functionType = "void";
             }
@@ -3659,7 +3811,8 @@ public class Translator {
 
         return functionScope + " "
                 + functionType + " "
-                + functionName.substring(0,1).toLowerCase() + functionName.substring(1) + "("
+                + functionName.substring(0,1).toLowerCase()
+                + functionName.substring(1) + "("
                 + translateParameters(strLine)
                 + ") {"
                 + newline;
@@ -4084,7 +4237,8 @@ public class Translator {
                 constValue = "0x" + constValue.substring(2);
             }
             else {
-                return "*TODO: (the data type can't be found for the value [" + constValue + "])" + strLine + newline;
+                return "*TODO: (the data type can't be found for the value ["
+                        + constValue + "])" + strLine + newline;
             }
         }
 
@@ -4201,7 +4355,8 @@ public class Translator {
                 constValue = "0x" + constValue.substring(2);
             }
             else {
-                return "*TODO: (the data type can't be found for the value [" + constValue + "])" + strLine + newline;
+                return "*TODO: (the data type can't be found for the value ["
+                        + constValue + "])" + strLine + newline;
             }
         }
 
@@ -4210,7 +4365,8 @@ public class Translator {
 
         saveVariable(vbIdentifier, identifier, dataType);
 
-        return "public static final " + dataType + " " + identifier + " = " + constValue + ";" + misc + newline;
+        return "public static final " + dataType + " " + identifier + " = "
+                + constValue + ";" + misc + newline;
     }
 
     private String translatePrivateMember(String strLine) {
@@ -4222,24 +4378,26 @@ public class Translator {
         String identifier = "";
         String vbIdentifier = "";
         String misc = "";
+        boolean isEventGenerator = false;
 
         if (words.length > 1) {
             vbIdentifier = words[1];
 
             // with events eg:
-            //      private with events my_obj_with_events as CObjetWithEvents ' some comments
-            //      0       1       2       3               4       5          >= 6
+            //      private withevents my_obj_with_events as CObjetWithEvents ' some comments
+            //      0       1           2                 3        4          >= 5
             //
-            if (vbIdentifier.equalsIgnoreCase("with")) {
-                vbIdentifier = words[3];
+            if (vbIdentifier.equalsIgnoreCase("WithEvents")) {
+                vbIdentifier = words[2];
                 identifier = getIdentifier(vbIdentifier);
-                if (words.length > 5) {
-                    dataType = words[5];
+                if (words.length > 4) {
+                    dataType = words[4];
                 }
-                for (int i = 6; i < words.length; i++) {
+                for (int i = 5; i < words.length; i++) {
                     misc += " " + words[i] ;
                 }
                 addToEventListeners(vbIdentifier, dataType);
+                isEventGenerator = true;
             }
             else {
                 identifier = getIdentifier(vbIdentifier);
@@ -4256,6 +4414,7 @@ public class Translator {
             var.setVbName(vbIdentifier);
             var.setJavaName(identifier);
             var.setType(dataType);
+            var.isEventGenerator = isEventGenerator;
             m_memberVariables.add(var);
         }
         if (dataType.isEmpty()) {
@@ -4277,23 +4436,25 @@ public class Translator {
         String identifier = "";
         String vbIdentifier = "";
         String misc = "";
+        boolean isEventGenerator = false;
 
         if (words.length > 1) {
             vbIdentifier = words[1];
             // with events eg:
-            //      private with events my_obj_with_events as CObjetWithEvents ' some comments
-            //      0       1       2       3               4       5          >= 6
+            //      private withevents my_obj_with_events as CObjetWithEvents ' some comments
+            //      0       1           2                 3        4          >= 5
             //
-            if (vbIdentifier.equalsIgnoreCase("with")) {
-                vbIdentifier = words[3];
+            if (vbIdentifier.equalsIgnoreCase("WithEvents")) {
+                vbIdentifier = words[2];
                 identifier = getIdentifier(vbIdentifier);
-                if (words.length > 5) {
-                    dataType = words[5];
+                if (words.length > 4) {
+                    dataType = words[4];
                 }
-                for (int i = 6; i < words.length; i++) {
+                for (int i = 5; i < words.length; i++) {
                     misc += " " + words[i] ;
                 }
                 addToEventListeners(vbIdentifier, dataType);
+                isEventGenerator = true;
             }
             else {
                 identifier = getIdentifier(vbIdentifier);
@@ -4310,6 +4471,7 @@ public class Translator {
             var.setVbName(vbIdentifier);
             var.setJavaName(identifier);
             var.setType(dataType);
+            var.isEventGenerator = isEventGenerator;
             m_memberVariables.add(var);
         }
         if (dataType.isEmpty()) {
@@ -4366,9 +4528,9 @@ public class Translator {
     // and the adapter will be CReportEventA
     //
     // b) when the class which we are translating is the event listener
-    // it has to declare anonymous inner classes which extend
+    // it has to declare an anonymous inner classes which extend
     // the adapter class (which implement the event listener
-    // interface) for every variable which raizes events.
+    // interface) for every variable which raises events.
     //
     // c) in visual basic 6 you need to instantiate the member variable
     // which generate events with an explicit assignment like
@@ -4403,6 +4565,10 @@ public class Translator {
         m_eventListeners.add(eventListener);
     }
 
+    private String getEventMacroName(String variable) {
+        return "__ADD_TO_LISTENER_" + variable + "__";
+    }
+
     private String translateDim(String strLine) {
         // form is
             // dim variable_name as data_type
@@ -4434,7 +4600,8 @@ public class Translator {
         var.setType(dataType);
         m_functionVariables.add(var);
 
-        return dataType + " " + identifier + " = " + getZeroValueForDataType(dataType) + ";" + misc + newline;
+        return dataType + " " + identifier + " = "
+                + getZeroValueForDataType(dataType) + ";" + misc + newline;
     }
 
     private String removeExtraSpaces(String strLine) {
@@ -4763,7 +4930,8 @@ public class Translator {
                             constValue = "0x" + constValue.substring(2);
                         }
                     }
-                    m_enum += "    " + identifier.toUpperCase() + " = " + constValue + "," + misc + newline;
+                    m_enum += "    " + identifier.toUpperCase() + " = "
+                            + constValue + "," + misc + newline;
             }
             else {
                 m_enum += strLine;
