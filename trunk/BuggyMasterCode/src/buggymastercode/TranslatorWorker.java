@@ -265,9 +265,12 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
             BufferedReader br = new BufferedReader(new InputStreamReader(in, "ISO-8859-1"));
             String strLine;
             while ((strLine = br.readLine()) != null) {
+                m_caller.addVbLine(strLine);
                 sourceCode.append(strLine + newline);
                 if (m_translator.isVbSource()) {
-                    sourceCodeJava.append(m_translator.translate(strLine));
+                    strLine = m_translator.translate(strLine);
+                    m_caller.addJavaLine(strLine);
+                    sourceCodeJava.append(strLine);
                 }
             }
             if (m_translator.isVbSource()) {
