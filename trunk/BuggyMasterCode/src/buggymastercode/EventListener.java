@@ -11,23 +11,51 @@ package buggymastercode;
  */
 public class EventListener {
 
-    private String m_generator = "";
-    private String m_adapter = "";
-    private StringBuilder sourceCode = new StringBuilder();
+    static private final String newline = "\n";
 
-    public String getGenerator() {
-        return m_generator;
+    private String m_generatorVb = "";
+    private String m_generatorJava = "";
+    private String m_adapter = "";
+    private String m_eventMacro = "";
+    private StringBuilder m_sourceCode = new StringBuilder();
+
+    public String getGeneratorVb() {
+        return m_generatorVb;
     }
 
-    public void setGenerator(String value) {
-        m_generator = value;
+    public void setGeneratorVb(String value) {
+        m_generatorVb = value;
+    }
+
+    public String getGeneratorJava() {
+        return m_generatorJava;
+    }
+
+    public void setGeneratorJava(String value) {
+        m_generatorJava = value;
     }
 
     public void setAdapter(String value) {
         m_adapter = value;
     }
 
+    public String getEventMacro() {
+        return m_eventMacro;
+    }
+
+    public void setEventMacro(String value) {
+        m_eventMacro = value;
+    }
+
     public StringBuilder getSourceCode() {
-        return sourceCode;
+        return m_sourceCode;
+    }
+
+    public String getAnonymousInnerClass() {
+        return "new " + m_adapter + "() {"
+                + newline
+                + m_sourceCode.toString()
+                + newline
+                + "              };";
     }
 }
