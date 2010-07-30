@@ -15,6 +15,8 @@ import java.util.Iterator;
 public class Translator {
 
     static private final String newline = "\n";
+    static private final String outerTabHandler = "                  ";
+    static private final String innerTabHandler = outerTabHandler + "  ";
     static private final String C_NUMBERS = "-+0123456789";
     static private final String C_SEPARARTORS = "_._=_&&_||_+_-_*_/_==_!=_<_>_<=_>=_";
     static private final String C_SYMBOLS = " +-()*/,";
@@ -815,6 +817,7 @@ public class Translator {
         }
         // in declaration
             // private and public can be modifier of member variables
+            // or events
             //
         if (inDeclaration) {
             if (workLine.length() > 8) {
@@ -831,6 +834,9 @@ public class Translator {
                 if (workLine.substring(0,7).equals("public ")) {
                     if (workLine.contains(" const ")) {
                         return translatePublicConstMember(strLine);
+                    }
+                    else if (workLine.contains(" event ")) {
+                        return translateEventDeclaration(strLine);
                     }
                     else {
                         return translatePublicMember(strLine);
@@ -1062,7 +1068,7 @@ public class Translator {
                 function.javaDeclaration = functionDeclaration;
                 if (words[2].contains("(")) {
                     int i = words[2].indexOf("(");
-                    function.getReturnType().setJavaName(words[2].substring(0,i));
+                    function.getReturnType().setJavaName(words[2].substring(0, i));
                 }
                 else
                     function.getReturnType().setJavaName(words[2]);
@@ -1456,9 +1462,24 @@ public class Translator {
                     + comments + newline;
         }
         else {
-            return "if (" + translateSentence(javaSentenceIf) + ") { "
-                    + translateSentenceWithColon(G.ltrimTab(javaSentenceBlock))
-                    + " }" + comments + newline;
+            javaSentenceIf = translateSentence(javaSentenceIf);
+            javaSentenceBlock = translateSentenceWithColon(G.ltrimTab(javaSentenceBlock));
+            // if "one line if" sentence in vb became two or more sentence
+            // we have to add a tab after every \n to keep the if
+            // indented
+            //
+            if (javaSentenceBlock.contains("\n")) {
+                return comments
+                        + "if (" + javaSentenceIf + ") { " + newline
+                        + getTabs() + "    "
+                        + javaSentenceBlock.replace("\n", "\n    ") + newline
+                        + getTabs() + "}"  + newline;
+            }
+            else {
+                return "if (" + javaSentenceIf + ") { "
+                        + javaSentenceBlock
+                        + " }" + comments + newline;
+            }
         }
     }
 
@@ -1944,11 +1965,10 @@ public class Translator {
             }
             if (i > 0) {
                 String variable = m_vbFunctionName.substring(0, i);
-                Iterator itrListener = null;
-                itrListener = m_eventListeners.iterator();
+                Iterator itrListener = m_eventListeners.iterator();
                 while(itrListener.hasNext()) {
                     EventListener listener = (EventListener)itrListener.next();
-                    if (variable.equals(listener.getGenerator())) {
+                    if (variable.equals(listener.getGeneratorVb())) {
                         listener.getSourceCode().append(
                                 getEventHandlerDeclaration(strLine));
                         break;
@@ -1984,17 +2004,23 @@ public class Translator {
                     params = strLine.substring(i + 1, j);
                     String[] words = G.split3(params, ",");
                     for (i = 0; i < words.length; i++) {
-                        j = words[i].trim().indexOf(" ");
-                        paramsCall += words[i].substring(j) + ",";
+                        String param = words[i].trim();
+                        j = param.indexOf(" ");
+                        if (j > 0)
+                            j++;
+                        else
+                            j = 0;
+                        paramsCall += param.substring(j) + ",";
                     }
                     if (paramsCall.length() > 0)
                         paramsCall = paramsCall.substring(0, paramsCall.length() - 1);
                 }
-                handler = "public void " + functionName + "(" + params  + ") {"
+                handler = outerTabHandler
+                            +"public void " + functionName + "(" + params  + ") {"
                             + newline
-                            + "    " + functionCall + "(" + paramsCall + ");"
+                            + innerTabHandler + functionCall + "(" + paramsCall + ");"
                             + newline
-                            + "}" + newline;
+                            + outerTabHandler + "}" + newline;
             }
         }
         if (handler.isEmpty())
@@ -2010,7 +2036,11 @@ public class Translator {
             Variable var = getMemberVariable(variable);
             if (var != null) {
                 if (var.isEventGenerator) {
-                    strLine += newline 
+                    if (var.getVbName().equals("m_fFormula")) {
+                        int q = 0;
+                    }
+                    strLine += ";"
+                                + newline
                                 + getTabs()
                                 + getEventMacroName(var.getJavaName());
                 }
@@ -2193,7 +2223,7 @@ public class Translator {
             var.packageName = packageName;
 
             if (info == null) {
-                var.setJavaName("w_" + var.dataType.substring(0,1).toLowerCase()
+                var.setJavaName("w_" + var.dataType.substring(0, 1).toLowerCase()
                             + var.dataType.substring(1));
 
                 if (m_inWith) {
@@ -2219,7 +2249,7 @@ public class Translator {
             }
             else {
                 if (info.isFunction) {
-                    var.setJavaName("w_" + info.function.getVbName().substring(0,1).toLowerCase()
+                    var.setJavaName("w_" + info.function.getVbName().substring(0, 1).toLowerCase()
                                 + info.function.getVbName().substring(1));
                     String params = "";
                     int startParams = workLine.indexOf("(");
@@ -3687,14 +3717,14 @@ public class Translator {
             else {
                 if (functionName.equalsIgnoreCase("get")) {
                     functionName = "get" 
-                                    + words[3].substring(0,1).toUpperCase()
+                                    + words[3].substring(0, 1).toUpperCase()
                                     + words[3].substring(1);
                     m_vbFunctionName = words[3];
                     functionType = getPropertyType(strLine);
                 }
                 else {
                     functionName = "set" 
-                                    + words[3].substring(0,1).toUpperCase()
+                                    + words[3].substring(0, 1).toUpperCase()
                                     + words[3].substring(1);
                     m_vbFunctionName = words[3];
                     functionType = "void";
@@ -3718,14 +3748,14 @@ public class Translator {
             else {
                 if (functionName.equalsIgnoreCase("get")) {
                     functionName = "get" 
-                                    + words[3].substring(0,1).toUpperCase()
+                                    + words[3].substring(0, 1).toUpperCase()
                                     + words[3].substring(1);
                     m_vbFunctionName = words[3];
                     functionType = getPropertyType(strLine);
                 }
                 else {
                     functionName = "set" 
-                                    + words[3].substring(0,1).toUpperCase()
+                                    + words[3].substring(0, 1).toUpperCase()
                                     + words[3].substring(1);
                     m_vbFunctionName = words[3];
                     functionType = "void";
@@ -3749,14 +3779,14 @@ public class Translator {
             else {
                 if (functionName.equalsIgnoreCase("get")) {
                     functionName = "get" 
-                                    + words[3].substring(0,1).toUpperCase()
+                                    + words[3].substring(0, 1).toUpperCase()
                                     + words[3].substring(1);
                     m_vbFunctionName = words[3];
                     functionType = getPropertyType(strLine);
                 }
                 else {
                     functionName = "set" 
-                                    + words[3].substring(0,1).toUpperCase()
+                                    + words[3].substring(0, 1).toUpperCase()
                                     + words[3].substring(1);
                     m_vbFunctionName = words[3];
                     functionType = "void";
@@ -3781,14 +3811,14 @@ public class Translator {
             m_vbFunctionName = words[1];
             if (functionName.equalsIgnoreCase("get")) {
                 functionName = "get" 
-                                + words[2].substring(0,1).toUpperCase()
+                                + words[2].substring(0, 1).toUpperCase()
                                 + words[2].substring(1);
                 m_vbFunctionName = words[2];
                 functionType = getPropertyType(strLine);
             }
             else {
                 functionName = "set" 
-                                + words[2].substring(0,0).toUpperCase()
+                                + words[2].substring(0, 0).toUpperCase()
                                 + words[2].substring(1);
                 m_vbFunctionName = words[2];
                 functionType = "void";
@@ -3797,7 +3827,7 @@ public class Translator {
 
         if (functionName.contains("(")) {
             functionName = functionName.substring(0,functionName.indexOf("("));
-            m_vbFunctionName = m_vbFunctionName.substring(0,m_vbFunctionName.indexOf("("));
+            m_vbFunctionName = m_vbFunctionName.substring(0, m_vbFunctionName.indexOf("("));
         }
 
         if (functionName.length() < 1) {
@@ -3812,11 +3842,75 @@ public class Translator {
 
         return functionScope + " "
                 + functionType + " "
-                + functionName.substring(0,1).toLowerCase()
+                + functionName.substring(0, 1).toLowerCase()
                 + functionName.substring(1) + "("
                 + translateParameters(strLine)
                 + ") {"
                 + newline;
+    }
+
+    private String translateEventDeclaration(String strLine) {
+        String eventName = "";
+        String eventScope = "";
+
+        strLine = G.ltrimTab(strLine);
+        String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
+
+        // Public
+        //
+        if (words[0].equalsIgnoreCase("public")) {
+            eventScope = "public";
+            eventName = words[2];
+        }
+        // Private
+        //
+        else if (words[0].equalsIgnoreCase("private")) {
+            eventScope = "private";
+            eventName = words[2];
+        }
+        // Friend
+        //
+        else if (words[0].equalsIgnoreCase("friend")) {
+            eventScope = "public";
+            eventName = words[2];
+        }
+        else if (words[0].equalsIgnoreCase("event")) {
+            eventScope = "public";
+            eventName = words[1];
+        }
+
+        if (eventName.contains("(")) {
+            eventName = eventName.substring(0,eventName.indexOf("("));
+        }
+
+        if (eventName.length() < 1) {
+            eventName = "";
+        }
+
+        if (eventName.isEmpty()) {
+            return "//*TODO:**The event declaration couldn't be translated. "
+                    + newline
+                    + strLine;
+        }
+        else {
+            m_listenerInterface += "    "
+                                    + eventScope + " "
+                                    + "void "
+                                    + eventName.substring(0, 1).toLowerCase()
+                                    + eventName.substring(1) + "("
+                                    + translateParameters(strLine)
+                                    + ");"
+                                    + newline;
+            m_adapterClass += "    "
+                                    + eventScope + " "
+                                    + "void "
+                                    + eventName.substring(0, 1).toLowerCase()
+                                    + eventName.substring(1) + "("
+                                    + translateParameters(strLine)
+                                    + ") {};"
+                                    + newline;
+            return "";
+        }
     }
 
     private String getPropertyType(String strLine) {
@@ -4039,7 +4133,7 @@ public class Translator {
     private String unCapitalize(String word) {
         if (word.length() > 0) {
             if (word.length() > 1) {
-                word = word.substring(0,1).toLowerCase() + word.substring(1);
+                word = word.substring(0, 1).toLowerCase() + word.substring(1);
             }
             else {
                 word = word.toLowerCase();
@@ -4397,7 +4491,6 @@ public class Translator {
                 for (int i = 5; i < words.length; i++) {
                     misc += " " + words[i] ;
                 }
-                addToEventListeners(vbIdentifier, dataType);
                 isEventGenerator = true;
             }
             else {
@@ -4416,6 +4509,12 @@ public class Translator {
             var.setJavaName(identifier);
             var.setType(dataType);
             var.isEventGenerator = isEventGenerator;
+            if (isEventGenerator) {
+                addToEventListeners(vbIdentifier,
+                                    var.getJavaName(),
+                                    dataType,
+                                    getEventMacroName(var.getJavaName()));
+            }
             m_memberVariables.add(var);
         }
         if (dataType.isEmpty()) {
@@ -4454,7 +4553,6 @@ public class Translator {
                 for (int i = 5; i < words.length; i++) {
                     misc += " " + words[i] ;
                 }
-                addToEventListeners(vbIdentifier, dataType);
                 isEventGenerator = true;
             }
             else {
@@ -4473,6 +4571,12 @@ public class Translator {
             var.setJavaName(identifier);
             var.setType(dataType);
             var.isEventGenerator = isEventGenerator;
+            if (isEventGenerator) {
+                addToEventListeners(vbIdentifier,
+                                    var.getJavaName(),
+                                    dataType,
+                                    getEventMacroName(var.getJavaName()));
+            }
             m_memberVariables.add(var);
         }
         if (dataType.isEmpty()) {
@@ -4559,10 +4663,15 @@ public class Translator {
     //
     //          __ADD_TO_LISTENER_m_report__
     //
-    private void addToEventListeners(String eventGenerator, String className) {
+    private void addToEventListeners(String eventGeneratorVb,
+            String eventGeneratorJava,
+            String className,
+            String eventMacro) {
         EventListener eventListener = new EventListener();
-        eventListener.setGenerator(eventGenerator);
+        eventListener.setGeneratorVb(eventGeneratorVb);
+        eventListener.setGeneratorJava(eventGeneratorJava);
         eventListener.setAdapter(className);
+        eventListener.setEventMacro(eventMacro);
         m_eventListeners.add(eventListener);
     }
 
@@ -4653,6 +4762,8 @@ public class Translator {
         m_publicVariables = new ArrayList<Variable>();
         m_types = new ArrayList<Type>();
         m_tabCount = 0;
+        m_listenerInterface = "";
+        m_adapterClass = "";
         m_addDateAuxFunction = false;
         m_returnValue = "";
 
@@ -4949,6 +5060,46 @@ public class Translator {
             subClasses += m_collEnums.get(i) + newline;
         }
         return subClasses;
+    }
+
+    public void addEventListenerInterface() {
+        if (!m_listenerInterface.isEmpty())
+            m_caller.addClass(m_javaClassName + "EventI",
+                    "public interface "
+                    + m_javaClassName
+                    + "EventI {"
+                    + newline
+                    + m_listenerInterface
+                    + "}");
+    }
+
+    public void addEventListenerAdapter() {
+        if (!m_listenerInterface.isEmpty())
+            m_caller.addClass(m_javaClassName + "EventA",
+                    "public class "
+                    + m_javaClassName
+                    + "EventA implements "
+                    + m_javaClassName
+                    + "EventI {"
+                    + newline
+                    + m_adapterClass
+                    + "}");
+    }
+
+    public void implementListeners(StringBuilder code) {
+        
+        Iterator itrListener = m_eventListeners.iterator();
+        while(itrListener.hasNext()) {
+            EventListener listener = (EventListener)itrListener.next();
+            String innerClass = listener.getAnonymousInnerClass();
+            String callToAddListener = listener.getGeneratorJava() + ".addListener("
+                                        + innerClass + ")";
+            int i = code.indexOf(listener.getEventMacro());
+            if (i > 0) {
+                int j = i + listener.getEventMacro().length();
+                code.replace(i, j, callToAddListener);
+            }
+        }
     }
 
     private void checkBeginBlock(String strLine) {
