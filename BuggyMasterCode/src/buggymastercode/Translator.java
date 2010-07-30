@@ -1981,8 +1981,8 @@ public class Translator {
                 String paramsCall = "";
                 // check for empty params eg: function()
                 if (j - i > 1) {
-                    params = strLine.substring(i, j);
-                    String[] words = G.split(params, ",");
+                    params = strLine.substring(i + 1, j);
+                    String[] words = G.split3(params, ",");
                     for (i = 0; i < words.length; i++) {
                         j = words[i].trim().indexOf(" ");
                         paramsCall += words[i].substring(j) + ",";
@@ -2203,6 +2203,7 @@ public class Translator {
                                 + var.getJavaName()
                                 + " = "
                                 + m_collWiths.get(m_collWiths.size()-1).getJavaName()
+                                + "."
                                 + workLine//.substring(5)
                                 + comments;
                 }
