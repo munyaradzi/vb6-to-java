@@ -26,6 +26,9 @@ public class Translator {
      + "_private_public_raise_select_sub_type_while_wend_char_date_double_integer_"
      + "_long_object_short_string_variant_#if_#end_exit_redim_on_";
 
+    static private final String C_INTERFACE_POSTIFX = "EventI";
+    static private final String C_ADAPTER_POSTIFX = "EventA";
+
     private boolean m_isVbSource = false;
     private boolean m_codeHasStarted = false;
     private boolean m_attributeBlockHasStarted = false;
@@ -1938,6 +1941,7 @@ public class Translator {
         strLine = replaceVbNameWithJavaName(strLine);
         strLine = replaceExitSentence(strLine);
         strLine = replaceSlashInLiterals(strLine);
+        strLine = replaceNewSentence(strLine);
 
         // this call has to be the last sentences in this function
         // all the changes have to be done before this call
@@ -2301,6 +2305,30 @@ public class Translator {
         }
         else {
             m_withDeclaration = false;
+        }
+        return strLine;
+    }
+
+    private String replaceNewSentence(String strLine) {
+        final String C_IDENTIFIER_FIRST_CHAR = "abcdefghijklmnopqrstuvwyxz";
+        boolean newFound = false;
+        String[] words = G.split(strLine, "\t (),");
+        strLine = "";
+        for (int i = 0; i < words.length; i++) {
+            if (words[i].equalsIgnoreCase("new")) {
+                words[i] = "new";
+                newFound = true;
+            }
+            else if (newFound) {
+                if (C_IDENTIFIER_FIRST_CHAR.contains(words[i].substring(0,1))) {
+                    words[i] += "()";
+                    newFound = false;
+                }
+                else if (!words[i].trim().isEmpty()) {
+                    newFound = false;
+                }
+            }
+            strLine += words[i];
         }
         return strLine;
     }
@@ -4670,7 +4698,7 @@ public class Translator {
         EventListener eventListener = new EventListener();
         eventListener.setGeneratorVb(eventGeneratorVb);
         eventListener.setGeneratorJava(eventGeneratorJava);
-        eventListener.setAdapter(className);
+        eventListener.setAdapter(className + C_ADAPTER_POSTIFX);
         eventListener.setEventMacro(eventMacro);
         m_eventListeners.add(eventListener);
     }
@@ -5064,10 +5092,10 @@ public class Translator {
 
     public void addEventListenerInterface() {
         if (!m_listenerInterface.isEmpty())
-            m_caller.addClass(m_javaClassName + "EventI",
+            m_caller.addClass(m_javaClassName + C_INTERFACE_POSTIFX,
                     "public interface "
                     + m_javaClassName
-                    + "EventI {"
+                    + C_INTERFACE_POSTIFX + " {"
                     + newline
                     + m_listenerInterface
                     + "}");
@@ -5075,12 +5103,12 @@ public class Translator {
 
     public void addEventListenerAdapter() {
         if (!m_listenerInterface.isEmpty())
-            m_caller.addClass(m_javaClassName + "EventA",
+            m_caller.addClass(m_javaClassName + C_ADAPTER_POSTIFX,
                     "public class "
                     + m_javaClassName
-                    + "EventA implements "
+                    + C_ADAPTER_POSTIFX + " implements "
                     + m_javaClassName
-                    + "EventI {"
+                    + C_INTERFACE_POSTIFX + " {"
                     + newline
                     + m_adapterClass
                     + "}");
