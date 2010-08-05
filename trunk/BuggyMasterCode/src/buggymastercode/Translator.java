@@ -1969,6 +1969,7 @@ public class Translator {
         strLine = translateFunctionCall(strLine);
         strLine = replaceWithSentence(strLine);
         strLine = replaceEndWithSentence(strLine);
+        strLine = replaceRedimSentence(strLine);
         strLine = replaceVbNameWithJavaName(strLine);
         strLine = replaceExitSentence(strLine);
         strLine = replaceSlashInLiterals(strLine);
@@ -2192,6 +2193,35 @@ public class Translator {
 
     private String replaceIsNothing(String strLine) {
         return strLine.replaceAll("Is Nothing", "== null");
+    }
+
+    private String replaceRedimSentence(String strLine) {
+        if (!G.beginLike(strLine.trim().toLowerCase(),"redim "))
+            return strLine;
+
+        String array = "";
+        String size = "";
+        String[] words = G.split(strLine, "\t ");
+        // posible sentences
+        // 1 - redim variable(...)
+        // 2 - redim preserve variable(...)
+        //
+        // not supported sentence
+        if (words.length < 4) {
+            return "/*TODO:** this redim sentence can't be translated " + strLine;
+        }
+        // 1
+        else if (words.length < 5) {
+            array = words[1];
+            size = words[3];
+            return "G.redim(" + array + ", " + size + ")";
+        }
+        // 2
+        else {
+            array = words[2];
+            size = words[4];
+            return "G.redimPreserve(" + array + ", " + size + ")";
+        }
     }
 
     private String replaceWithSentence(String strLine) {
@@ -4770,8 +4800,20 @@ public class Translator {
         var.setType(dataType);
         m_functionVariables.add(var);
 
-        return dataType + " " + identifier + " = "
-                + getZeroValueForDataType(dataType) + ";" + misc + newline;
+        if (identifier.contains("(")) {
+            words = G.split(identifier);
+            if (words.length > 3) {
+                dataType += "[" + words[3] + "]";
+            }
+            else {
+                dataType += "[]";
+            }
+            return dataType + " " + identifier + " = null;" + misc + newline;
+        }
+        else {
+            return dataType + " " + identifier + " = "
+                    + getZeroValueForDataType(dataType) + ";" + misc + newline;
+        }
     }
 
     private String removeExtraSpaces(String strLine) {
