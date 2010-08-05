@@ -2,8 +2,8 @@
 <!DOCTYPE log SYSTEM "logger.dtd">
 <log>
 <record>
-  <date>2010-08-05T08:50:54</date>
-  <millis>1281012654750</millis>
+  <date>2010-08-05T10:23:54</date>
+  <millis>1281018234656</millis>
   <sequence>3</sequence>
   <logger>ar.com.crowsoft.cvxi</logger>
   <level>INFO</level>
@@ -13,8 +13,8 @@
   <message>initializing BuggyMasterCode</message>
 </record>
 <record>
-  <date>2010-08-05T08:50:54</date>
-  <millis>1281012654750</millis>
+  <date>2010-08-05T10:23:54</date>
+  <millis>1281018234656</millis>
   <sequence>4</sequence>
   <logger>ar.com.crowsoft.cvxi</logger>
   <level>INFO</level>
@@ -23,3 +23,4 @@
   <thread>10</thread>
   <message>running in: C:\dev\proyectos.nb\BuggyMasterCode</message>
 </record>
+</log>
