@@ -287,6 +287,7 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
                 }
             }
             if (m_translator.isVbSource()) {
+                sourceCodeJava.append(m_translator.getEventListenerCollection());
                 sourceCodeJava.append(m_translator.getAuxFunctions());
                 sourceCodeJava.append("}" + newline);
             }
@@ -296,7 +297,6 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
             sourceFile.setJavaSource(sourceCodeJava.toString() + newline + m_translator.getSubClasses());
             m_translator.addEventListenerInterface();
             m_translator.addEventListenerAdapter();
-
         } catch (FileNotFoundException ex) {
             Logger.getLogger(BuggyMasterCodeView.class.getName()).log(Level.SEVERE, null, ex);
         } catch (Exception ex) {
