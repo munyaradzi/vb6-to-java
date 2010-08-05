@@ -104,6 +104,11 @@ public class Translator {
     // of every method
     //
     private String m_adapterClass = "";
+    // this flag tell us if we need add a collection variable to
+    // hold the listeners and two methods to add and remove objets
+    // in the collection
+    //
+    private boolean m_raiseEvents = false;
     private boolean m_wasSingleLineIf = false;
     private String m_strBuffer = "";
     private int m_tabCount = 0;
@@ -350,6 +355,32 @@ public class Translator {
         }
 
         return rtn + newline;
+    }
+
+    public String getEventListenerCollection() {
+        if (m_raiseEvents) {
+            String className = m_javaClassName + C_INTERFACE_POSTIFX;
+            String rtn = newline + "    // event listener collection"
+                            + newline + "    //"
+                            + "    private ArrayList<"
+                            + className
+                            + "> m_listeners = new ArrayList<"
+                            + className
+                            + ">();" + newline + newline
+                            + "    public synchronized void addListener("
+                            + className
+                            + " l) {" + newline
+                            + "        m_listeners.add(l);" + newline
+                            + "    }" + newline + newline
+                            + "    public synchronized void removeListener("
+                            + className
+                            + " l) {" + newline
+                            + "        m_listeners.remove(l);" + newline
+                            + "    }" + newline;
+            return rtn;
+        }
+        else
+            return "";
     }
 
     public String getAuxFunctions() {
@@ -3937,6 +3968,7 @@ public class Translator {
                                     + translateParameters(strLine)
                                     + ") {};"
                                     + newline;
+            m_raiseEvents = true;
             return "";
         }
     }
@@ -4785,6 +4817,7 @@ public class Translator {
         m_eventListeners.removeAll(m_eventListeners);
         m_memberVariables.removeAll(m_memberVariables);
         m_functionVariables.removeAll(m_functionVariables);
+        m_raiseEvents = false;
         m_privateFunctions = new ArrayList<Function>();
         m_publicFunctions = new ArrayList<Function>();
         m_publicVariables = new ArrayList<Variable>();
@@ -5469,6 +5502,7 @@ class IdentifierInfo {
  */
 
 /*
+ *
  * TODO: manage events
  * TODO: manage byref params that actually aren't byref because are not asigned to a value
  *       by the function code
@@ -5482,4 +5516,7 @@ class IdentifierInfo {
  * TODO: translate redim
  * TODO: translate instr
  * TODO: translate database access. replace recordsets.
+ * TODO: translate globals (be aware of multi threading)
+ * TODO: file functions (print, open, getattr, etc.)
+ * 
  */
