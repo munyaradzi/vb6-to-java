@@ -361,7 +361,7 @@ public class Translator {
         if (m_raiseEvents) {
             String className = m_javaClassName + C_INTERFACE_POSTIFX;
             String rtn = newline + "    // event listener collection"
-                            + newline + "    //"
+                            + newline + "    //" + newline
                             + "    private ArrayList<"
                             + className
                             + "> m_listeners = new ArrayList<"
@@ -1911,7 +1911,13 @@ public class Translator {
     }
 
     private String translateSentenceWithColon(String strLine) {
-        return translateSentence(strLine) + ";";
+        strLine = translateSentence(strLine);
+        if (!strLine.trim().isEmpty()) {
+            if (";}".contains(strLine.substring(strLine.length() - 1))) {
+                return strLine;
+            }
+        }
+        return strLine + ";";
     }
 
     private String translateSentence(String strLine) {
@@ -1974,6 +1980,7 @@ public class Translator {
         strLine = replaceExitSentence(strLine);
         strLine = replaceSlashInLiterals(strLine);
         strLine = replaceNewSentence(strLine);
+        strLine = replaceRaiseEvent(strLine);
 
         // this call has to be the last sentences in this function
         // all the changes have to be done before this call
@@ -2370,6 +2377,25 @@ public class Translator {
         return strLine;
     }
 
+    private String replaceRaiseEvent(String strLine) {
+        if (G.beginLike(strLine, "RaiseEvent ")) {
+            int i = strLine.toLowerCase().indexOf("raiseevent ") + 11;
+            String call = strLine.substring(i);
+            call = call.substring(0, 1).toLowerCase() + call.substring(1);
+            if (!G.endLike(call, ")"))
+                call += "()";
+            String className = m_javaClassName + C_INTERFACE_POSTIFX;
+            strLine = "Iterator listeners = m_listeners.iterator();"
+                    + newline + getTabs() 
+                    + "while(listeners.hasNext()) {"
+                    + newline + getTabs() 
+                    + "    ((" + className + ")listeners.next())." + call + ";"
+                    + newline + getTabs() 
+                    + "}";
+        }
+        return strLine;
+    }
+
     private String replaceNewSentence(String strLine) {
         final String C_IDENTIFIER_FIRST_CHAR = "abcdefghijklmnopqrstuvwyxz";
         boolean newFound = false;
@@ -2446,6 +2472,12 @@ public class Translator {
         // we will process with later
         //
         if (G.beginLike(strLine,"With ")) {
+            return strLine;
+        }
+
+        // we will process raiseevent later
+        //
+        if (G.beginLike(strLine,"RaiseEvent ")) {
             return strLine;
         }
 
@@ -5560,5 +5592,6 @@ class IdentifierInfo {
  * TODO: translate database access. replace recordsets.
  * TODO: translate globals (be aware of multi threading)
  * TODO: file functions (print, open, getattr, etc.)
- * 
+ * TODO: translate Not sentence eg return Not cancel (this is a parcial translated functionName = Not Cancel)
+ *
  */
