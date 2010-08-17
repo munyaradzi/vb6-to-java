@@ -37,6 +37,7 @@ public class BuggyMasterCodeView extends FrameView {
         initComponents();
 
         cbFiles.removeAllItems();
+        cbProject.removeAllItems();
 
         // status bar initialization - message timeout, idle icon and busy animation, etc
         ResourceMap resourceMap = getResourceMap();
@@ -122,12 +123,13 @@ public class BuggyMasterCodeView extends FrameView {
         mainPanel = new javax.swing.JPanel();
         jPanel1 = new javax.swing.JPanel();
         jPanel2 = new javax.swing.JPanel();
-        txFileVB = new javax.swing.JTextField();
         jButton1 = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
-        cbFiles = new javax.swing.JComboBox();
+        cbProject = new javax.swing.JComboBox();
         jLabel2 = new javax.swing.JLabel();
         lbPackage = new javax.swing.JLabel();
+        cbFiles = new javax.swing.JComboBox();
+        jButton2 = new javax.swing.JButton();
         tabMain = new javax.swing.JTabbedPane();
         pnProgress = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
@@ -139,12 +141,10 @@ public class BuggyMasterCodeView extends FrameView {
         jScrollPane4 = new javax.swing.JScrollPane();
         lsVbSource = new javax.swing.JList();
         pnCode = new javax.swing.JSplitPane();
-        txSourceCode = new RSyntaxTextArea();
-        txSourceCode.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_VB);
-        jScrollPane1 = new RTextScrollPane(txSourceCode);
-        txSourceCodeJava = new RSyntaxTextArea();
-        txSourceCodeJava.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
-        jScrollPane2 = new RTextScrollPane(txSourceCodeJava);
+        jScrollPane1 = new javax.swing.JScrollPane();
+        txSourceCode = new javax.swing.JTextArea();
+        jScrollPane2 = new javax.swing.JScrollPane();
+        txSourceCodeJava = new javax.swing.JTextArea();
         menuBar = new javax.swing.JMenuBar();
         javax.swing.JMenu fileMenu = new javax.swing.JMenu();
         javax.swing.JMenuItem exitMenuItem = new javax.swing.JMenuItem();
@@ -171,23 +171,19 @@ public class BuggyMasterCodeView extends FrameView {
         jPanel2.setName("jPanel2"); // NOI18N
         jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
-        txFileVB.setText(resourceMap.getString("txFileVb.text")); // NOI18N
-        txFileVB.setName("txFileVb"); // NOI18N
-        jPanel2.add(txFileVB, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 10, 428, -1));
-
         javax.swing.ActionMap actionMap = org.jdesktop.application.Application.getInstance(buggymastercode.BuggyMasterCodeApp.class).getContext().getActionMap(BuggyMasterCodeView.class, this);
         jButton1.setAction(actionMap.get("showChoseFileDialog")); // NOI18N
         jButton1.setText(resourceMap.getString("jButton1.text")); // NOI18N
         jButton1.setName("jButton1"); // NOI18N
-        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(490, 10, -1, -1));
+        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(540, 10, -1, -1));
 
         jLabel1.setText(resourceMap.getString("jLabel1.text")); // NOI18N
         jLabel1.setName("jLabel1"); // NOI18N
         jPanel2.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 15, -1, -1));
 
-        cbFiles.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
-        cbFiles.setName("cbFiles"); // NOI18N
-        jPanel2.add(cbFiles, new org.netbeans.lib.awtextra.AbsoluteConstraints(247, 45, 230, -1));
+        cbProject.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        cbProject.setName("cbProject"); // NOI18N
+        jPanel2.add(cbProject, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 10, 470, -1));
 
         jLabel2.setText(resourceMap.getString("jLabel2.text")); // NOI18N
         jLabel2.setName("jLabel2"); // NOI18N
@@ -198,7 +194,16 @@ public class BuggyMasterCodeView extends FrameView {
         lbPackage.setName("lbPackage"); // NOI18N
         jPanel2.add(lbPackage, new org.netbeans.lib.awtextra.AbsoluteConstraints(64, 45, 105, -1));
 
-        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 620, 90));
+        cbFiles.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        cbFiles.setName("cbFiles"); // NOI18N
+        jPanel2.add(cbFiles, new org.netbeans.lib.awtextra.AbsoluteConstraints(247, 45, 340, -1));
+
+        jButton2.setAction(actionMap.get("translateFromList")); // NOI18N
+        jButton2.setText(resourceMap.getString("jButton2.text")); // NOI18N
+        jButton2.setName("jButton2"); // NOI18N
+        jPanel2.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(600, 10, 110, -1));
+
+        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 720, 90));
 
         mainPanel.add(jPanel1, java.awt.BorderLayout.PAGE_START);
 
@@ -237,8 +242,8 @@ public class BuggyMasterCodeView extends FrameView {
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pnProgressLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(pnProgressLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jScrollPane3, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 595, Short.MAX_VALUE)
-                    .addComponent(jSplitPane1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 595, Short.MAX_VALUE)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 697, Short.MAX_VALUE)
+                    .addComponent(jSplitPane1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 697, Short.MAX_VALUE)
                     .addComponent(jLabel3, javax.swing.GroupLayout.Alignment.LEADING))
                 .addContainerGap())
         );
@@ -248,7 +253,7 @@ public class BuggyMasterCodeView extends FrameView {
                 .addContainerGap()
                 .addComponent(jLabel3)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 197, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 193, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jSplitPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
@@ -335,11 +340,11 @@ public class BuggyMasterCodeView extends FrameView {
         statusPanel.setLayout(statusPanelLayout);
         statusPanelLayout.setHorizontalGroup(
             statusPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(statusPanelSeparator, javax.swing.GroupLayout.DEFAULT_SIZE, 620, Short.MAX_VALUE)
+            .addComponent(statusPanelSeparator, javax.swing.GroupLayout.DEFAULT_SIZE, 722, Short.MAX_VALUE)
             .addGroup(statusPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(statusMessageLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 446, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 552, Short.MAX_VALUE)
                 .addComponent(progressBar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(statusAnimationLabel)
@@ -375,31 +380,35 @@ public class BuggyMasterCodeView extends FrameView {
         if (returnVal == JFileChooser.APPROVE_OPTION) {
 
             File file = fc.getSelectedFile();
-            m_collFiles.removeAll(m_collFiles);
-            String vbpFile = file.getAbsolutePath();
-            m_vbpFile = vbpFile;
-            m_path = vbpFile.substring(0, vbpFile.length() - file.getName().length());
-            txFileVB.setText(vbpFile);
-            lbPackage.setText(getVbName(vbpFile));
-            cbFiles.removeAllItems();
-
-            if (!busyIconTimer.isRunning()) {
-                statusAnimationLabel.setIcon(busyIcons[0]);
-                busyIconIndex = 0;
-                busyIconTimer.start();
-            }
-            progressBar.setVisible(true);
-            progressBar.setIndeterminate(true);
-
-            tabMain.setSelectedComponent(pnProgress);
-
-            TranslatorWorker tw = new TranslatorWorker(this, m_path, vbpFile, m_collFiles);
-            tw.execute();
+            cbProject.addItem(file.getAbsolutePath());
+            translate(file.getAbsolutePath(), file.getName());
 
         } else {
             txSourceCode.append("Open command cancelled by user." + newline);
         }
         txSourceCode.setCaretPosition(0);
+    }
+
+    private void translate(String filePath, String fileName) {
+        String vbpFile = filePath;
+        m_collFiles.removeAll(m_collFiles);
+        m_vbpFile = vbpFile;
+        m_path = vbpFile.substring(0, vbpFile.length() - fileName.length());
+        lbPackage.setText(getVbName(vbpFile));
+        cbFiles.removeAllItems();
+
+        if (!busyIconTimer.isRunning()) {
+            statusAnimationLabel.setIcon(busyIcons[0]);
+            busyIconIndex = 0;
+            busyIconTimer.start();
+        }
+        progressBar.setVisible(true);
+        progressBar.setIndeterminate(true);
+
+        tabMain.setSelectedComponent(pnProgress);
+
+        TranslatorWorker tw = new TranslatorWorker(this, m_path, vbpFile, m_collFiles);
+        tw.execute();
     }
 
     public void workDone() {
@@ -485,10 +494,27 @@ public class BuggyMasterCodeView extends FrameView {
         BuggyMasterCodeApp.getApplication().show(classView);
     }
 
+    @Action
+    public void translateFromList() {
+        String fullPath = cbProject.getSelectedItem().toString();
+        if (!fullPath.isEmpty()) {
+            String fileName = "";
+            for (int i = fullPath.length() - 1; i > 0; i--) {
+                if (fullPath.charAt(i) == '\\' || fullPath.charAt(i) == '/') {
+                    fileName = fullPath.substring(i + 1);
+                    break;
+                }
+            }
+            translate(fullPath, fileName);
+        }
+    }
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JComboBox cbFiles;
+    private javax.swing.JComboBox cbProject;
     private javax.swing.JMenuItem dictionaryMenu;
     private javax.swing.JButton jButton1;
+    private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
@@ -496,8 +522,8 @@ public class BuggyMasterCodeView extends FrameView {
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JPanel jPanel1;
     private javax.swing.JPanel jPanel2;
-    private RTextScrollPane jScrollPane1;
-    private RTextScrollPane jScrollPane2;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JScrollPane jScrollPane5;
@@ -516,9 +542,8 @@ public class BuggyMasterCodeView extends FrameView {
     private javax.swing.JPanel statusPanel;
     private javax.swing.JTabbedPane tabMain;
     private javax.swing.JMenu toolMenu;
-    private javax.swing.JTextField txFileVB;
-    private RSyntaxTextArea txSourceCode;
-    private RSyntaxTextArea txSourceCodeJava;
+    private javax.swing.JTextArea txSourceCode;
+    private javax.swing.JTextArea txSourceCodeJava;
     // End of variables declaration//GEN-END:variables
 
     private final Timer messageTimer;
