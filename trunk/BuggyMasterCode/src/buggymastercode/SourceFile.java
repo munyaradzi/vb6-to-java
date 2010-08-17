@@ -21,6 +21,7 @@ public class SourceFile {
     private ArrayList<Function> m_publicFunctions = null;
     private ArrayList<Function> m_privateFunctions = null;
     private ArrayList<Variable> m_publicVariables = null;
+    private ArrayList<String> m_raiseEventFunctions = null;
 
     public String getVbSource() {
         return m_vbSource;
@@ -84,6 +85,14 @@ public class SourceFile {
 
     public void setPublicVariables(ArrayList<Variable> list) {
         m_publicVariables = list;
+    }
+
+    public ArrayList<String> getRaiseEventFunctions() {
+        return m_raiseEventFunctions;
+    }
+
+    public void setRaiseEventFunctions(ArrayList<String> list) {
+        m_raiseEventFunctions = list;
     }
 
     @Override

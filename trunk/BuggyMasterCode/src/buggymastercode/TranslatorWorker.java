@@ -211,6 +211,7 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
                 sourceFile.setPublicFunctions(m_translator.getPublicFunctions());
                 sourceFile.setPrivateFunctions(m_translator.getPrivateFunctions());
                 sourceFile.setPublicVariables(m_translator.getPublicVariables());
+                sourceFile.setRaiseEventFunctions(m_translator.getRaiseEventFunctions());
                 sourceFile.setFileName(vbFile);
             }
         } catch (FileNotFoundException ex) {
@@ -272,6 +273,7 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
             vbFile = m_path + vbFile;
 
             m_translator.initTranslator(vbFile);
+            m_translator.setRaiseEventFunctions(sourceFile.getRaiseEventFunctions());
 
             fstream = new FileInputStream(getFileForOS(vbFile));
             DataInputStream in = new DataInputStream(fstream);

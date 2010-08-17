@@ -53,11 +53,11 @@ public class Translator {
     // public functions, subs and properties of the class which we are 
     // translating
     //
-    private ArrayList<Function> m_publicFunctions = new ArrayList<Function>();
+    private ArrayList<Function> m_publicFunctions = null;
     // private functions, subs and properties of the class which we are
     // translating
     //
-    private ArrayList<Function> m_privateFunctions = new ArrayList<Function>();
+    private ArrayList<Function> m_privateFunctions = null;
     // this is used to build the dictionary of public variables of every
     // class in this project. this collection is used to found identifiers
     // in the code which references to public member of objects of other
@@ -67,7 +67,7 @@ public class Translator {
     // hand public properties are translated as setters and getters and the
     // assignment doesn't use the equals sign but the setter method.
     //
-    private ArrayList<Variable> m_publicVariables = new ArrayList<Variable>();
+    private ArrayList<Variable> m_publicVariables = null;
     // files (frm, bas, cls) in this vbp
     //
     private ArrayList<SourceFile> m_collFiles = new ArrayList<SourceFile>();
@@ -109,16 +109,30 @@ public class Translator {
     // in the collection
     //
     private boolean m_raiseEvents = false;
+    // this collection is filled when we parse the class and
+    // used by translate function declaration to determine if
+    // the function has to be syncrhonized
+    //
+    private ArrayList<String> m_raiseEventFunctions = new ArrayList<String>();
+
     private boolean m_wasSingleLineIf = false;
     private String m_strBuffer = "";
     private int m_tabCount = 0;
+    // the vb name of the function we are parsing or translating
+    //
     private String m_vbFunctionName = "";
     private String m_vbClassName = "";
     private String m_javaClassName = "";
     private boolean m_isFirstCase = false;
     private boolean m_previousWasReturn = false;
+    // flag to add auxiliary function to support vb date expecific
+    // functionality
+    //
     private boolean m_addDateAuxFunction = false;
     private String m_packageName = "";
+    // packages refence by this visual basic project in the order it appears in
+    // vbp file
+    //
     private String[] m_references = null;
 
     private ClassObject m_classObject;
@@ -240,6 +254,14 @@ public class Translator {
         else {
             return false;
         }
+    }
+
+    public ArrayList<String> getRaiseEventFunctions() {
+        return m_raiseEventFunctions;
+    }
+
+    public void setRaiseEventFunctions(ArrayList<String> functions) {
+        m_raiseEventFunctions = functions;
     }
 
     public void parse(String strLine) {
@@ -460,6 +482,7 @@ public class Translator {
                 return;
             }
             else if (m_inFunction) {
+                checkRaiseEvent(strLine);
                 return;
             }
             else {
@@ -1359,9 +1382,10 @@ public class Translator {
                     identifierHasStarted = true;
             }
         }
+        switchStatetment = translateSentence(switchStatetment.trim());
         if (!parenthesesClosed)
             switchStatetment += ") {";
-        return "switch (" + switchStatetment.trim() + newline;
+        return "switch (" + switchStatetment + newline;
     }
 
     private String translateIfSentence(String strLine) {
@@ -2090,6 +2114,12 @@ public class Translator {
             }
         }
         return strLine;
+    }
+
+    private void checkRaiseEvent(String strLine) {
+        if (strLine.toLowerCase().contains("raiseevent")) {
+            m_raiseEventFunctions.add(m_vbFunctionName);
+        }
     }
 
     private String replaceSlashInLiterals(String strLine) {
@@ -3961,13 +3991,26 @@ public class Translator {
 
         m_returnValue = getDefaultForReturnType(functionType);
 
+        String modifiers = getIfNeedToBeSyncrhonized();
+
         return functionScope + " "
+                + modifiers
                 + functionType + " "
                 + functionName.substring(0, 1).toLowerCase()
                 + functionName.substring(1) + "("
                 + translateParameters(strLine)
                 + ") {"
                 + newline;
+    }
+
+    private String getIfNeedToBeSyncrhonized() {
+        Iterator function = m_raiseEventFunctions.iterator();
+        while (function.hasNext()) {
+            if (((String)function.next()).equals(m_vbFunctionName)) {
+                return "synchronized ";
+            }
+        }
+        return "";
     }
 
     private String translateEventDeclaration(String strLine) {
@@ -4895,6 +4938,7 @@ public class Translator {
         m_privateFunctions = new ArrayList<Function>();
         m_publicFunctions = new ArrayList<Function>();
         m_publicVariables = new ArrayList<Variable>();
+        m_raiseEventFunctions = new ArrayList<String>();
         m_types = new ArrayList<Type>();
         m_tabCount = 0;
         m_listenerInterface = "";
@@ -5593,5 +5637,6 @@ class IdentifierInfo {
  * TODO: translate globals (be aware of multi threading)
  * TODO: file functions (print, open, getattr, etc.)
  * TODO: translate Not sentence eg return Not cancel (this is a parcial translated functionName = Not Cancel)
+ * TODO: translate default property
  *
  */
