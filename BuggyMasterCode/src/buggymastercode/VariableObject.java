@@ -145,11 +145,11 @@ public class VariableObject {
                     DynaBean row = j.next();
                     if (row.get("cl_packagename").toString().equals(references[i])) {
                         var = new Variable();
-                        var.packageName = rs.getRows().get(0).get("cl_packagename").toString();
-                        var.setJavaName(rs.getRows().get(0).get("var_javaname").toString());
-                        var.setVbName(rs.getRows().get(0).get("var_vbname").toString());
-                        var.isPublic = (Integer)rs.getRows().get(0).get("var_vbname") != 0 ? true : false;
-                        var.setType(rs.getRows().get(0).get("var_datatype").toString());
+                        var.packageName = row.get("cl_packagename").toString();
+                        var.setJavaName(row.get("var_javaname").toString());
+                        var.setVbName(row.get("var_vbname").toString());
+                        var.isPublic = (Integer)row.get("var_vbname") != 0 ? true : false;
+                        var.setType(row.get("var_datatype").toString());
                         break;
                     }
                 }
