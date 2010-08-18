@@ -48,8 +48,10 @@ public class BuggyMasterCodeApp extends SingleFrameApplication {
     /**
      * At startup create and show the main frame of the application.
      */
-    @Override protected void startup() {
-        show(new BuggyMasterCodeView(this));
+    @Override 
+    protected void startup() {
+        BuggyMasterCodeView view = new BuggyMasterCodeView(this);
+        show(view);
 
         // Login to database
         Login login;
@@ -63,6 +65,9 @@ public class BuggyMasterCodeApp extends SingleFrameApplication {
             if (startLog()) {
                 if (login.getOk() == false) {
                     mainFrame.dispose();
+                }
+                else {
+                    view.fillOpenRecentList();
                 }
             }
         }
@@ -96,7 +101,8 @@ public class BuggyMasterCodeApp extends SingleFrameApplication {
      * Windows shown in our application come fully initialized from the GUI
      * builder, so this additional configuration is not needed.
      */
-    @Override protected void configureWindow(java.awt.Window root) {
+    @Override
+    protected void configureWindow(java.awt.Window root) {
     }
 
     /**

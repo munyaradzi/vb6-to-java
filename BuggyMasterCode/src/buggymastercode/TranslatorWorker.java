@@ -40,11 +40,9 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
 
     @Override
     protected Boolean doInBackground() throws Exception {
-        G.setHourglass();
         G.setNoChangeMousePointer(true);
         doWork(m_vbpFile);
         G.setNoChangeMousePointer(false);
-        G.setDefaultCursor();
         return true;
     }
 
@@ -85,12 +83,12 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
         int line = 1;
         int k = 0;
         String[] references = new String[500];
-        if (G.getToken(vbpFile, "Reference", line , value)) {
+        if (G.getToken(vbpFile, "Reference", line, value)) {
             while (!value.text.isEmpty()) {
                 references[k] = getReferenceName(value.text);
                 k++;
                 line++;
-                if (!G.getToken(vbpFile, "Reference", line , value)) {
+                if (!G.getToken(vbpFile, "Reference", line, value)) {
                     break;
                 }
                 //progressBar.setValue(line);
@@ -102,33 +100,45 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
         // Parse
         //
         line = 1;
-        if (G.getToken(vbpFile, "Form", line , value)) {
+        if (G.getToken(vbpFile, "Form", line, value)) {
             while (!value.text.isEmpty()) {
+                // stop if the user wants to cancel
+                //
+                if (m_caller.getCancel())
+                    return;
                 parseFile(value.text);
                 line++;
-                if (!G.getToken(vbpFile, "Form", line , value)) {
+                if (!G.getToken(vbpFile, "Form", line, value)) {
                     break;
                 }
                 //progressBar.setValue(line);
             }
         }
         line = 1;
-        if (G.getToken(vbpFile, "Module", line , value)) {
+        if (G.getToken(vbpFile, "Module", line, value)) {
             while (!value.text.isEmpty()) {
+                // stop if the user wants to cancel
+                //
+                if (m_caller.getCancel())
+                    return;
                 parseFile(value.text);
                 line++;
-                if (!G.getToken(vbpFile, "Module", line , value)) {
+                if (!G.getToken(vbpFile, "Module", line, value)) {
                     break;
                 }
                 //progressBar.setValue(line);
             }
         }
         line = 1;
-        if (G.getToken(vbpFile, "Class", line , value)) {
+        if (G.getToken(vbpFile, "Class", line, value)) {
             while (!value.text.isEmpty()) {
+                // stop if the user wants to cancel
+                //
+                if (m_caller.getCancel())
+                    return;
                 parseFile(value.text);
                 line++;
-                if (!G.getToken(vbpFile, "Class", line , value)) {
+                if (!G.getToken(vbpFile, "Class", line, value)) {
                     break;
                 }
                 //progressBar.setValue(line);
@@ -141,31 +151,43 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
 
         int indexFile = 0;
         line = 1;
-        if (G.getToken(vbpFile, "Form", line , value)) {
+        if (G.getToken(vbpFile, "Form", line, value)) {
             while (!value.text.isEmpty()) {
+                // stop if the user wants to cancel
+                //
+                if (m_caller.getCancel())
+                    return;
                 translateFile(value.text, indexFile++);
                 line++;
-                if (!G.getToken(vbpFile, "Form", line , value)) {
+                if (!G.getToken(vbpFile, "Form", line, value)) {
                     break;
                 }
             }
         }
         line = 1;
-        if (G.getToken(vbpFile, "Module", line , value)) {
+        if (G.getToken(vbpFile, "Module", line, value)) {
             while (!value.text.isEmpty()) {
+                // stop if the user wants to cancel
+                //
+                if (m_caller.getCancel())
+                    return;
                 translateFile(value.text, indexFile++);
                 line++;
-                if (!G.getToken(vbpFile, "Module", line , value)) {
+                if (!G.getToken(vbpFile, "Module", line, value)) {
                     break;
                 }
             }
         }
         line = 1;
-        if (G.getToken(vbpFile, "Class", line , value)) {
+        if (G.getToken(vbpFile, "Class", line, value)) {
             while (!value.text.isEmpty()) {
+                // stop if the user wants to cancel
+                //
+                if (m_caller.getCancel())
+                    return;
                 translateFile(value.text, indexFile++);
                 line++;
-                if (!G.getToken(vbpFile, "Class", line , value)) {
+                if (!G.getToken(vbpFile, "Class", line, value)) {
                     break;
                 }
             }
@@ -199,11 +221,15 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
             m_translator.setPackage(m_packageName);
 
             if (m_translator.isVbSource()) {
-                fstream = new FileInputStream(getFileForOS(vbFullFile));
+                fstream = new FileInputStream(G.getFileForOS(vbFullFile));
                 DataInputStream in = new DataInputStream(fstream);
                 BufferedReader br = new BufferedReader(new InputStreamReader(in, "ISO-8859-1"));
                 String strLine;
                 while ((strLine = br.readLine()) != null) {
+                    // stop if the user wants to cancel
+                    //
+                    if (m_caller.getCancel())
+                        return;
                     m_translator.parse(strLine);
                 }
                 sourceFile.setVbName(m_translator.getVbClassName());
@@ -275,30 +301,32 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
             m_translator.initTranslator(vbFile);
             m_translator.setRaiseEventFunctions(sourceFile.getRaiseEventFunctions());
 
-            fstream = new FileInputStream(getFileForOS(vbFile));
-            DataInputStream in = new DataInputStream(fstream);
-            BufferedReader br = new BufferedReader(new InputStreamReader(in, "ISO-8859-1"));
-            String strLine;
-            while ((strLine = br.readLine()) != null) {
-                m_caller.addVbLine(strLine);
-                sourceCode.append(strLine + newline);
-                if (m_translator.isVbSource()) {
+            if (m_translator.isVbSource()) {
+                fstream = new FileInputStream(G.getFileForOS(vbFile));
+                DataInputStream in = new DataInputStream(fstream);
+                BufferedReader br = new BufferedReader(new InputStreamReader(in, "ISO-8859-1"));
+                String strLine;
+                while ((strLine = br.readLine()) != null) {
+                    // stop if the user wants to cancel
+                    //
+                    if (m_caller.getCancel())
+                        return;
+                    m_caller.addVbLine(strLine);
+                    sourceCode.append(strLine + newline);
                     strLine = m_translator.translate(strLine);
                     m_caller.addJavaLine(strLine);
                     sourceCodeJava.append(strLine);
                 }
-            }
-            if (m_translator.isVbSource()) {
                 sourceCodeJava.append(m_translator.getEventListenerCollection());
                 sourceCodeJava.append(m_translator.getAuxFunctions());
                 sourceCodeJava.append("}" + newline);
+                m_translator.implementListeners(sourceCodeJava);
+                sourceCodeJava.insert(0, m_translator.getImportSection());
+                sourceFile.setVbSource(sourceCode.toString());
+                sourceFile.setJavaSource(sourceCodeJava.toString() + newline + m_translator.getSubClasses());
+                m_translator.addEventListenerInterface();
+                m_translator.addEventListenerAdapter();
             }
-            m_translator.implementListeners(sourceCodeJava);
-            sourceCodeJava.insert(0, m_translator.getImportSection());
-            sourceFile.setVbSource(sourceCode.toString());
-            sourceFile.setJavaSource(sourceCodeJava.toString() + newline + m_translator.getSubClasses());
-            m_translator.addEventListenerInterface();
-            m_translator.addEventListenerAdapter();
         } catch (FileNotFoundException ex) {
             Logger.getLogger(BuggyMasterCodeView.class.getName()).log(Level.SEVERE, null, ex);
         } catch (Exception ex) {
@@ -309,16 +337,6 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
             } catch (Exception ex) {
                 Logger.getLogger(BuggyMasterCodeView.class.getName()).log(Level.SEVERE, null, ex);
             }
-        }
-    }
-
-    private String getFileForOS(String file) {
-        String nameOS = "os.name";
-        if (System.getProperty(nameOS).toLowerCase().contains("windows")) {
-            return file;
-        }
-        else {
-            return file.replace("\\", "/");
         }
     }
 

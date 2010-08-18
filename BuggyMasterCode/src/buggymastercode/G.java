@@ -772,4 +772,14 @@ public class G {
             return tmp;
         }
     }
+
+    public static String getFileForOS(String file) {
+        String nameOS = "os.name";
+        if (System.getProperty(nameOS).toLowerCase().contains("windows")) {
+            return file;
+        }
+        else {
+            return file.replace("\\", "/");
+        }
+    }
 }

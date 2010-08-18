@@ -121,7 +121,7 @@ public class ClassDialog extends javax.swing.JDialog {
         jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
 
         txJavaName.setName("txJavaName"); // NOI18N
-        jPanel1.add(txJavaName, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 80, 286, -1));
+        jPanel1.add(txJavaName, new org.netbeans.lib.awtextra.AbsoluteConstraints(110, 80, 286, -1));
 
         org.jdesktop.application.ResourceMap resourceMap = org.jdesktop.application.Application.getInstance(buggymastercode.BuggyMasterCodeApp.class).getContext().getResourceMap(ClassDialog.class);
         jLabel1.setText(resourceMap.getString("jLabel1.text")); // NOI18N
@@ -130,14 +130,14 @@ public class ClassDialog extends javax.swing.JDialog {
 
         txVbName.setText(resourceMap.getString("txVbName.text")); // NOI18N
         txVbName.setName("txVbName"); // NOI18N
-        jPanel1.add(txVbName, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 50, 286, -1));
+        jPanel1.add(txVbName, new org.netbeans.lib.awtextra.AbsoluteConstraints(110, 50, 286, -1));
 
         jLabel2.setText(resourceMap.getString("jLabel2.text")); // NOI18N
         jLabel2.setName("jLabel2"); // NOI18N
         jPanel1.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 80, -1, -1));
 
         txPackage.setName("txPackage"); // NOI18N
-        jPanel1.add(txPackage, new org.netbeans.lib.awtextra.AbsoluteConstraints(70, 20, 286, -1));
+        jPanel1.add(txPackage, new org.netbeans.lib.awtextra.AbsoluteConstraints(110, 20, 286, -1));
 
         jLabel3.setText(resourceMap.getString("jLabel3.text")); // NOI18N
         jLabel3.setName("jLabel3"); // NOI18N
@@ -173,7 +173,7 @@ public class ClassDialog extends javax.swing.JDialog {
         jPanel3Layout.setHorizontalGroup(
             jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel3Layout.createSequentialGroup()
-                .addContainerGap(197, Short.MAX_VALUE)
+                .addContainerGap(199, Short.MAX_VALUE)
                 .addComponent(jPanel5, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
         );
         jPanel3Layout.setVerticalGroup(
@@ -267,7 +267,7 @@ public class ClassDialog extends javax.swing.JDialog {
             .addGroup(jPanel6Layout.createSequentialGroup()
                 .addComponent(jPanel8, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 167, Short.MAX_VALUE))
+                .addComponent(jScrollPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE))
         );
 
         tabbedPane.addTab(resourceMap.getString("jPanel6.TabConstraints.tabTitle"), jPanel6); // NOI18N
@@ -355,7 +355,7 @@ public class ClassDialog extends javax.swing.JDialog {
             .addGroup(jPanel2Layout.createSequentialGroup()
                 .addComponent(jPanel7, javax.swing.GroupLayout.PREFERRED_SIZE, 38, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 167, Short.MAX_VALUE))
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 164, Short.MAX_VALUE))
         );
 
         tabbedPane.addTab(resourceMap.getString("jPanel2.TabConstraints.tabTitle"), jPanel2); // NOI18N

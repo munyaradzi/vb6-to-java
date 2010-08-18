@@ -92,10 +92,22 @@ public class DBH2 implements DBConnection {
         stat.execute("CREATE TABLE IF NOT EXISTS topenrecent (" +
                 "or_id int PRIMARY KEY," +
                 "or_file varchar(500) DEFAULT '' NOT NULL);");
+        stat.execute("drop table tproject");
+        stat.execute("CREATE TABLE IF NOT EXISTS tproject (" +
+                "prj_id int PRIMARY KEY," +
+                "prj_name varchar(500) DEFAULT '' NOT NULL," +
+                "prj_dllname varchar(500) DEFAULT '' NOT NULL);");
+        //stat.execute("drop table treference");
+        stat.execute("CREATE TABLE IF NOT EXISTS treference (" +
+                "prj_id int," +
+                "ref_id int PRIMARY KEY," +
+                "ref_name varchar(500) DEFAULT '' NOT NULL);");
         stat.execute("CREATE SEQUENCE IF NOT EXISTS seq_tclass_id");
         stat.execute("CREATE SEQUENCE IF NOT EXISTS seq_tfunction_id");
         stat.execute("CREATE SEQUENCE IF NOT EXISTS seq_tvariable_id");
         stat.execute("CREATE SEQUENCE IF NOT EXISTS seq_topenrecent_id");
+        stat.execute("CREATE SEQUENCE IF NOT EXISTS seq_tproject_id");
+        stat.execute("CREATE SEQUENCE IF NOT EXISTS seq_treference_id");
     }
 
     @Override
