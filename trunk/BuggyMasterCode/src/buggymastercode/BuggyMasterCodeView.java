@@ -15,6 +15,8 @@ import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
 import javax.swing.DefaultListModel;
 import javax.swing.Timer;
 import javax.swing.Icon;
@@ -38,6 +40,7 @@ public class BuggyMasterCodeView extends FrameView {
 
         cbFiles.removeAllItems();
         cbProject.removeAllItems();
+        cmdCancel.setEnabled(false);
 
         // status bar initialization - message timeout, idle icon and busy animation, etc
         ResourceMap resourceMap = getResourceMap();
@@ -122,14 +125,14 @@ public class BuggyMasterCodeView extends FrameView {
 
         mainPanel = new javax.swing.JPanel();
         jPanel1 = new javax.swing.JPanel();
-        jPanel2 = new javax.swing.JPanel();
-        jButton1 = new javax.swing.JButton();
+        cmdOpenFile = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         cbProject = new javax.swing.JComboBox();
         jLabel2 = new javax.swing.JLabel();
         lbPackage = new javax.swing.JLabel();
         cbFiles = new javax.swing.JComboBox();
-        jButton2 = new javax.swing.JButton();
+        cmdTranslate = new javax.swing.JButton();
+        cmdCancel = new javax.swing.JButton();
         tabMain = new javax.swing.JTabbedPane();
         pnProgress = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
@@ -166,44 +169,90 @@ public class BuggyMasterCodeView extends FrameView {
         mainPanel.setLayout(new java.awt.BorderLayout());
 
         jPanel1.setName("jPanel1"); // NOI18N
-        jPanel1.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
-
-        jPanel2.setName("jPanel2"); // NOI18N
-        jPanel2.setLayout(new org.netbeans.lib.awtextra.AbsoluteLayout());
+        jPanel1.setPreferredSize(new java.awt.Dimension(800, 90));
 
         javax.swing.ActionMap actionMap = org.jdesktop.application.Application.getInstance(buggymastercode.BuggyMasterCodeApp.class).getContext().getActionMap(BuggyMasterCodeView.class, this);
-        jButton1.setAction(actionMap.get("showChoseFileDialog")); // NOI18N
-        jButton1.setText(resourceMap.getString("jButton1.text")); // NOI18N
-        jButton1.setName("jButton1"); // NOI18N
-        jPanel2.add(jButton1, new org.netbeans.lib.awtextra.AbsoluteConstraints(540, 10, -1, -1));
+        cmdOpenFile.setAction(actionMap.get("showChoseFileDialog")); // NOI18N
+        cmdOpenFile.setText(resourceMap.getString("cmdOpenFile.text")); // NOI18N
+        cmdOpenFile.setName("cmdOpenFile"); // NOI18N
 
         jLabel1.setText(resourceMap.getString("jLabel1.text")); // NOI18N
         jLabel1.setName("jLabel1"); // NOI18N
-        jPanel2.add(jLabel1, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 15, -1, -1));
 
         cbProject.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
         cbProject.setName("cbProject"); // NOI18N
-        jPanel2.add(cbProject, new org.netbeans.lib.awtextra.AbsoluteConstraints(60, 10, 470, -1));
 
         jLabel2.setText(resourceMap.getString("jLabel2.text")); // NOI18N
+        jLabel2.setMinimumSize(new java.awt.Dimension(44, 22));
         jLabel2.setName("jLabel2"); // NOI18N
-        jPanel2.add(jLabel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(10, 48, -1, -1));
+        jLabel2.setPreferredSize(new java.awt.Dimension(44, 22));
 
         lbPackage.setFont(resourceMap.getFont("lbPackage.font")); // NOI18N
         lbPackage.setText(resourceMap.getString("lbPackage.text")); // NOI18N
+        lbPackage.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+        lbPackage.setMinimumSize(new java.awt.Dimension(4, 22));
         lbPackage.setName("lbPackage"); // NOI18N
-        jPanel2.add(lbPackage, new org.netbeans.lib.awtextra.AbsoluteConstraints(64, 45, 105, -1));
+        lbPackage.setPreferredSize(new java.awt.Dimension(4, 22));
 
         cbFiles.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
         cbFiles.setName("cbFiles"); // NOI18N
-        jPanel2.add(cbFiles, new org.netbeans.lib.awtextra.AbsoluteConstraints(247, 45, 340, -1));
 
-        jButton2.setAction(actionMap.get("translateFromList")); // NOI18N
-        jButton2.setText(resourceMap.getString("jButton2.text")); // NOI18N
-        jButton2.setName("jButton2"); // NOI18N
-        jPanel2.add(jButton2, new org.netbeans.lib.awtextra.AbsoluteConstraints(600, 10, 110, -1));
+        cmdTranslate.setAction(actionMap.get("translateFromList")); // NOI18N
+        cmdTranslate.setText(resourceMap.getString("cmdTranslate.text")); // NOI18N
+        cmdTranslate.setName("cmdTranslate"); // NOI18N
 
-        jPanel1.add(jPanel2, new org.netbeans.lib.awtextra.AbsoluteConstraints(0, 0, 720, 90));
+        cmdCancel.setAction(actionMap.get("cancelTranslate")); // NOI18N
+        cmdCancel.setText(resourceMap.getString("cmdCancel.text")); // NOI18N
+        cmdCancel.setName("cmdCancel"); // NOI18N
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(10, 10, 10)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(jLabel1)
+                                .addGap(18, 18, 18)
+                                .addComponent(cbProject, javax.swing.GroupLayout.PREFERRED_SIZE, 467, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(10, 10, 10)
+                                .addComponent(cmdOpenFile)
+                                .addGap(15, 15, 15)
+                                .addComponent(cmdTranslate, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(18, 18, 18)
+                                .addComponent(cmdCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(306, 306, 306)
+                                .addComponent(cbFiles, javax.swing.GroupLayout.PREFERRED_SIZE, 409, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(64, 64, 64)
+                        .addComponent(lbPackage, javax.swing.GroupLayout.PREFERRED_SIZE, 278, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(22, Short.MAX_VALUE))
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(10, 10, 10)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(cbProject, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(5, 5, 5)
+                        .addComponent(jLabel1))
+                    .addComponent(cmdOpenFile)
+                    .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                        .addComponent(cmdTranslate)
+                        .addComponent(cmdCancel)))
+                .addGap(15, 15, 15)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(lbPackage, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(cbFiles, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(43, 43, 43))
+        );
 
         mainPanel.add(jPanel1, java.awt.BorderLayout.PAGE_START);
 
@@ -242,8 +291,8 @@ public class BuggyMasterCodeView extends FrameView {
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pnProgressLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(pnProgressLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jScrollPane3, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 697, Short.MAX_VALUE)
-                    .addComponent(jSplitPane1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 697, Short.MAX_VALUE)
+                    .addComponent(jScrollPane3, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 775, Short.MAX_VALUE)
+                    .addComponent(jSplitPane1, javax.swing.GroupLayout.Alignment.LEADING, javax.swing.GroupLayout.DEFAULT_SIZE, 775, Short.MAX_VALUE)
                     .addComponent(jLabel3, javax.swing.GroupLayout.Alignment.LEADING))
                 .addContainerGap())
         );
@@ -340,11 +389,11 @@ public class BuggyMasterCodeView extends FrameView {
         statusPanel.setLayout(statusPanelLayout);
         statusPanelLayout.setHorizontalGroup(
             statusPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addComponent(statusPanelSeparator, javax.swing.GroupLayout.DEFAULT_SIZE, 722, Short.MAX_VALUE)
+            .addComponent(statusPanelSeparator, javax.swing.GroupLayout.DEFAULT_SIZE, 800, Short.MAX_VALUE)
             .addGroup(statusPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(statusMessageLabel)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 552, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 630, Short.MAX_VALUE)
                 .addComponent(progressBar, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(statusAnimationLabel)
@@ -381,6 +430,8 @@ public class BuggyMasterCodeView extends FrameView {
 
             File file = fc.getSelectedFile();
             cbProject.addItem(file.getAbsolutePath());
+            OpenRecent or = new OpenRecent();
+            or.addOpenRecent(file.getAbsolutePath());
             translate(file.getAbsolutePath(), file.getName());
 
         } else {
@@ -390,25 +441,100 @@ public class BuggyMasterCodeView extends FrameView {
     }
 
     private void translate(String filePath, String fileName) {
-        String vbpFile = filePath;
-        m_collFiles.removeAll(m_collFiles);
-        m_vbpFile = vbpFile;
-        m_path = vbpFile.substring(0, vbpFile.length() - fileName.length());
-        lbPackage.setText(getVbName(vbpFile));
-        cbFiles.removeAllItems();
+        setEnabledCtrls(false);
+        try {
+            if (isVbGroup(fileName)) {
+                translateGroup(filePath);
+                setEnabledCtrls(true);
+            }
+            else {
+                m_cancel = false;
+                String vbpFile = filePath;
+                m_collFiles.removeAll(m_collFiles);
+                m_vbpFile = vbpFile;
+                m_path = vbpFile.substring(0, vbpFile.length() - fileName.length());
+                lbPackage.setText(getVbName(vbpFile));
+                cbFiles.removeAllItems();
 
-        if (!busyIconTimer.isRunning()) {
-            statusAnimationLabel.setIcon(busyIcons[0]);
-            busyIconIndex = 0;
-            busyIconTimer.start();
+                if (!busyIconTimer.isRunning()) {
+                    statusAnimationLabel.setIcon(busyIcons[0]);
+                    busyIconIndex = 0;
+                    busyIconTimer.start();
+                }
+                progressBar.setVisible(true);
+                progressBar.setIndeterminate(true);
+
+                tabMain.setSelectedComponent(pnProgress);
+
+                TranslatorWorker tw = new TranslatorWorker(this, m_path, vbpFile, m_collFiles);
+                tw.execute();
+            }
         }
-        progressBar.setVisible(true);
-        progressBar.setIndeterminate(true);
+        catch (Exception ex) {
+            String msg = "the translate execution has failed";
+            BuggyMasterCodeApp.getLogger().log(Level.WARNING, msg, ex);
+            G.showInfo(msg);
+            setEnabledCtrls(true);
+        }
+    }
 
-        tabMain.setSelectedComponent(pnProgress);
+    private void translateGroup(String vbgFile) {
+        // Parse
+        //
+        int line = 1;
+        ByRefString value = new ByRefString();
+        ArrayList<Project> projects = new ArrayList<Project>();
 
-        TranslatorWorker tw = new TranslatorWorker(this, m_path, vbpFile, m_collFiles);
-        tw.execute();
+        if (G.getToken(vbgFile, "Project", line, value)) {
+            while (!value.text.isEmpty()) {
+                // stop if the user wants to cancel
+                //
+                if (m_cancel)
+                    return;
+                Project project = new Project();
+                project.setName(getFileName(value.text));
+                project.setPath(getFilePath(vbgFile) + "\\" + getFilePath(value.text));
+                if (!project.save())
+                    return;
+                if (!project.loadReferences())
+                    return;
+                projects.add(project);
+                line++;
+                if (!G.getToken(vbgFile, "Project", line, value)) {
+                    break;
+                }
+                //progressBar.setValue(line);
+            }
+        }
+
+        if (G.getToken(vbgFile, "StartupProject", 1, value)) {
+            if (!value.text.isEmpty()) {
+                Project project = new Project();
+                project.setName(getFileName(value.text));
+                project.setPath(getFilePath(vbgFile) + "\\" + getFilePath(value.text));
+                if (!project.save())
+                    return;
+                if (!project.loadReferences())
+                    return;
+                projects.add(project);
+            }
+        }
+
+        for (int i = 0; i < projects.size(); i++) {
+            projects.get(i).getLevelFromReferences();
+        }
+
+        if (vbGroup == null) {
+            JFrame mainFrame = BuggyMasterCodeApp.getApplication().getMainFrame();
+            vbGroup = new VbGroup(mainFrame, false);
+            vbGroup.setLocationRelativeTo(mainFrame);
+        }
+        vbGroup.loadGrid(projects);
+        BuggyMasterCodeApp.getApplication().show(vbGroup);
+    }
+
+    private boolean isVbGroup(String fileName) {
+        return G.endLike(fileName, ".vbg");
     }
 
     public void workDone() {
@@ -418,6 +544,7 @@ public class BuggyMasterCodeView extends FrameView {
         progressBar.setVisible(false);
         busyIconTimer.stop();
         tabMain.setSelectedComponent(pnCode);
+        setEnabledCtrls(true);
     }
 
     public void initProgress() {
@@ -434,6 +561,10 @@ public class BuggyMasterCodeView extends FrameView {
     public void updateLastMessage(String message) {
         DefaultListModel model = (DefaultListModel)lsFiles.getModel();
         model.setElementAt(message, 0);
+    }
+
+    public boolean getCancel() {
+        return m_cancel;
     }
 
     public synchronized void addVbLine(String message) {
@@ -462,6 +593,14 @@ public class BuggyMasterCodeView extends FrameView {
         else {
             return "";
         }
+    }
+
+    private void setEnabledCtrls(boolean enabled) {
+        cbFiles.setEnabled(enabled);
+        cbProject.setEnabled(enabled);
+        cmdTranslate.setEnabled(enabled);
+        cmdOpenFile.setEnabled(enabled);
+        cmdCancel.setEnabled(!enabled);
     }
 
     public void showFiles(int index) {
@@ -498,30 +637,60 @@ public class BuggyMasterCodeView extends FrameView {
     public void translateFromList() {
         String fullPath = cbProject.getSelectedItem().toString();
         if (!fullPath.isEmpty()) {
-            String fileName = "";
-            for (int i = fullPath.length() - 1; i > 0; i--) {
-                if (fullPath.charAt(i) == '\\' || fullPath.charAt(i) == '/') {
-                    fileName = fullPath.substring(i + 1);
-                    break;
-                }
-            }
+            String fileName = getFileName(fullPath);
             translate(fullPath, fileName);
         }
+    }
+
+    private String getFileName(String fullPath) {
+        String fileName = "";
+        for (int i = fullPath.length() - 1; i > 0; i--) {
+            if (fullPath.charAt(i) == '\\' || fullPath.charAt(i) == '/') {
+                fileName = fullPath.substring(i + 1);
+                break;
+            }
+        }
+        return fileName;
+    }
+
+    private String getFilePath(String fullPath) {
+        String path = "";
+        for (int i = fullPath.length() - 1; i > 0; i--) {
+            if (fullPath.charAt(i) == '\\' || fullPath.charAt(i) == '/') {
+                path = fullPath.substring(0, i);
+                break;
+            }
+        }
+        return path;
+    }
+
+    public void fillOpenRecentList() {
+        String[] openRecentList = OpenRecent.getOpenRecentList();
+        if (openRecentList != null) {
+            for (int i = 0; i < openRecentList.length; i++) {
+                cbProject.addItem(openRecentList[i]);
+            }
+        }
+    }
+
+    @Action
+    public void cancelTranslate() {
+        m_cancel = true;
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JComboBox cbFiles;
     private javax.swing.JComboBox cbProject;
+    private javax.swing.JButton cmdCancel;
+    private javax.swing.JButton cmdOpenFile;
+    private javax.swing.JButton cmdTranslate;
     private javax.swing.JMenuItem dictionaryMenu;
-    private javax.swing.JButton jButton1;
-    private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JPanel jPanel2;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
@@ -555,10 +724,12 @@ public class BuggyMasterCodeView extends FrameView {
     private JDialog aboutBox;
     private Dictionary dictionary;
     private ClassView classView;
+    private VbGroup vbGroup;
     private JFileChooser fc;
 
     private String m_path = "";
     private String m_vbpFile = "";
+    private boolean m_cancel = false;
     private ArrayList<SourceFile> m_collFiles = new ArrayList<SourceFile>();
 
     static private final String newline = "\n";

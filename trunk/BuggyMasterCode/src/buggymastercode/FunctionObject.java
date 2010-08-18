@@ -50,7 +50,6 @@ public class FunctionObject {
             else {
                 return false;
             }
-
         }
         else {
 
@@ -91,7 +90,7 @@ public class FunctionObject {
 
         if (rs.getRows().isEmpty()) {
             G.setDefaultCursor();
-            return false;
+            return true;
         }
         else {
             setId(((Number)(rs.getRows().get(0).get("fun_id"))).intValue());

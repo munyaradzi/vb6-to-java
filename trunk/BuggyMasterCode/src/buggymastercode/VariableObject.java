@@ -104,7 +104,7 @@ public class VariableObject {
 
         if (rs.getRows().isEmpty()) {
             G.setDefaultCursor();
-            return false;
+            return true;
         }
         else {
             setId(((Number)(rs.getRows().get(0).get("var_id"))).intValue());
