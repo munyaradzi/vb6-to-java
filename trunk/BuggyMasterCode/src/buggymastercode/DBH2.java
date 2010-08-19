@@ -92,7 +92,7 @@ public class DBH2 implements DBConnection {
         stat.execute("CREATE TABLE IF NOT EXISTS topenrecent (" +
                 "or_id int PRIMARY KEY," +
                 "or_file varchar(500) DEFAULT '' NOT NULL);");
-        stat.execute("drop table tproject");
+        //stat.execute("drop table tproject");
         stat.execute("CREATE TABLE IF NOT EXISTS tproject (" +
                 "prj_id int PRIMARY KEY," +
                 "prj_name varchar(500) DEFAULT '' NOT NULL," +

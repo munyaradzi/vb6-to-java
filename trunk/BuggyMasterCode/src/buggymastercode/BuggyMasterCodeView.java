@@ -4,6 +4,8 @@
 
 package buggymastercode;
 
+import java.io.IOException;
+import java.util.logging.Logger;
 import org.jdesktop.application.Action;
 import org.jdesktop.application.ResourceMap;
 import org.jdesktop.application.SingleFrameApplication;
@@ -13,7 +15,11 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
+import java.io.Writer;
+import javax.swing.filechooser.FileFilter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
@@ -125,7 +131,7 @@ public class BuggyMasterCodeView extends FrameView {
 
         mainPanel = new javax.swing.JPanel();
         jPanel1 = new javax.swing.JPanel();
-        cmdOpenFile = new javax.swing.JButton();
+        cmdChooseFile = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         cbProject = new javax.swing.JComboBox();
         jLabel2 = new javax.swing.JLabel();
@@ -133,6 +139,9 @@ public class BuggyMasterCodeView extends FrameView {
         cbFiles = new javax.swing.JComboBox();
         cmdTranslate = new javax.swing.JButton();
         cmdCancel = new javax.swing.JButton();
+        jLabel4 = new javax.swing.JLabel();
+        cmdChooseFolderOutput = new javax.swing.JButton();
+        txOutputFolder = new javax.swing.JTextField();
         tabMain = new javax.swing.JTabbedPane();
         pnProgress = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
@@ -169,12 +178,12 @@ public class BuggyMasterCodeView extends FrameView {
         mainPanel.setLayout(new java.awt.BorderLayout());
 
         jPanel1.setName("jPanel1"); // NOI18N
-        jPanel1.setPreferredSize(new java.awt.Dimension(800, 90));
+        jPanel1.setPreferredSize(new java.awt.Dimension(800, 120));
 
         javax.swing.ActionMap actionMap = org.jdesktop.application.Application.getInstance(buggymastercode.BuggyMasterCodeApp.class).getContext().getActionMap(BuggyMasterCodeView.class, this);
-        cmdOpenFile.setAction(actionMap.get("showChoseFileDialog")); // NOI18N
-        cmdOpenFile.setText(resourceMap.getString("cmdOpenFile.text")); // NOI18N
-        cmdOpenFile.setName("cmdOpenFile"); // NOI18N
+        cmdChooseFile.setAction(actionMap.get("showChooseFileDialog")); // NOI18N
+        cmdChooseFile.setText(resourceMap.getString("cmdChooseFile.text")); // NOI18N
+        cmdChooseFile.setName("cmdChooseFile"); // NOI18N
 
         jLabel1.setText(resourceMap.getString("jLabel1.text")); // NOI18N
         jLabel1.setName("jLabel1"); // NOI18N
@@ -205,6 +214,18 @@ public class BuggyMasterCodeView extends FrameView {
         cmdCancel.setText(resourceMap.getString("cmdCancel.text")); // NOI18N
         cmdCancel.setName("cmdCancel"); // NOI18N
 
+        jLabel4.setText(resourceMap.getString("jLabel4.text")); // NOI18N
+        jLabel4.setMinimumSize(new java.awt.Dimension(44, 22));
+        jLabel4.setName("jLabel4"); // NOI18N
+        jLabel4.setPreferredSize(new java.awt.Dimension(44, 22));
+
+        cmdChooseFolderOutput.setAction(actionMap.get("showChooseFolderDialog")); // NOI18N
+        cmdChooseFolderOutput.setText(resourceMap.getString("cmdChooseFolderOutput.text")); // NOI18N
+        cmdChooseFolderOutput.setName("cmdChooseFolderOutput"); // NOI18N
+
+        txOutputFolder.setText(resourceMap.getString("txOutputFolder.text")); // NOI18N
+        txOutputFolder.setName("txOutputFolder"); // NOI18N
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -212,46 +233,61 @@ public class BuggyMasterCodeView extends FrameView {
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(10, 10, 10)
                         .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addGroup(jPanel1Layout.createSequentialGroup()
-                                .addComponent(jLabel1)
-                                .addGap(18, 18, 18)
-                                .addComponent(cbProject, javax.swing.GroupLayout.PREFERRED_SIZE, 467, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(10, 10, 10)
-                                .addComponent(cmdOpenFile)
-                                .addGap(15, 15, 15)
-                                .addComponent(cmdTranslate, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(18, 18, 18)
-                                .addComponent(cmdCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE))
-                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                .addGap(306, 306, 306)
-                                .addComponent(cbFiles, javax.swing.GroupLayout.PREFERRED_SIZE, 409, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                                .addComponent(jLabel1)
+                                .addGap(49, 49, 49)
+                                .addComponent(cbProject, javax.swing.GroupLayout.PREFERRED_SIZE, 436, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addContainerGap()
+                                .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, 74, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(txOutputFolder, javax.swing.GroupLayout.PREFERRED_SIZE, 438, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(cmdChooseFile)
+                            .addComponent(cmdChooseFolderOutput))
+                        .addGap(13, 13, 13)
+                        .addComponent(cmdTranslate, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(18, 18, 18)
+                        .addComponent(cmdCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(64, 64, 64)
-                        .addComponent(lbPackage, javax.swing.GroupLayout.PREFERRED_SIZE, 278, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addContainerGap()
+                        .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(40, 40, 40)
+                        .addComponent(lbPackage, javax.swing.GroupLayout.PREFERRED_SIZE, 281, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(cbFiles, javax.swing.GroupLayout.PREFERRED_SIZE, 376, javax.swing.GroupLayout.PREFERRED_SIZE)))
                 .addContainerGap(22, Short.MAX_VALUE))
         );
+
+        jPanel1Layout.linkSize(javax.swing.SwingConstants.HORIZONTAL, new java.awt.Component[] {cbProject, txOutputFolder});
+
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
                 .addGap(10, 10, 10)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(cbProject, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addGap(5, 5, 5)
                         .addComponent(jLabel1))
-                    .addComponent(cmdOpenFile)
                     .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                         .addComponent(cmdTranslate)
-                        .addComponent(cmdCancel)))
-                .addGap(15, 15, 15)
+                        .addComponent(cmdCancel)
+                        .addComponent(cmdChooseFile))
+                    .addComponent(cbProject, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(txOutputFolder, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(cmdChooseFolderOutput))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(lbPackage, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(cbFiles, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(43, 43, 43))
+                .addGap(90, 90, 90))
         );
 
         mainPanel.add(jPanel1, java.awt.BorderLayout.PAGE_START);
@@ -302,7 +338,7 @@ public class BuggyMasterCodeView extends FrameView {
                 .addContainerGap()
                 .addComponent(jLabel3)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 193, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 163, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jSplitPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
@@ -417,18 +453,23 @@ public class BuggyMasterCodeView extends FrameView {
     }// </editor-fold>//GEN-END:initComponents
 
     @Action
-    public void showChoseFileDialog() {
-
-        if (fc == null) {
-            fc = new JFileChooser("C:\\Dev\\proyectos.mono\\vb\\CSReports\\CSReport\\CSReportDll\\Codigo");
+    public void showChooseFileDialog() {
+        if (chooserFile == null) {
+            chooserFile = new JFileChooser();
+            chooserFile.setCurrentDirectory(new java.io.File("."));
+            FileFilter filter = new ExtensionFileFilter("VBP and VBG", new String[] { "VBP", "VBG" });
+            chooserFile.setFileFilter(filter);
+            chooserFile.setDialogTitle("Select the vbp or vbg file to be translated");
+            chooserFile.setFileSelectionMode(JFileChooser.FILES_ONLY);
+            chooserFile.setAcceptAllFileFilterUsed(false);
         }
         JFrame mainFrame = BuggyMasterCodeApp.getApplication().getMainFrame();
 
-        int returnVal = fc.showOpenDialog(mainFrame);
+        int returnVal = chooserFile.showOpenDialog(mainFrame);
 
         if (returnVal == JFileChooser.APPROVE_OPTION) {
 
-            File file = fc.getSelectedFile();
+            File file = chooserFile.getSelectedFile();
             cbProject.addItem(file.getAbsolutePath());
             OpenRecent or = new OpenRecent();
             or.addOpenRecent(file.getAbsolutePath());
@@ -529,8 +570,31 @@ public class BuggyMasterCodeView extends FrameView {
             vbGroup = new VbGroup(mainFrame, false);
             vbGroup.setLocationRelativeTo(mainFrame);
         }
+        vbGroup.setCaller(this);
         vbGroup.loadGrid(projects);
         BuggyMasterCodeApp.getApplication().show(vbGroup);
+    }
+
+    public void translateProjects(ArrayList<Project> projects) {
+        m_projects.removeAll(projects);
+
+        for (int i = 0; i < projects.size(); i++) {
+            Project project = projects.get(i);
+            if (project.getSelected()) {
+                m_projects.add(project);
+            }
+        }
+        translate();
+    }
+
+    private void translate() {
+        if (m_projects.size() > 0) {
+            Project project = m_projects.get(0);
+            String name = project.getName();
+            String path = G.getFileForOS(project.getPath() + "\\" + name);
+            m_projects.remove(0);
+            translate(path, name);
+        }
     }
 
     private boolean isVbGroup(String fileName) {
@@ -539,12 +603,21 @@ public class BuggyMasterCodeView extends FrameView {
 
     public void workDone() {
         for (int i = 0; i < m_collFiles.size(); i++) {
+            saveFile(m_collFiles.get(i));
             cbFiles.addItem(m_collFiles.get(i).getFileName());
         }
-        progressBar.setVisible(false);
-        busyIconTimer.stop();
-        tabMain.setSelectedComponent(pnCode);
-        setEnabledCtrls(true);
+        if (thereIsProjectsInQueue())
+                translate();
+        else {
+            progressBar.setVisible(false);
+            busyIconTimer.stop();
+            tabMain.setSelectedComponent(pnCode);
+            setEnabledCtrls(true);
+        }
+    }
+
+    private boolean thereIsProjectsInQueue() {
+        return m_projects.size() > 0;
     }
 
     public void initProgress() {
@@ -585,6 +658,36 @@ public class BuggyMasterCodeView extends FrameView {
         model.addElement(message);
     }
 
+    private void saveFile(SourceFile source) {
+        if (txOutputFolder.getText().isEmpty())
+            return;
+        Writer output = null;
+        String folder = getFileName(m_vbpFile);
+        createFolderIfNotExists(G.getFileForOS(txOutputFolder.getText()
+                                                + "\\"
+                                                + folder));
+        String fileName = G.getFileForOS(txOutputFolder.getText()
+                                            + "\\"
+                                            + folder
+                                            + "\\"
+                                            + source.getJavaName()
+                                            + ".java");
+        File file = new File(fileName);
+        try {
+            output = new BufferedWriter(new FileWriter(file));
+            output.write(source.getJavaSource());
+            output.close();
+        } catch (IOException ex) {
+            Logger.getLogger(BuggyMasterCodeView.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+
+    private void createFolderIfNotExists(String folder) {
+        File f = new File(folder);
+        if (!f.exists())
+            f.mkdir();
+    }
+
     private String getVbName(String vbpFile) {
         ByRefString value = new ByRefString();
         if (G.getToken(vbpFile, "Name", 1, value)) {
@@ -599,8 +702,10 @@ public class BuggyMasterCodeView extends FrameView {
         cbFiles.setEnabled(enabled);
         cbProject.setEnabled(enabled);
         cmdTranslate.setEnabled(enabled);
-        cmdOpenFile.setEnabled(enabled);
+        cmdChooseFile.setEnabled(enabled);
         cmdCancel.setEnabled(!enabled);
+        cmdChooseFolderOutput.setEnabled(enabled);
+        txOutputFolder.setEnabled(enabled);
     }
 
     public void showFiles(int index) {
@@ -678,16 +783,40 @@ public class BuggyMasterCodeView extends FrameView {
         m_cancel = true;
     }
 
+    @Action
+    public void showChooseFolderDialog() {
+        if (chooserFolder == null) {
+            chooserFolder = new JFileChooser();
+            chooserFolder.setCurrentDirectory(new java.io.File("."));
+            chooserFolder.setFileFilter(null);
+            chooserFolder.setDialogTitle("Select the output folder where java files will be saved");
+            chooserFolder.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+            chooserFolder.setAcceptAllFileFilterUsed(false);
+        }
+        JFrame mainFrame = BuggyMasterCodeApp.getApplication().getMainFrame();
+
+        int returnVal = chooserFolder.showOpenDialog(mainFrame);
+
+        if (returnVal == JFileChooser.APPROVE_OPTION) {
+
+            File file = chooserFolder.getSelectedFile();
+            txOutputFolder.setText(file.getAbsolutePath());
+
+        }
+    }
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JComboBox cbFiles;
     private javax.swing.JComboBox cbProject;
     private javax.swing.JButton cmdCancel;
-    private javax.swing.JButton cmdOpenFile;
+    private javax.swing.JButton cmdChooseFile;
+    private javax.swing.JButton cmdChooseFolderOutput;
     private javax.swing.JButton cmdTranslate;
     private javax.swing.JMenuItem dictionaryMenu;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JLabel jLabel2;
     private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JPanel jPanel1;
@@ -711,6 +840,7 @@ public class BuggyMasterCodeView extends FrameView {
     private javax.swing.JPanel statusPanel;
     private javax.swing.JTabbedPane tabMain;
     private javax.swing.JMenu toolMenu;
+    private javax.swing.JTextField txOutputFolder;
     private javax.swing.JTextArea txSourceCode;
     private javax.swing.JTextArea txSourceCodeJava;
     // End of variables declaration//GEN-END:variables
@@ -725,12 +855,14 @@ public class BuggyMasterCodeView extends FrameView {
     private Dictionary dictionary;
     private ClassView classView;
     private VbGroup vbGroup;
-    private JFileChooser fc;
+    private JFileChooser chooserFile;
+    private JFileChooser chooserFolder;
 
     private String m_path = "";
     private String m_vbpFile = "";
     private boolean m_cancel = false;
     private ArrayList<SourceFile> m_collFiles = new ArrayList<SourceFile>();
+    private ArrayList<Project> m_projects = new ArrayList<Project>();
 
     static private final String newline = "\n";
 }

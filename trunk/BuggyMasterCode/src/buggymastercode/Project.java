@@ -16,9 +16,11 @@ import org.apache.commons.beanutils.DynaBean;
 public class Project {
 
     private String m_name = "";
+    private String m_dllName = "";
     private String m_path = "";
     private int m_level = 0;
     private int m_id = 0;
+    private boolean m_selected = false;
 
     public void setId(int value) {m_id = value;}
     public int getId() {return m_id;}
@@ -31,12 +33,28 @@ public class Project {
         m_name = value;
     }
 
+    public String getDllName() {
+        return m_dllName;
+    }
+
+    public void setDllName(String value) {
+        m_dllName = value;
+    }
+
     public String getPath() {
         return m_path;
     }
 
     public void setPath(String value) {
         m_path = value;
+    }
+
+    public boolean getSelected() {
+        return m_selected;
+    }
+
+    public void setSelected(boolean value) {
+        m_selected = value;
     }
 
     public int getLevel() {
@@ -47,8 +65,33 @@ public class Project {
         int line = 1;
         ByRefString value = new ByRefString();
         String vbpFile = G.getFileForOS(m_path + "\\" + m_name);
+
+        // we need to update the dll name of this project
+        //
+        if (G.getToken(vbpFile, "Name", 1, value)) {
+            if (!value.text.isEmpty()) {
+                m_dllName = value.text;
+            }
+        }
+        if (G.getToken(vbpFile, "Type", 1, value)) {
+            if (!value.text.isEmpty()) {
+                if (value.text.equals("Exe"))
+                    m_dllName += ".exe";
+                else if (value.text.equals("Control"))
+                    m_dllName += ".ocx";
+                else if (value.text.equals("OleDll"))
+                    m_dllName += ".dll";
+                m_dllName = m_dllName.replaceAll("\"", "");
+                if (!save())
+                    return false;
+            }
+        }
+        // first we clear all references
+        //
         if (!deleteReferences())
             return false;
+        // now we add the references of this project
+        //
         if (G.getToken(vbpFile, "Reference", line, value)) {
             while (!value.text.isEmpty()) {
                 if (!addReference(getReferenceName(value.text)))
@@ -57,14 +100,13 @@ public class Project {
                 if (!G.getToken(vbpFile, "Reference", line, value)) {
                     break;
                 }
-                //progressBar.setValue(line);
             }
         }
         return true;
     }
 
     public void getLevelFromReferences() {
-        m_level = getLevelForReferenceName(m_name);
+        m_level = getLevelForReferenceName(m_dllName);
     }
 
     private boolean deleteReferences() {
@@ -86,10 +128,11 @@ public class Project {
                 m_id = id.getId();
             }
 
-            String sqlstmt = "insert into tproject (prj_id, prj_name)"
+            String sqlstmt = "insert into tproject (prj_id, prj_name, prj_dllname)"
                                 + " values("
                                 + Integer.toString(m_id)
                                 + "," + Db.getString(m_name)
+                                + "," + Db.getString(m_dllName)
                                 + ")";
             if (Db.db.execute(sqlstmt)) {
                 return true;
@@ -98,8 +141,17 @@ public class Project {
                 return false;
             }
         }
-        else
-            return true;
+        else {
+            String sqlstmt = "update tproject set"
+                                + " prj_dllname = " + Db.getString(m_dllName)
+                                + " where prj_id = " + Integer.toString(m_id);
+            if (Db.db.execute(sqlstmt)) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
     }
 
     private boolean addReference(String reference) {
@@ -126,7 +178,7 @@ public class Project {
     private int getLevelForReferenceName(String reference) {
         int level = 0;
         int refLevel = 0;
-        int prjId = getProjectIdFromName(reference);
+        int prjId = getProjectIdFromDllName(reference);
         ArrayList<String>references = getReferencesList(prjId);
         if (references != null) {
             for (int i = 0; i < references.size(); i++) {
@@ -161,9 +213,9 @@ public class Project {
         }
     }
 
-    private int getProjectIdFromName(String reference) {
+    private int getProjectIdFromDllName(String reference) {
         G.setHourglass();
-        String sqlstmt = "select prj_id from tproject where prj_name = "
+        String sqlstmt = "select prj_id from tproject where prj_dllname = "
                             + Db.getString(reference);
         DBRecordSet rs = new DBRecordSet();
         if (!Db.db.openRs(sqlstmt, rs)) {
