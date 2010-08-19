@@ -2429,7 +2429,7 @@ public class Translator {
     private String replaceNewSentence(String strLine) {
         final String C_IDENTIFIER_FIRST_CHAR = "abcdefghijklmnopqrstuvwyxz";
         boolean newFound = false;
-        String[] words = G.split(strLine, "\t (),");
+        String[] words = G.split2(strLine, "\t (),");
         strLine = "";
         for (int i = 0; i < words.length; i++) {
             if (words[i].equalsIgnoreCase("new")) {
@@ -5638,5 +5638,6 @@ class IdentifierInfo {
  * TODO: file functions (print, open, getattr, etc.)
  * TODO: translate Not sentence eg return Not cancel (this is a parcial translated functionName = Not Cancel)
  * TODO: translate default property
+ * TODO: translate on error goto controlerror
  *
  */
