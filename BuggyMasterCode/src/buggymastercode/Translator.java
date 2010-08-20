@@ -2077,7 +2077,7 @@ public class Translator {
                             j++;
                         else
                             j = 0;
-                        paramsCall += param.substring(j) + ",";
+                        paramsCall += param.substring(j) + ", ";
                     }
                     if (paramsCall.length() > 0)
                         paramsCall = paramsCall.substring(0, paramsCall.length() - 1);
