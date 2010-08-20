@@ -534,7 +534,11 @@ public class BuggyMasterCodeView extends FrameView {
                     return;
                 Project project = new Project();
                 project.setName(getFileName(value.text));
-                project.setPath(getFilePath(vbgFile) + "\\" + getFilePath(value.text));
+                String path = getFilePath(vbgFile);
+                String filePath = getFilePath(value.text);
+                if (!filePath.isEmpty())
+                    path += "\\" + filePath;
+                project.setPath(path);
                 if (!project.save())
                     return;
                 if (!project.loadReferences())
@@ -552,7 +556,11 @@ public class BuggyMasterCodeView extends FrameView {
             if (!value.text.isEmpty()) {
                 Project project = new Project();
                 project.setName(getFileName(value.text));
-                project.setPath(getFilePath(vbgFile) + "\\" + getFilePath(value.text));
+                String path = getFilePath(vbgFile);
+                String filePath = getFilePath(value.text);
+                if (!filePath.isEmpty())
+                    path += "\\" + filePath;
+                project.setPath(path);
                 if (!project.save())
                     return;
                 if (!project.loadReferences())
@@ -748,7 +756,7 @@ public class BuggyMasterCodeView extends FrameView {
     }
 
     private String getFileName(String fullPath) {
-        String fileName = "";
+        String fileName = fullPath;
         for (int i = fullPath.length() - 1; i > 0; i--) {
             if (fullPath.charAt(i) == '\\' || fullPath.charAt(i) == '/') {
                 fileName = fullPath.substring(i + 1);
