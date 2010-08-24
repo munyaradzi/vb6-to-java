@@ -465,6 +465,15 @@
                 <Property name="name" type="java.lang.String" value="dictionaryMenu" noResource="true"/>
               </Properties>
             </MenuItem>
+            <MenuItem class="javax.swing.JMenuItem" name="preferencesMenu">
+              <Properties>
+                <Property name="action" type="javax.swing.Action" editor="org.netbeans.modules.swingapp.ActionEditor">
+                  <action class="buggymastercode.BuggyMasterCodeView" id="showPreferences" methodName="showPreferences"/>
+                </Property>
+                <Property name="text" type="java.lang.String" resourceKey="preferencesMenu.text"/>
+                <Property name="name" type="java.lang.String" value="preferencesMenu" noResource="true"/>
+              </Properties>
+            </MenuItem>
           </SubComponents>
         </Menu>
         <Menu class="javax.swing.JMenu" name="jMenu1">
