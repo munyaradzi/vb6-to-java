@@ -129,6 +129,9 @@ public class Translator {
     // functionality
     //
     private boolean m_addDateAuxFunction = false;
+    // flag to add auxiliary function to support vb IsNumeric function
+    //
+    private boolean m_addIsNumericAuxFunction = false;
     private String m_packageName = "";
     // packages refence by this visual basic project in the order it appears in
     // vbp file
@@ -419,6 +422,20 @@ public class Translator {
                     "            dateValue = df.parse(date);" + newline +
                     "        } catch (ParseException ex) {/* it can not be possible*/}" + newline +
                     "        return dateValue;" + newline +
+                    "    }" + newline;
+        }
+
+        if (m_addIsNumericAuxFunction) {
+            rtn = newline +
+                    "    private static boolean isNumeric(String number)" + newline +
+                    "    {" + newline +
+                    "        try {" + newline +
+                    "            Double.parseDouble(number);" + newline +
+                    "            return true;" + newline +
+                    "        } " + newline +
+                    "        catch (ParseException ex) {" + newline +
+                    "            return false;" + newline +
+                    "        }" + newline +
                     "    }" + newline;
         }
 
@@ -2005,6 +2022,8 @@ public class Translator {
         strLine = replaceSlashInLiterals(strLine);
         strLine = replaceNewSentence(strLine);
         strLine = replaceRaiseEvent(strLine);
+        strLine = replaceIsNumericSentence(strLine);
+        strLine = replaceCdblSentence(strLine);
 
         // this call has to be the last sentences in this function
         // all the changes have to be done before this call
@@ -3344,6 +3363,113 @@ public class Translator {
         return expression.trim();
     }
 
+    private String replaceIsNumericSentence(String expression) {
+        if (containsFunction(expression, "IsNumeric")) {
+            m_addIsNumericAuxFunction = true;
+            return replaceOneParamFunction(expression, "IsNumeric", "isNumeric");
+        }
+        else
+            return expression;
+    }
+
+    private String replaceCdblSentence(String expression) {
+        if (containsFunction(expression, "CDbl")) {
+            return replaceOneParamFunction(expression, "CDbl", "Double.parseDouble");
+        }
+        else
+            return expression;
+    }
+
+    private String replaceOneParamFunction(String expression, String function, String javaFunction) {
+        boolean isNumericFound = false;
+        expression = G.ltrimTab(expression);
+
+        if (containsFunction(expression, function)) {
+
+            m_addIsNumericAuxFunction = true;
+
+            int openParentheses = 0;
+            String[] words = G.split(expression);
+            String params = "";
+            expression = "";
+            isNumericFound = false;
+
+            for (int i = 0; i < words.length; i++) {
+                if (isNumericFound) {
+                    if (words[i].equals("(")) {
+                        openParentheses++;
+                        if (openParentheses > 1) {
+                            params += words[i];
+                        }
+                    }
+                    // look for a close parentheses without an open parentheses
+                    else if (words[i].equals(")")) {
+                        openParentheses--;
+                        if (openParentheses == 0) {
+                            if (containsFunction(expression, function)) {
+                                params = replaceIsNumericSentence(params);
+                            }
+                            String[] vparams = G.split(params);
+                            String identifier = "";
+
+                            int colons = 0;
+                            identifier = "";
+                            for (int t = 0; t < vparams.length; t++) {
+                                if (vparams[t].equals(",")) {
+                                    colons++;
+                                }
+                                else {
+
+                                    if (colons == 0) {
+                                        identifier += vparams[t];
+                                    }
+                                    else {
+                                        G.showInfo("Unexpected colon found in "
+                                                + function
+                                                + " function's params: " + params);
+                                    }
+                                }
+                            }
+                            // identifier can be a complex expresion
+                            // like ' "an string plus" + a_var '
+                            //
+                            if (G.contains(identifier, " ")) {
+                                identifier = "(" + identifier + ")";
+                            }
+                            expression += javaFunction + "(" + identifier + ")";
+                            isNumericFound = false;
+                            params = "";
+                        }
+                        else {
+                            params = params.trim() + words[i];
+                        }
+                    }
+                    else {
+                        params += words[i];
+                    }
+                }
+                else {
+                    if (words[i].equalsIgnoreCase(function)) {
+                        isNumericFound = true;
+                    }
+                    else if (G.beginLike(words[i], function + "(")) {
+                        expression += replaceOneParamFunction(words[i], function, javaFunction);
+                    }
+                    else if (words[i].toLowerCase().contains(" " + function + "(")) {
+                        expression += replaceOneParamFunction(words[i], function, javaFunction);
+                    }
+                    else if (words[i].toLowerCase().contains("(" + function + "(")) {
+                        expression += replaceOneParamFunction(words[i], function, javaFunction);
+                    }
+                    else {
+                        expression += words[i];
+                    }
+                }
+            }
+        }
+        return expression.trim();
+    }
+
     private boolean containsMid(String expression) {
         if (expression.toLowerCase().contains(" mid(")) {
             return true;
@@ -3465,13 +3591,19 @@ public class Translator {
     }
 
     private boolean containsLen(String expression) {
-        if (expression.toLowerCase().contains(" len(")) {
+        return containsFunction(expression, "len");
+    }
+
+    private boolean containsFunction(String expression, String function) {
+        function = function.toLowerCase();
+        expression = expression.toLowerCase();
+        if (expression.contains(" " + function + "(")) {
             return true;
         }
-        else if (expression.toLowerCase().contains("(len(")) {
+        else if (expression.contains("(" + function + "(")) {
             return true;
         }
-        else if (G.beginLike(expression,"len(")) {
+        else if (G.beginLike(expression,function + "(")) {
             return true;
         }
         else {
@@ -4944,6 +5076,7 @@ public class Translator {
         m_listenerInterface = "";
         m_adapterClass = "";
         m_addDateAuxFunction = false;
+        m_addIsNumericAuxFunction = false;
         m_returnValue = "";
 
         if (name.contains(".")) {
@@ -4975,6 +5108,12 @@ public class Translator {
     private void addToType(String strLine) {
         String className = "";
         strLine = G.ltrim(strLine);
+        int startComment = getStartComment(strLine);
+        String comments = "";
+        if (startComment >= 0) {
+            comments =  "//" + strLine.substring(startComment);
+            strLine = strLine.substring(0, startComment-1);
+        }
 
         if (strLine.length() > 5) {
             if (strLine.substring(0,5).toLowerCase().equals("type ")) {
@@ -4984,7 +5123,7 @@ public class Translator {
                 type.javaName = className;
                 type.getVbCode().append(strLine);
                 m_types.add(type);
-                m_type += "private class " + className + " {" + newline;
+                m_type += "private class " + className + " {" + comments + newline;
                 saveTypeClassInDB(className);
                 return;
             }
@@ -4999,7 +5138,7 @@ public class Translator {
                 type.javaName = className;
                 type.getVbCode().append(strLine);
                 m_types.add(type);
-                m_type += "public class " + className + " {" + newline;
+                m_type += "public class " + className + " {" + comments + newline;
                 saveTypeClassInDB(className);
                 return;
             }
@@ -5013,7 +5152,7 @@ public class Translator {
                 type.javaName = className;
                 type.getVbCode().append(strLine);
                 m_types.add(type);
-                m_type += "private class " + className + " {" + newline;
+                m_type += "private class " + className + " {" + comments + newline;
                 saveTypeClassInDB(className);
                 return;
             }
@@ -5022,7 +5161,7 @@ public class Translator {
         if (strLine.trim().length() == 8) {
             if (strLine.substring(0,8).toLowerCase().equals("end type")) {
                 m_inType = false;
-                m_type += "}" + newline + newline;
+                m_type += "}" + comments + newline + newline;
                 m_collTypes.add(m_type);
                 Type type = m_types.get(m_types.size()-1);
                 type.getVbCode().append(strLine);
@@ -5132,7 +5271,7 @@ public class Translator {
                 var.isPublic = true;
                 type.getMembersVariables().add(var);
 
-                m_type += "    public " + dataType + ' ' + identifier + ";" + newline;
+                m_type += "    public " + dataType + ' ' + identifier + ";" + comments + newline;
             } 
             else {
                 m_type += strLine;
@@ -5639,5 +5778,22 @@ class IdentifierInfo {
  * TODO: translate Not sentence eg return Not cancel (this is a parcial translated functionName = Not Cancel)
  * TODO: translate default property
  * TODO: translate on error goto controlerror
+ * TODO: add import calls for references to vb projects we have translated
+ *
+ * TODO: make an html report with a sumary of the work done (total classes translated,
+ *       total files created, total projects translated, total functions)
+ *
+ *       erros: list of windows api calls founded and the line number where it appears in files
+ *              list o variables of with block which can not be resolved and the line number
+ *               where it appears in files
+ *              list of references which are not vb projects we have translated yet eg: stdole2.dll
+ *
+ *       warnnings: list all the cases where default properties were translated
+ *                  list all the cases where array indexes where translated
+ *                  list all the cases where byref strings and byref numbers where translated
+ *                  list all the cases where byref objects where translated to byval because
+ *                   the object is not assigned by the code in the function and neither by the code
+ *                   in other functions called by the function which was translated and take
+ *                   the object as a byref parameter
  *
  */

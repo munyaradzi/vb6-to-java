@@ -21,7 +21,6 @@ import java.io.FileWriter;
 import java.io.Writer;
 import javax.swing.filechooser.FileFilter;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Level;
 import javax.swing.DefaultListModel;
 import javax.swing.Timer;
@@ -153,15 +152,18 @@ public class BuggyMasterCodeView extends FrameView {
         jScrollPane4 = new javax.swing.JScrollPane();
         lsVbSource = new javax.swing.JList();
         pnCode = new javax.swing.JSplitPane();
-        jScrollPane1 = new javax.swing.JScrollPane();
-        txSourceCode = new javax.swing.JTextArea();
-        jScrollPane2 = new javax.swing.JScrollPane();
-        txSourceCodeJava = new javax.swing.JTextArea();
+        txSourceCode = new RSyntaxTextArea();
+        txSourceCode.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_VB);
+        jScrollPane1 = new RTextScrollPane(txSourceCode);
+        txSourceCodeJava = new RSyntaxTextArea();
+        txSourceCodeJava.setSyntaxEditingStyle(SyntaxConstants.SYNTAX_STYLE_JAVA);
+        jScrollPane2 = new RTextScrollPane(txSourceCodeJava);
         menuBar = new javax.swing.JMenuBar();
         javax.swing.JMenu fileMenu = new javax.swing.JMenu();
         javax.swing.JMenuItem exitMenuItem = new javax.swing.JMenuItem();
         toolMenu = new javax.swing.JMenu();
         dictionaryMenu = new javax.swing.JMenuItem();
+        preferencesMenu = new javax.swing.JMenuItem();
         jMenu1 = new javax.swing.JMenu();
         jMenuItem1 = new javax.swing.JMenuItem();
         javax.swing.JMenu helpMenu = new javax.swing.JMenu();
@@ -388,6 +390,11 @@ public class BuggyMasterCodeView extends FrameView {
         dictionaryMenu.setText(resourceMap.getString("dictionaryMenu.text")); // NOI18N
         dictionaryMenu.setName("dictionaryMenu"); // NOI18N
         toolMenu.add(dictionaryMenu);
+
+        preferencesMenu.setAction(actionMap.get("showPreferences")); // NOI18N
+        preferencesMenu.setText(resourceMap.getString("preferencesMenu.text")); // NOI18N
+        preferencesMenu.setName("preferencesMenu"); // NOI18N
+        toolMenu.add(preferencesMenu);
 
         menuBar.add(toolMenu);
 
@@ -813,6 +820,10 @@ public class BuggyMasterCodeView extends FrameView {
         }
     }
 
+    @Action
+    public void showPreferences() {
+    }
+
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JComboBox cbFiles;
     private javax.swing.JComboBox cbProject;
@@ -828,8 +839,8 @@ public class BuggyMasterCodeView extends FrameView {
     private javax.swing.JMenu jMenu1;
     private javax.swing.JMenuItem jMenuItem1;
     private javax.swing.JPanel jPanel1;
-    private javax.swing.JScrollPane jScrollPane1;
-    private javax.swing.JScrollPane jScrollPane2;
+    private RTextScrollPane jScrollPane1;
+    private RTextScrollPane jScrollPane2;
     private javax.swing.JScrollPane jScrollPane3;
     private javax.swing.JScrollPane jScrollPane4;
     private javax.swing.JScrollPane jScrollPane5;
@@ -842,6 +853,7 @@ public class BuggyMasterCodeView extends FrameView {
     private javax.swing.JMenuBar menuBar;
     private javax.swing.JSplitPane pnCode;
     private javax.swing.JPanel pnProgress;
+    private javax.swing.JMenuItem preferencesMenu;
     private javax.swing.JProgressBar progressBar;
     private javax.swing.JLabel statusAnimationLabel;
     private javax.swing.JLabel statusMessageLabel;
@@ -849,8 +861,8 @@ public class BuggyMasterCodeView extends FrameView {
     private javax.swing.JTabbedPane tabMain;
     private javax.swing.JMenu toolMenu;
     private javax.swing.JTextField txOutputFolder;
-    private javax.swing.JTextArea txSourceCode;
-    private javax.swing.JTextArea txSourceCodeJava;
+    private RSyntaxTextArea txSourceCode;
+    private RSyntaxTextArea txSourceCodeJava;
     // End of variables declaration//GEN-END:variables
 
     private final Timer messageTimer;
