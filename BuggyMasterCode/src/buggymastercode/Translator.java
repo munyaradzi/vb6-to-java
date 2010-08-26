@@ -131,12 +131,22 @@ public class Translator {
     // functionality
     //
     private boolean m_addDateAuxFunction = false;
+    private boolean m_addDateAuxFunctionToG = false;
     // flag to add auxiliary function to support vb CDate function
     //
     private boolean m_addParseDateAuxFunction = false;
+    private boolean m_addParseDateAuxFunctionToG = false;
     // flag to add auxiliary function to support vb IsNumeric function
     //
     private boolean m_addIsNumericAuxFunction = false;
+    private boolean m_addIsNumericAuxFunctionToG = false;
+    // flag to add auxiliary function to support vb redim and redim preserve
+    //
+    private boolean m_addRedimAuxFunction = false;
+    private boolean m_addRedimAuxFunctionToG = false;
+    private boolean m_addRedimPreserveAuxFunction = false;
+    private boolean m_addRedimPreserveAuxFunctionToG = false;
+    //
     private String m_packageName = "";
     // packages refence by this visual basic project in the order it appears in
     // vbp file
@@ -150,6 +160,10 @@ public class Translator {
     private TranslatorWorker m_caller = null;
 
     private ClassObject m_typeClassObject;
+
+    private boolean m_AddAuxFunctionsToClass = false;
+    private boolean m_UseGAuxFunctions = false;
+    private boolean m_UseCSUtils = false;
 
     public Translator() {
         m_collJavaClassess = new ArrayList<SourceFile>();
@@ -193,6 +207,14 @@ public class Translator {
             fun.getReturnType().setType("String");
             source.getPublicFunctions().add(fun);
             m_collJavaClassess.add(source);
+
+        Preference pref = PreferenceObject.getPreference(G.C_AUX_FUN_ID);
+        if (pref.getValue().equals(G.C_AUX_FUN_IN_CLASS_SOURCE))
+            m_AddAuxFunctionsToClass = true;
+        else if (pref.getValue().equals(G.C_AUX_FUN_IN_G_CLASS))
+            m_UseGAuxFunctions = true;
+        else if (pref.getValue().equals(G.C_AUX_FUN_IN_CS_LIBRARY))
+            m_UseCSUtils = true;
     }
 
     public void setCaller(TranslatorWorker caller) {
@@ -437,7 +459,93 @@ public class Translator {
         String rtn = "";
 
         if (m_addDateAuxFunction) {
-            rtn = newline +
+            rtn += newline + getDateAuxFunction();
+        }
+
+        if (m_addParseDateAuxFunction) {
+            rtn += newline + getParseDateAuxFunction();
+        }
+
+        if (m_addIsNumericAuxFunction) {
+            rtn += newline + getIsNumericAuxFunction();
+        }
+
+        if (m_addRedimAuxFunction) {
+            rtn += newline + getRedimAuxFunction();
+        }
+
+        if (m_addRedimPreserveAuxFunction) {
+            rtn += newline + getRedimPreserveAuxFunction();
+        }
+
+        return rtn;
+    }
+
+    public String getGImportSection() {
+        String rtn = "";
+        m_importCount = 0;
+
+        if (m_addDateAuxFunctionToG || m_addParseDateAuxFunctionToG) {
+            addToImportList("import java.text.DateFormat;");
+            addToImportList("import java.text.ParseException;");
+            addToImportList("import java.text.SimpleDateFormat;");
+            addToImportList("import java.text.Date;");
+        }
+
+        if (m_addIsNumericAuxFunctionToG) {
+            addToImportList("import java.text.ParseException;");
+        }
+
+        for (int i = 0; i < m_importCount; i++) {
+            rtn += m_imports[i] + newline;
+        }
+
+        if (!rtn.isEmpty())
+            rtn = newline + rtn + newline;
+
+        return rtn;
+    }
+
+    public String getGClass() {
+        if (m_UseGAuxFunctions) {
+
+            String rtn = "// Class G : Auxiliary functions" 
+                            + newline + "//" + newline + newline
+                            + getGImportSection()
+                            + "public class G {" + newline;
+
+            if (m_addDateAuxFunctionToG) {
+                rtn += newline + getDateAuxFunction();
+            }
+
+            if (m_addParseDateAuxFunctionToG) {
+                rtn += newline + getParseDateAuxFunction();
+            }
+
+            if (m_addIsNumericAuxFunctionToG) {
+                rtn += newline + getIsNumericAuxFunction();
+            }
+
+            if (m_addRedimAuxFunctionToG) {
+                rtn += newline + getRedimAuxFunction();
+            }
+
+            if (m_addRedimPreserveAuxFunctionToG) {
+                rtn += newline + getRedimPreserveAuxFunction();
+            }
+
+            rtn += newline + "}";
+
+            return rtn;
+
+        }
+        else
+            return "";
+
+    }
+
+    private String getDateAuxFunction() {
+        return
                     "    private static Date getDateFromString(String date) {" + newline +
                     "        DateFormat df = new SimpleDateFormat(\"MM/dd/yyyy\");" + newline +
                     "        date = date.replace(\"#\",\"\");" + newline +
@@ -447,18 +555,19 @@ public class Translator {
                     "        } catch (ParseException ex) {/* it can not be possible*/}" + newline +
                     "        return dateValue;" + newline +
                     "    }" + newline;
-        }
 
-        if (m_addParseDateAuxFunction) {
-            rtn = newline +
+    }
+
+    private String getParseDateAuxFunction() {
+        return
                     "    private static Date parseDate(String date) throws ParseException {" + newline +
                     "        DateFormat df = new SimpleDateFormat(\"MM/dd/yyyy\");" + newline +
                     "        return df.parse(date);" + newline +
                     "    }" + newline;
-        }
+    }
 
-        if (m_addIsNumericAuxFunction) {
-            rtn = newline +
+    private String getIsNumericAuxFunction() {
+        return
                     "    private static boolean isNumeric(String number) {" + newline +
                     "        try {" + newline +
                     "            Double.parseDouble(number);" + newline +
@@ -468,9 +577,44 @@ public class Translator {
                     "            return false;" + newline +
                     "        }" + newline +
                     "    }" + newline;
-        }
+    }
 
-        return rtn;
+    private String getRedimAuxFunction() {
+        return getRedimAuxFunctionForType("String");
+    }
+
+    private String getRedimAuxFunctionForType(String type) {
+        return
+                    "    public static " + type + "[] redim(" + type + "[] source, int size) {" + newline +
+                    "        if (size == 0) {" + newline +
+                    "            return null;" + newline +
+                    "        }" + newline +
+                    "        else {" + newline +
+                    "            return new " + type + "[size];" + newline +
+                    "        }" + newline +
+                    "    }" + newline;
+    }
+
+    private String getRedimPreserveAuxFunction() {
+        return getRedimPreserveAuxFunctionForType("String");
+    }
+
+    private String getRedimPreserveAuxFunctionForType(String type) {
+        return
+                    "    public static " + type + "[] redimPreserve(" + type + "[] source, int size) {" + newline +
+                    "        if (size == 0) {" + newline +
+                    "            return null;" + newline +
+                    "        }" + newline +
+                    "        else {" + newline +
+                    "            " + type + "[] tmp = new " + type + "[size];" + newline +
+                    "            if (source != null) {" + newline +
+                    "                for (int i = 0; i < Math.min(source.length, tmp.length); i++) {" + newline +
+                    "                    tmp[i] = source[i];" + newline +
+                    "                }" + newline +
+                    "            }" + newline +
+                    "            return tmp;" + newline +
+                    "        }" + newline +
+                    "    }" + newline;
     }
 
     private void parseLine(String strLine) {
@@ -1016,10 +1160,21 @@ public class Translator {
             if (words[i].length() >= 8) {
                 if (words[i].charAt(0) == '#') {
                     if (words[i].charAt(words[i].length() - 1) == '#') {
-                        words[i] = "getDateFromString("
-                                    + words[i].substring(1, words[i].length() - 1)
-                                    + ")";
-                        m_addDateAuxFunction = true;
+                        if (m_AddAuxFunctionsToClass) {
+                            m_addDateAuxFunction = true;
+                            words[i] = "getDateFromString("
+                                        + words[i].substring(1, words[i].length() - 1)
+                                        + ")";
+                        }
+                        // when preference are setting to use G class or CSUtils
+                        // it is translated using G.{auxfunction}
+                        //
+                        else {
+                            m_addDateAuxFunctionToG = m_UseGAuxFunctions;
+                            words[i] = "G.getDateFromString("
+                                        + words[i].substring(1, words[i].length() - 1)
+                                        + ")";
+                        }
                     }
                 }
             }
@@ -2306,13 +2461,27 @@ public class Translator {
         else if (words.length < 5) {
             array = words[1];
             size = words[3];
-            return "G.redim(" + array + ", " + size + ")";
+            if (m_AddAuxFunctionsToClass) {
+                m_addRedimAuxFunction = true;
+                return "redim(" + array + ", " + size + ")";
+            }
+            else {
+                m_addRedimAuxFunctionToG = m_UseGAuxFunctions;
+                return "G.redim(" + array + ", " + size + ")";
+            }
         }
         // 2
         else {
             array = words[2];
             size = words[4];
-            return "G.redimPreserve(" + array + ", " + size + ")";
+            if (m_AddAuxFunctionsToClass) {
+                m_addRedimPreserveAuxFunction = true;
+                return "redimPreserve(" + array + ", " + size + ")";
+            }
+            else {
+                m_addRedimPreserveAuxFunctionToG = m_UseGAuxFunctions;
+                return "G.redimPreserve(" + array + ", " + size + ")";
+            }
         }
     }
 
@@ -3401,8 +3570,17 @@ public class Translator {
 
     private String replaceIsNumericSentence(String expression) {
         if (containsFunction(expression, "IsNumeric")) {
-            m_addIsNumericAuxFunction = true;
-            return replaceOneParamFunction(expression, "IsNumeric", "isNumeric");
+            if (m_AddAuxFunctionsToClass) {
+                m_addIsNumericAuxFunction = true;
+                return replaceOneParamFunction(expression, "IsNumeric", "isNumeric");
+            }
+            // when preference are setting to use G class or CSUtils
+            // it is translated using G.{auxfunction}
+            //
+            else {
+                m_addIsNumericAuxFunctionToG = m_UseGAuxFunctions;
+                return replaceOneParamFunction(expression, "IsNumeric", "G.isNumeric");
+            }
         }
         else
             return expression;
@@ -3450,8 +3628,17 @@ public class Translator {
 
     private String replaceCDateSentence(String expression) {
         if (containsFunction(expression, "CDate")) {
-            m_addParseDateAuxFunction = true;
-            return replaceOneParamFunction(expression, "CDate", "parseDate");
+            if (m_AddAuxFunctionsToClass) {
+                m_addParseDateAuxFunction = true;
+                return replaceOneParamFunction(expression, "CDate", "parseDate");
+            }
+            // when preference are setting to use G class or CSUtils
+            // it is translated using G.{auxfunction}
+            //
+            else {
+                m_addParseDateAuxFunctionToG = m_UseGAuxFunctions;
+                return replaceOneParamFunction(expression, "CDate", "G.parseDate");
+            }
         }
         else
             return expression;
@@ -5085,7 +5272,7 @@ public class Translator {
         if (identifier.contains("(")) {
             words = G.split(identifier);
             if (words.length > 3) {
-                dataType += "[" + words[3] + "]";
+                dataType += "[" + words[2] + "]";
             }
             else {
                 dataType += "[]";
@@ -5153,6 +5340,8 @@ public class Translator {
         m_addDateAuxFunction = false;
         m_addParseDateAuxFunction = false;
         m_addIsNumericAuxFunction = false;
+        m_addRedimAuxFunction = false;
+        m_addRedimPreserveAuxFunction = false;
         m_returnValue = "";
         m_imports = new String[100];
         m_importCount = 0;
