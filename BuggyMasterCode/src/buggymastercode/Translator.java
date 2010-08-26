@@ -43,6 +43,8 @@ public class Translator {
 
     private String[] m_iterators = {"","_i","_j","_k","_t","_w","_z"};
     private int m_iteratorIndex = 0;
+    private String[] m_imports = null;
+    private int m_importCount = 0;
 
     // member variables of the class which we are translating
     //
@@ -129,6 +131,9 @@ public class Translator {
     // functionality
     //
     private boolean m_addDateAuxFunction = false;
+    // flag to add auxiliary function to support vb CDate function
+    //
+    private boolean m_addParseDateAuxFunction = false;
     // flag to add auxiliary function to support vb IsNumeric function
     //
     private boolean m_addIsNumericAuxFunction = false;
@@ -371,15 +376,35 @@ public class Translator {
     public String getImportSection() {
         String rtn = "";
 
-        if (m_addDateAuxFunction) {
-            rtn = newline +
-                    "import java.text.DateFormat;" + newline +
-                    "import java.text.ParseException;" + newline +
-                    "import java.text.SimpleDateFormat;" + newline +
-                    "import java.util.Date;" + newline;
+        if (m_addDateAuxFunction || m_addParseDateAuxFunction) {
+            addToImportList("import java.text.DateFormat;");
+            addToImportList("import java.text.ParseException;");
+            addToImportList("import java.text.SimpleDateFormat;");
+            addToImportList("import java.text.Date;");
         }
 
-        return rtn + newline;
+        if (m_addIsNumericAuxFunction) {
+            addToImportList("import java.text.ParseException;");
+        }
+
+        for (int i = 0; i < m_importCount; i++) {
+            rtn += m_imports[i] + newline;
+        }
+
+        if (!rtn.isEmpty())
+            rtn = newline + rtn + newline;
+
+        return rtn;
+    }
+
+    private void addToImportList(String reference) {
+        for (int i = 0; i < m_importCount; i++) {
+            if (m_imports[i].equals(reference)) {
+                return;
+            }
+        }
+        m_importCount++;
+        m_imports[m_importCount-1] = reference;
     }
 
     public String getEventListenerCollection() {
@@ -413,8 +438,7 @@ public class Translator {
 
         if (m_addDateAuxFunction) {
             rtn = newline +
-                    "    private static Date getDateFromString(String date)" + newline +
-                    "    {" + newline +
+                    "    private static Date getDateFromString(String date) {" + newline +
                     "        DateFormat df = new SimpleDateFormat(\"MM/dd/yyyy\");" + newline +
                     "        date = date.replace(\"#\",\"\");" + newline +
                     "        Date dateValue = null;" + newline +
@@ -425,10 +449,17 @@ public class Translator {
                     "    }" + newline;
         }
 
+        if (m_addParseDateAuxFunction) {
+            rtn = newline +
+                    "    private static Date parseDate(String date) throws ParseException {" + newline +
+                    "        DateFormat df = new SimpleDateFormat(\"MM/dd/yyyy\");" + newline +
+                    "        return df.parse(date);" + newline +
+                    "    }" + newline;
+        }
+
         if (m_addIsNumericAuxFunction) {
             rtn = newline +
-                    "    private static boolean isNumeric(String number)" + newline +
-                    "    {" + newline +
+                    "    private static boolean isNumeric(String number) {" + newline +
                     "        try {" + newline +
                     "            Double.parseDouble(number);" + newline +
                     "            return true;" + newline +
@@ -2023,7 +2054,12 @@ public class Translator {
         strLine = replaceNewSentence(strLine);
         strLine = replaceRaiseEvent(strLine);
         strLine = replaceIsNumericSentence(strLine);
-        strLine = replaceCdblSentence(strLine);
+        strLine = replaceCDblSentence(strLine);
+        strLine = replaceCIntSentence(strLine);
+        strLine = replaceCLngSentence(strLine);
+        strLine = replaceCSngSentence(strLine);
+        strLine = replaceCCurSentence(strLine);
+        strLine = replaceCDateSentence(strLine);
 
         // this call has to be the last sentences in this function
         // all the changes have to be done before this call
@@ -3372,9 +3408,50 @@ public class Translator {
             return expression;
     }
 
-    private String replaceCdblSentence(String expression) {
+    private String replaceCDblSentence(String expression) {
         if (containsFunction(expression, "CDbl")) {
             return replaceOneParamFunction(expression, "CDbl", "Double.parseDouble");
+        }
+        else
+            return expression;
+    }
+
+    private String replaceCIntSentence(String expression) {
+        if (containsFunction(expression, "CInt")) {
+            return replaceOneParamFunction(expression, "CInt", "Integer.parseInt");
+        }
+        else
+            return expression;
+    }
+
+    private String replaceCLngSentence(String expression) {
+        if (containsFunction(expression, "CLng")) {
+            return replaceOneParamFunction(expression, "CLng", "Long.parseLong");
+        }
+        else
+            return expression;
+    }
+
+    private String replaceCSngSentence(String expression) {
+        if (containsFunction(expression, "CSng")) {
+            return replaceOneParamFunction(expression, "CSng", "Double.parseDouble");
+        }
+        else
+            return expression;
+    }
+
+    private String replaceCCurSentence(String expression) {
+        if (containsFunction(expression, "CCur")) {
+            return replaceOneParamFunction(expression, "CCur", "Double.parseDouble");
+        }
+        else
+            return expression;
+    }
+
+    private String replaceCDateSentence(String expression) {
+        if (containsFunction(expression, "CDate")) {
+            m_addParseDateAuxFunction = true;
+            return replaceOneParamFunction(expression, "CDate", "parseDate");
         }
         else
             return expression;
@@ -3385,8 +3462,6 @@ public class Translator {
         expression = G.ltrimTab(expression);
 
         if (containsFunction(expression, function)) {
-
-            m_addIsNumericAuxFunction = true;
 
             int openParentheses = 0;
             String[] words = G.split(expression);
@@ -5076,8 +5151,11 @@ public class Translator {
         m_listenerInterface = "";
         m_adapterClass = "";
         m_addDateAuxFunction = false;
+        m_addParseDateAuxFunction = false;
         m_addIsNumericAuxFunction = false;
         m_returnValue = "";
+        m_imports = new String[100];
+        m_importCount = 0;
 
         if (name.contains(".")) {
             if (name.length() > 0) {
@@ -5795,5 +5873,6 @@ class IdentifierInfo {
  *                   the object is not assigned by the code in the function and neither by the code
  *                   in other functions called by the function which was translated and take
  *                   the object as a byref parameter
+ *                  list all the cases where we found #If #else and #end if
  *
  */

@@ -76,6 +76,8 @@ public class Dictionary extends javax.swing.JDialog {
         jLabel4 = new javax.swing.JLabel();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+        org.jdesktop.application.ResourceMap resourceMap = org.jdesktop.application.Application.getInstance(buggymastercode.BuggyMasterCodeApp.class).getContext().getResourceMap(Dictionary.class);
+        setTitle(resourceMap.getString("Form.title")); // NOI18N
         setMinimumSize(new java.awt.Dimension(600, 300));
         setName("Form"); // NOI18N
 
@@ -84,7 +86,6 @@ public class Dictionary extends javax.swing.JDialog {
 
         javax.swing.ActionMap actionMap = org.jdesktop.application.Application.getInstance(buggymastercode.BuggyMasterCodeApp.class).getContext().getActionMap(Dictionary.class, this);
         cmdNew.setAction(actionMap.get("newClass")); // NOI18N
-        org.jdesktop.application.ResourceMap resourceMap = org.jdesktop.application.Application.getInstance(buggymastercode.BuggyMasterCodeApp.class).getContext().getResourceMap(Dictionary.class);
         cmdNew.setIcon(resourceMap.getIcon("cmdNew.icon")); // NOI18N
         cmdNew.setText(resourceMap.getString("cmdNew.text")); // NOI18N
         cmdNew.setFocusable(false);
