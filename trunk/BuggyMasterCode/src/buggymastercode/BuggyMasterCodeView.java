@@ -822,6 +822,13 @@ public class BuggyMasterCodeView extends FrameView {
 
     @Action
     public void showPreferences() {
+        if (preferences == null) {
+            JFrame mainFrame = BuggyMasterCodeApp.getApplication().getMainFrame();
+            preferences = new PreferencesDialog(mainFrame);
+            preferences.setLocationRelativeTo(mainFrame);
+        }
+        if (!preferences.initDialog()) {return;}
+        BuggyMasterCodeApp.getApplication().show(preferences);
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
@@ -873,6 +880,7 @@ public class BuggyMasterCodeView extends FrameView {
 
     private JDialog aboutBox;
     private Dictionary dictionary;
+    private PreferencesDialog preferences;
     private ClassView classView;
     private VbGroup vbGroup;
     private JFileChooser chooserFile;

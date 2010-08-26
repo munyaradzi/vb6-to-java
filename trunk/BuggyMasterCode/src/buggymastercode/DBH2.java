@@ -102,6 +102,10 @@ public class DBH2 implements DBConnection {
                 "prj_id int," +
                 "ref_id int PRIMARY KEY," +
                 "ref_name varchar(500) DEFAULT '' NOT NULL);");
+        //stat.execute("drop table tpreference");
+        stat.execute("CREATE TABLE IF NOT EXISTS tpreference (" +
+                "pr_id varchar(255) PRIMARY KEY," +
+                "pr_value varchar(500) DEFAULT '' NOT NULL);");
         stat.execute("CREATE SEQUENCE IF NOT EXISTS seq_tclass_id");
         stat.execute("CREATE SEQUENCE IF NOT EXISTS seq_tfunction_id");
         stat.execute("CREATE SEQUENCE IF NOT EXISTS seq_tvariable_id");
