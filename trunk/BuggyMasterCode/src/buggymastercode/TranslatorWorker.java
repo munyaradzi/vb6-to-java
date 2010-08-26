@@ -192,6 +192,13 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
                 }
             }
         }
+
+        // G class
+        //
+        Preference pref = PreferenceObject.getPreference(G.C_AUX_FUN_ID);
+        if (pref.getValue().equals(G.C_AUX_FUN_IN_G_CLASS)) {
+            addClass("G", m_translator.getGClass());
+        }
     }
 
     public void parseFile(String vbFile) {
