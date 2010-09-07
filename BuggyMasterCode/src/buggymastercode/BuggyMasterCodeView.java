@@ -25,6 +25,7 @@ import java.util.logging.Level;
 import javax.swing.DefaultListModel;
 import javax.swing.Timer;
 import javax.swing.Icon;
+import javax.swing.ImageIcon;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -42,6 +43,8 @@ public class BuggyMasterCodeView extends FrameView {
         super(app);
 
         initComponents();
+
+        getFrame().setIconImage(new ImageIcon("C:\\dev\\proyectos.nb\\BuggyMasterCode\\src\\buggymastercode\\resources\\grasshopper.png").getImage());
 
         cbFiles.removeAllItems();
         cbProject.removeAllItems();
