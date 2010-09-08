@@ -2144,7 +2144,7 @@ public class Translator {
                 return strLine;
             }
         }
-        return strLine + ";";
+        return G.rtrim(strLine) + ";";
     }
 
     private String translateSentence(String strLine) {
@@ -2215,6 +2215,7 @@ public class Translator {
         strLine = replaceCSngSentence(strLine);
         strLine = replaceCCurSentence(strLine);
         strLine = replaceCDateSentence(strLine);
+        strLine = replacePropertySetSentence(strLine);
 
         // this call has to be the last sentences in this function
         // all the changes have to be done before this call
@@ -2438,6 +2439,57 @@ public class Translator {
         return strLine;
     }
 
+    private String replacePropertySetSentence(String strLine) {
+        IdentifierInfo info = null;
+        String type = "";
+        String parent = "";
+        boolean addParentheses = false;
+        String[] words = G.split2(strLine, "\t/*-+ .()");
+        strLine = "";
+        String[] parents = new String[30]; // why 30? how nows :P, 30 should be enough :)
+        int openParentheses = 0;
+
+        for (int i = 0; i < words.length; i++) {
+            if (!(",.()\"'".contains(words[i]))) {
+                info = getIdentifierInfo(words[i], parent);
+                if (info == null)
+                    type = "";
+                else if (info.isFunction) {
+                    type = info.function.getReturnType().dataType;
+                    
+                    if (i + 4 < words.length) {
+                        if (words[i + 4].equals("=")) {
+                            String setter = info.function.getJavaName();
+                            setter = "set" + setter.substring(3, setter.length());
+                            words[i] = setter;
+                            words[i + 2] = "";
+                            words[i + 3] = "";
+                            words[i + 4] = "";
+                            words[i + 5] = "";
+                            addParentheses = true;
+                        }
+                    }
+                }
+                else {
+                    type = info.variable.dataType;
+                }
+                parent = type;
+            }
+            else if (words[i].equals("(")) {
+                parents[openParentheses] = parent;
+                openParentheses++;
+            }
+            else if (words[i].equals(")")) {
+                openParentheses--;
+                parent = parents[openParentheses];
+            }
+            strLine += words[i];
+        }
+        if (addParentheses)
+            strLine += ")";
+        return strLine;
+    }
+
     private String replaceIsNothing(String strLine) {
         return strLine.replaceAll("Is Nothing", "== null");
     }
@@ -2458,9 +2510,9 @@ public class Translator {
             return "/*TODO:** this redim sentence can't be translated " + strLine;
         }
         // 1
-        else if (words.length < 5) {
-            array = words[1];
-            size = words[3];
+        else if (words.length < 7) {
+            array = words[2];
+            size = words[4];
             if (m_AddAuxFunctionsToClass) {
                 m_addRedimAuxFunction = true;
                 return "redim(" + array + ", " + size + ")";
@@ -2472,8 +2524,8 @@ public class Translator {
         }
         // 2
         else {
-            array = words[2];
-            size = words[4];
+            array = words[4];
+            size = words[6];
             if (m_AddAuxFunctionsToClass) {
                 m_addRedimPreserveAuxFunction = true;
                 return "redimPreserve(" + array + ", " + size + ")";
@@ -6027,17 +6079,17 @@ class IdentifierInfo {
 
 /*
  *
- * TODO: manage events
+ * TODO_DONE: manage events
  * TODO: manage byref params that actually aren't byref because are not asigned to a value
  *       by the function code
- * TODO: change getters in assignment eg:
+ * TODO_DONE: change getters in assignment eg:
  *              m_obj.getProperty() = ...;
  *       must be
  *              m_obj.setProperty(...);
  * TODO: translate byref for strings
  * TODO: translate byref for arrays. this is for params of array type that are resized
  *       by the code of the function. we have to search for redim
- * TODO: translate redim
+ * TODO_DONE: translate redim
  * TODO: translate instr
  * TODO: translate database access. replace recordsets.
  * TODO: translate globals (be aware of multi threading)
