@@ -606,12 +606,19 @@ public class BuggyMasterCodeView extends FrameView {
     }
 
     private void translate() {
-        if (m_projects.size() > 0) {
-            Project project = m_projects.get(0);
-            String name = project.getName();
-            String path = G.getFileForOS(project.getPath() + "\\" + name);
-            m_projects.remove(0);
-            translate(path, name);
+        if (m_cancel) {
+            m_cancel = false;
+            m_projects.removeAll(m_projects);
+            setEnabledCtrls(true);
+        }
+        else {
+            if (m_projects.size() > 0) {
+                Project project = m_projects.get(0);
+                String name = project.getName();
+                String path = G.getFileForOS(project.getPath() + "\\" + name);
+                m_projects.remove(0);
+                translate(path, name);
+            }
         }
     }
 
