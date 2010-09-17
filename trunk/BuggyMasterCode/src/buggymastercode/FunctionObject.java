@@ -104,6 +104,24 @@ public class FunctionObject {
             String className,
             String[] references) {
 
+        if (functionName.trim().isEmpty())
+            return null;
+        if (className.trim().isEmpty())
+            return null;
+
+        if ("=;/+-:.(){}[]*\\".contains(functionName))
+            return null;
+
+        // if classname contains a package name
+        // we need split in package and class
+        //
+        String packageName = "";
+        if (className.contains(".")) {
+            int n = className.indexOf(".");
+            packageName = className.substring(0, n);
+            className = className.substring(n + 1, className.length());
+        }
+
         G.setHourglass();
         String sqlstmt = "select f.*, cl_packagename"
                             + " from tfunction f inner join tclass c"
@@ -114,6 +132,9 @@ public class FunctionObject {
                             + ") and (cl_vbname = " + Db.getString(className)
                             + " or cl_javaname = " + Db.getString(className)
                             + ")";
+        if (!packageName.isEmpty()) {
+            sqlstmt += " and (cl_packagename = " + Db.getString(packageName) + ")";
+        }
         DBRecordSet rs = new DBRecordSet();
         if (!Db.db.openRs(sqlstmt, rs)) {
             G.setDefaultCursor();

@@ -2458,15 +2458,100 @@ public class Translator {
                     type = info.function.getReturnType().dataType;
                     
                     if (i + 4 < words.length) {
+                        // set with one parameter eg: property set value(byval rhs as object)
+                        //
                         if (words[i + 4].equals("=")) {
                             String setter = info.function.getJavaName();
                             setter = "set" + setter.substring(3, setter.length());
                             words[i] = setter;
-                            words[i + 2] = "";
-                            words[i + 3] = "";
-                            words[i + 4] = "";
-                            words[i + 5] = "";
+                            words[i + 2] = ""; // )
+                            words[i + 3] = ""; // space character
+                            words[i + 4] = ""; // =
+                            words[i + 5] = ""; // space character
                             addParentheses = true;
+                        }
+                        // set with two or more parameters
+                        // eg: property set value(byval name as string, byval rhs as object)
+                        //
+                        // we can have to translate something like this
+                        //
+                        //  myObject.value(getValueForKey(gdb.ValField(rs.fields, "myKey"))) = theValue
+                        //
+                        // to this
+                        //
+                        //  myObject.setValue(getValueForKey(gdb.ValField(rs.fields, "myKey"))), theValue);
+                        //
+                        else {
+                            int equalsIdx = 0;
+                            int parentheses = 0;
+                            boolean closedParenthesesFound = false;
+                            boolean moreThanOneParenthesesFound = false;
+                            String parameters = "";
+                            for (int k = i + 1; k < words.length; k++) {
+                                if (words[k].equals("=")) {
+                                    equalsIdx = k;
+                                    break;
+                                }
+                            }
+                            if (equalsIdx > 0) {
+                                for (int k = i +1; k < equalsIdx; k++) {
+                                    // skip spaces
+                                    //
+                                    if (!words[k].trim().isEmpty()) {
+                                        // if it is not a space and we
+                                        // have found a close parentheses
+                                        // for this function we are
+                                        // dealing with something like this
+                                        //
+                                        // myObject.setProperty(someParameters) somethingElse =
+                                        //
+                                        // we can not translate this
+                                        //
+                                        if (closedParenthesesFound) {
+                                            moreThanOneParenthesesFound = true;
+                                            break;
+                                        }
+                                        // for each ( we increase prentheses variable
+                                        //
+                                        else if (words[k].equals("(")) {
+                                            parameters += words[k];
+                                            parentheses++;
+                                        }
+                                        // for each ) we decrease parentheses variable
+                                        //
+                                        else if (words[k].equals(")")) {
+                                            parentheses--;
+                                            // if parentheses reach 0 we have
+                                            // found the close parentheses of
+                                            // the parameters of the function
+                                            //
+                                            if (parentheses == 0) {
+                                                // we turn on this flag to detect
+                                                // sentences like:
+                                                //
+                                                // myObject.setProperty(paramethers)(paramethers) =
+                                                //
+                                                // we can not translate this
+                                                //
+                                                closedParenthesesFound = true;
+                                            }
+                                            else
+                                                parameters += words[k];
+                                        }
+                                        else
+                                            parameters += words[k];
+                                    }
+                                    else
+                                        parameters += words[k];
+                                }
+                                if (!moreThanOneParenthesesFound && parentheses == 0) {
+                                    String setter = info.function.getJavaName();
+                                    setter = "set" + setter.substring(3, setter.length());
+                                    addParentheses = true;
+                                    strLine += setter + parameters.trim() + ",";
+                                    i = equalsIdx + 1;
+                                }
+                            }
                         }
                     }
                 }
@@ -2713,7 +2798,7 @@ public class Translator {
                 newFound = true;
             }
             else if (newFound) {
-                if (C_IDENTIFIER_FIRST_CHAR.contains(words[i].substring(0,1))) {
+                if (C_IDENTIFIER_FIRST_CHAR.contains(words[i].substring(0,1).toLowerCase())) {
                     words[i] += "()";
                     newFound = false;
                 }
