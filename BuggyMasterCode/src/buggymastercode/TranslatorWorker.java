@@ -360,6 +360,14 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
                 sharpFound = true;
             }
         }
+        if (rtn.contains(".")) {
+            for (int i = rtn.length() - 1; i > 0; i--) {
+                if (rtn.charAt(i) == '.') {
+                    rtn = rtn.substring(0, i);
+                    break;
+                }
+            }
+        }
         return rtn;
     }
 }
