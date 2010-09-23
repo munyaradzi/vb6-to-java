@@ -2197,6 +2197,7 @@ public class Translator {
         strLine = replaceLenSentence(strLine);
         strLine = replaceStringComparison(strLine, "==");
         strLine = replaceStringComparison(strLine, "!=");
+        strLine = replaceInStrSentence(strLine);
         strLine = replaceVbWords(strLine);
         strLine = replaceIsNothing(strLine);
         strLine = translateFunctionCall(strLine);
@@ -3198,13 +3199,13 @@ public class Translator {
                                 else {
 
                                     if (colons == 0) {
-                                        identifier += vparams[t];
+                                        identifier = vparams[t];
                                     }
                                     else if (colons == 1) {
-                                        start += vparams[t];
+                                        start = vparams[t];
                                     }
                                     else if (colons == 2) {
-                                        end += vparams[t];
+                                        end = vparams[t];
                                     }
                                     else {
                                         G.showInfo("Unexpected colon found in Mid function's params: " + params);
@@ -3298,10 +3299,10 @@ public class Translator {
                                 else {
 
                                     if (colons == 0) {
-                                        identifier += vparams[t];
+                                        identifier = vparams[t];
                                     }
                                     else if (colons == 1) {
-                                        length += vparams[t];
+                                        length = vparams[t];
                                     }
                                     else {
                                         G.showInfo("Unexpected colon found in Left function's params: " + params);
@@ -3390,10 +3391,10 @@ public class Translator {
                                 else {
 
                                     if (colons == 0) {
-                                        identifier += vparams[t];
+                                        identifier = vparams[t];
                                     }
                                     else if (colons == 1) {
-                                        lenght += vparams[t];
+                                        lenght = vparams[t];
                                     }
                                     else {
                                         G.showInfo("Unexpected colon found in Right function's params: " + params);
@@ -3482,7 +3483,7 @@ public class Translator {
                                 else {
 
                                     if (colons == 0) {
-                                        identifier += vparams[t];
+                                        identifier = vparams[t];
                                     }
                                     else {
                                         G.showInfo("Unexpected colon found in LCase function's params: " + params);
@@ -3570,7 +3571,7 @@ public class Translator {
                                 else {
 
                                     if (colons == 0) {
-                                        identifier += vparams[t];
+                                        identifier = vparams[t];
                                     }
                                     else {
                                         G.showInfo("Unexpected colon found in UCase function's params: " + params);
@@ -3658,7 +3659,7 @@ public class Translator {
                                 else {
 
                                     if (colons == 0) {
-                                        identifier += vparams[t];
+                                        identifier = vparams[t];
                                     }
                                     else {
                                         G.showInfo("Unexpected colon found in Len function's params: " + params);
@@ -3695,6 +3696,127 @@ public class Translator {
                     }
                     else if (words[i].toLowerCase().contains("(len(")) {
                         expression += replaceLenSentence(words[i]);
+                    }
+                    else {
+                        expression += words[i];
+                    }
+                }
+            }
+        }
+        return expression.trim();
+    }
+
+    private String replaceInStrSentence(String expression) {
+        boolean inStrFound = false;
+
+        expression = G.ltrimTab(expression);
+
+        if (containsInStr(expression)) {
+
+            int openParentheses = 0;
+            String[] words = G.split(expression);
+            String params = "";
+            expression = "";
+            inStrFound = false;
+
+            for (int i = 0; i < words.length; i++) {
+                if (inStrFound) {
+                    if (words[i].equals("(")) {
+                        openParentheses++;
+                        if (openParentheses > 1) {
+                            params += words[i];
+                        }
+                    }
+                    // look for a close parentheses without an open parentheses
+                    else if (words[i].equals(")")) {
+                        openParentheses--;
+                        if (openParentheses == 0) {
+                            if (containsInStr(params)) {
+                                params = replaceInStrSentence(params);
+                            }
+                            String[] vparams = G.split(params);
+
+                            String start = "";
+                            String source = "";
+                            String toSearch = "";
+                            String compareType = "";
+
+                            String param1 = "";
+                            String param2 = "";
+                            String param3 = "";
+                            String param4 = "";
+
+                            int colons = 0;
+                            source = "";
+                            for (int t = 0; t < vparams.length; t++) {
+                                if (vparams[t].equals(",")) {
+                                    colons++;
+                                }
+                                else {
+
+                                    if (colons == 0) {
+                                        param1 = vparams[t];
+                                    }
+                                    else if (colons == 1) {
+                                        param2 = vparams[t];
+                                    }
+                                    else if (colons == 2) {
+                                        param3 = vparams[t];
+                                    }
+                                    else if (colons == 3) {
+                                        param4 = vparams[t];
+                                    }
+                                    else {
+                                        G.showInfo("Unexpected colon found in InStr function's params: " + params);
+                                    }
+                                }
+                            }
+                            // there are x param combinations
+                            // 1 if we have 4 params there are: start, source, toSearch, compareType
+                            // 2 if we have 3 params it could be:
+                            //        2.a if param1 is numeric: start, source, toSearch
+                            //        2.b if params isn't numeric: source, toSearch, compareType
+                            // 3 if we have 2 params there are: source, toSearch
+                            // 4 if we have less than 2 params there is an error :P
+
+
+
+                            // identifier can be a complex expresion
+                            // like ' "an string plus" + a_var '
+                            //
+                            if (G.contains(source, " ")) {
+                                source = "(" + source + ")";
+                            }
+                            expression += source + ".substring(" + start.trim();
+                            if (!end.isEmpty()) {
+                                expression += ", " + end.trim() + ")";
+                            }
+                            else {
+                                expression += ")";
+                            }
+                            inStrFound = false;
+                            params = "";
+                        }
+                        else {
+                            params = params.trim() + words[i];
+                        }
+                    }
+                    else {
+                        params += words[i];
+                    }
+                }
+                else {
+                    if (words[i].equalsIgnoreCase("mid")) {
+                        inStrFound = true;
+                    }
+                    else if (words[i].equalsIgnoreCase("mid$")) {
+                        inStrFound = true;
+                    }
+                    else if (G.beginLike(words[i],"mid(")) {
+                        expression += replaceMidSentence(words[i]);
+                    }
+                    else if (G.beginLike(words[i],"mid$(")) {
+                        expression += replaceMidSentence(words[i]);
                     }
                     else {
                         expression += words[i];
@@ -3820,7 +3942,7 @@ public class Translator {
                                 else {
 
                                     if (colons == 0) {
-                                        identifier += vparams[t];
+                                        identifier = vparams[t];
                                     }
                                     else {
                                         G.showInfo("Unexpected colon found in "
@@ -3991,6 +4113,10 @@ public class Translator {
 
     private boolean containsLen(String expression) {
         return containsFunction(expression, "len");
+    }
+
+    private boolean containsInStr(String expression) {
+        return containsFunction(expression, "instr");
     }
 
     private boolean containsFunction(String expression, String function) {
@@ -6172,14 +6298,14 @@ class IdentifierInfo {
  *       must be
  *              m_obj.setProperty(...);
  * TODO: translate byref for strings
- * TODO: translate byref for arrays. this is for params of array type that are resized
- *       by the code of the function. we have to search for redim
+ * TODO: translate byref for arrays. this is for array type params that are resized
+ *       by the the function code. we have to search for redim
  * TODO_DONE: translate redim
  * TODO: translate instr
  * TODO: translate database access. replace recordsets.
  * TODO: translate globals (be aware of multi threading)
  * TODO: file functions (print, open, getattr, etc.)
- * TODO: translate Not sentence eg return Not cancel (this is a parcial translated functionName = Not Cancel)
+ * TODO: translate Not sentence eg return Not cancel (this is parcially translated functionName = Not Cancel)
  * TODO: translate default property
  * TODO: translate on error goto controlerror
  * TODO: add import calls for references to vb projects we have translated
@@ -6197,7 +6323,7 @@ class IdentifierInfo {
  *                  list all the cases where byref strings and byref numbers where translated
  *                  list all the cases where byref objects where translated to byval because
  *                   the object is not assigned by the code in the function and neither by the code
- *                   in other functions called by the function which was translated and take
+ *                   in other functions called by the function which was translated and takes
  *                   the object as a byref parameter
  *                  list all the cases where we found #If #else and #end if
  *

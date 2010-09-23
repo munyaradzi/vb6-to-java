@@ -81,6 +81,7 @@ public class FunctionObject {
         setId(Db.CS_NO_ID);
         String sqlstmt = "select fun_id from tfunction"
                             + " where fun_vbname = " + Db.getString(m_vbName)
+                            + " and fun_javaname = " + Db.getString(m_javaName)
                             + " and cl_id = " + Integer.toString(m_cl_id);
         DBRecordSet rs = new DBRecordSet();
         if (!Db.db.openRs(sqlstmt, rs)) {
@@ -135,6 +136,7 @@ public class FunctionObject {
         if (!packageName.isEmpty()) {
             sqlstmt += " and (cl_packagename = " + Db.getString(packageName) + ")";
         }
+        sqlstmt += " order by fun_javaname;";
         DBRecordSet rs = new DBRecordSet();
         if (!Db.db.openRs(sqlstmt, rs)) {
             G.setDefaultCursor();
