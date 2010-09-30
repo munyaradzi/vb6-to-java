@@ -29,6 +29,8 @@ public class Translator {
     static private final String C_INTERFACE_POSTIFX = "EventI";
     static private final String C_ADAPTER_POSTIFX = "EventA";
 
+    static private final String C_NUMERIC_DATA_TYPES = "||int||integer||double||single||currency||short||long||";
+
     private boolean m_isVbSource = false;
     private boolean m_codeHasStarted = false;
     private boolean m_attributeBlockHasStarted = false;
@@ -3771,28 +3773,97 @@ public class Translator {
                                     }
                                 }
                             }
-                            // there are x param combinations
+                            // there are 4 param combinations
                             // 1 if we have 4 params there are: start, source, toSearch, compareType
                             // 2 if we have 3 params it could be:
                             //        2.a if param1 is numeric: start, source, toSearch
                             //        2.b if params isn't numeric: source, toSearch, compareType
                             // 3 if we have 2 params there are: source, toSearch
                             // 4 if we have less than 2 params there is an error :P
-
-
-
-                            // identifier can be a complex expresion
-                            // like ' "an string plus" + a_var '
                             //
-                            if (G.contains(source, " ")) {
-                                source = "(" + source + ")";
-                            }
-                            expression += source + ".substring(" + start.trim();
-                            if (!end.isEmpty()) {
-                                expression += ", " + end.trim() + ")";
+
+                            // 4 if we have less than 2 params there is an error :P
+                            //
+                            if (param2.isEmpty()) {
+                                G.showInfo("Wrong number of params in InStr function call. At least there must be two params: " + params);
                             }
                             else {
-                                expression += ")";
+                                // 1 if we have 4 params there are: start, source, toSearch, compareType
+                                //
+                                if (!param4.isEmpty()) {
+                                    start = param1;
+                                    source = param2;
+                                    toSearch = param3;
+                                    compareType = param4;
+                                    if (compareType.equals("0")
+                                            || compareType.equals("vbBinaryCompare")) {
+                                        expression += source
+                                                        + ".indexOf(" + toSearch
+                                                        + ", " + start.trim() + ")";
+                                    }
+                                    else { // 1 or vbTextCompare
+                                        if (isStringIdentifier(toSearch)) {
+                                            expression += source
+                                                        + ".toLowerCase().indexOf("
+                                                        + toSearch + ".toLowerCase(), "
+                                                        + start.trim() + ")";
+                                        }
+                                        else {
+                                            expression += source
+                                                        + ".toLowerCase().indexOf(String.valueOf("
+                                                        + toSearch + ").toLowerCase(), "
+                                                        + start.trim() + ")";
+                                        }
+                                    }
+                                }
+                                // 2 if we have 3 params it could be:
+                                //        2.a if param1 is numeric: start, source, toSearch
+                                //        2.b if params isn't numeric: source, toSearch, compareType
+                                //
+                                else if(!param3.isEmpty()) {
+                                    // 2.a if param1 is numeric: start, source, toSearch
+                                    //
+                                    if (isNumericIdentifier(param1)) {
+                                        start = param1;
+                                        source = param2;
+                                        toSearch = param3;
+                                        expression += source
+                                                    + ".indexOf("
+                                                    + toSearch + ", "
+                                                    + start.trim() + ")";
+                                    }
+                                    else {
+                                        source = param1;
+                                        toSearch = param2;
+                                        compareType = param3;
+                                        if (compareType.equals("0")
+                                                || compareType.equals("vbBinaryCompare")) {
+                                            expression += source
+                                                            + ".indexOf(" + toSearch + ")";
+                                        }
+                                        else { // 1 or vbTextCompare
+                                            if (isStringIdentifier(toSearch)) {
+                                                expression += source
+                                                            + ".toLowerCase().indexOf("
+                                                            + toSearch + ".toLowerCase())";
+                                            }
+                                            else {
+                                                expression += source
+                                                            + ".toLowerCase().indexOf(String.valueOf("
+                                                            + toSearch + ").toLowerCase())";
+                                            }
+                                        }
+                                    }
+                                }
+                                // 3 if we have 2 params there are: source, toSearch
+                                //
+                                else {
+                                    source = param1;
+                                    toSearch = param2;
+                                    expression += source
+                                                + ".indexOf("
+                                                + toSearch + ")";
+                                }
                             }
                             inStrFound = false;
                             params = "";
@@ -6240,6 +6311,73 @@ public class Translator {
         else {
             return strLine;
         }
+    }
+
+    private boolean isStringIdentifier(String identifier) {
+        return isXTypeIdentifier(identifier, "String");
+    }
+    private boolean isNumericIdentifier(String identifier) {
+        return isXTypeIdentifier(identifier, "@numeric");
+    }
+    private boolean isXTypeIdentifier(String identifier, String type) {
+        // first we evaluate constants expressions
+        //
+        if (type.equals("String")) {
+            if (identifier.startsWith("\"")) {
+                return true;
+            }
+        }
+        if (type.equals("@numeric")) {
+            if ("-".equals(identifier.substring(0, 1))) {
+                if ("1234567890".contains(identifier.substring(2, 3))) {
+                    return true;
+                }
+            }
+            else {
+                if ("1234567890".contains(identifier.substring(0, 3))) {
+                    return true;
+                }
+            }
+        }
+
+        // if is not a constant we look for the type of the variable or
+        // function
+        //
+        IdentifierInfo info = null;
+        String varType = "";
+        String parent = "";
+        String[] words = G.split2(identifier, "\t/*-+ .()");
+        identifier = "";
+        String[] parents = new String[30]; // why 30? how nows :P, 30 should be enough :)
+        int openParentheses = 0;
+
+        for (int i = 0; i < words.length; i++) {
+            if (!(",.()\"'".contains(words[i]))) {
+                info = getIdentifierInfo(words[i], parent);
+                if (info == null)
+                    varType = "";
+                else if (info.isFunction) {
+                    varType = info.function.getReturnType().dataType;
+                }
+                else {
+                    varType = info.variable.dataType;
+                }
+                parent = varType;
+            }
+            else if (words[i].equals("(")) {
+                parents[openParentheses] = parent;
+                openParentheses++;
+            }
+            else if (words[i].equals(")")) {
+                openParentheses--;
+                parent = parents[openParentheses];
+            }
+        }
+        if (type.equals("@numeric")) {
+            return C_NUMERIC_DATA_TYPES.contains(type.toLowerCase());
+        }
+        else
+            return varType.toLowerCase().equals(type.toLowerCase());
     }
 }
 
