@@ -3201,13 +3201,13 @@ public class Translator {
                                 else {
 
                                     if (colons == 0) {
-                                        identifier = vparams[t];
+                                        identifier += vparams[t];
                                     }
                                     else if (colons == 1) {
-                                        start = vparams[t];
+                                        start += vparams[t];
                                     }
                                     else if (colons == 2) {
-                                        end = vparams[t];
+                                        end += vparams[t];
                                     }
                                     else {
                                         G.showInfo("Unexpected colon found in Mid function's params: " + params);
@@ -3301,10 +3301,10 @@ public class Translator {
                                 else {
 
                                     if (colons == 0) {
-                                        identifier = vparams[t];
+                                        identifier += vparams[t];
                                     }
                                     else if (colons == 1) {
-                                        length = vparams[t];
+                                        length += vparams[t];
                                     }
                                     else {
                                         G.showInfo("Unexpected colon found in Left function's params: " + params);
@@ -3393,10 +3393,10 @@ public class Translator {
                                 else {
 
                                     if (colons == 0) {
-                                        identifier = vparams[t];
+                                        identifier += vparams[t];
                                     }
                                     else if (colons == 1) {
-                                        lenght = vparams[t];
+                                        lenght += vparams[t];
                                     }
                                     else {
                                         G.showInfo("Unexpected colon found in Right function's params: " + params);
@@ -3485,7 +3485,7 @@ public class Translator {
                                 else {
 
                                     if (colons == 0) {
-                                        identifier = vparams[t];
+                                        identifier += vparams[t];
                                     }
                                     else {
                                         G.showInfo("Unexpected colon found in LCase function's params: " + params);
@@ -3573,7 +3573,7 @@ public class Translator {
                                 else {
 
                                     if (colons == 0) {
-                                        identifier = vparams[t];
+                                        identifier += vparams[t];
                                     }
                                     else {
                                         G.showInfo("Unexpected colon found in UCase function's params: " + params);
@@ -3661,7 +3661,7 @@ public class Translator {
                                 else {
 
                                     if (colons == 0) {
-                                        identifier = vparams[t];
+                                        identifier += vparams[t];
                                     }
                                     else {
                                         G.showInfo("Unexpected colon found in Len function's params: " + params);
@@ -3757,16 +3757,16 @@ public class Translator {
                                 else {
 
                                     if (colons == 0) {
-                                        param1 = vparams[t];
+                                        param1 += vparams[t];
                                     }
                                     else if (colons == 1) {
-                                        param2 = vparams[t];
+                                        param2 += vparams[t];
                                     }
                                     else if (colons == 2) {
-                                        param3 = vparams[t];
+                                        param3 += vparams[t];
                                     }
                                     else if (colons == 3) {
-                                        param4 = vparams[t];
+                                        param4 += vparams[t];
                                     }
                                     else {
                                         G.showInfo("Unexpected colon found in InStr function's params: " + params);
@@ -3784,6 +3784,10 @@ public class Translator {
 
                             // 4 if we have less than 2 params there is an error :P
                             //
+                            param1 = param1.trim();
+                            param2 = param2.trim();
+                            param3 = param3.trim();
+                            param4 = param4.trim();
                             if (param2.isEmpty()) {
                                 G.showInfo("Wrong number of params in InStr function call. At least there must be two params: " + params);
                             }
@@ -3877,17 +3881,11 @@ public class Translator {
                     }
                 }
                 else {
-                    if (words[i].equalsIgnoreCase("mid")) {
+                    if (words[i].equalsIgnoreCase("instr")) {
                         inStrFound = true;
                     }
-                    else if (words[i].equalsIgnoreCase("mid$")) {
-                        inStrFound = true;
-                    }
-                    else if (G.beginLike(words[i],"mid(")) {
-                        expression += replaceMidSentence(words[i]);
-                    }
-                    else if (G.beginLike(words[i],"mid$(")) {
-                        expression += replaceMidSentence(words[i]);
+                    else if (G.beginLike(words[i],"instr(")) {
+                        expression += replaceInStrSentence(words[i]);
                     }
                     else {
                         expression += words[i];
@@ -3975,7 +3973,7 @@ public class Translator {
     }
 
     private String replaceOneParamFunction(String expression, String function, String javaFunction) {
-        boolean isNumericFound = false;
+        boolean functionFound = false;
         expression = G.ltrimTab(expression);
 
         if (containsFunction(expression, function)) {
@@ -3984,10 +3982,10 @@ public class Translator {
             String[] words = G.split(expression);
             String params = "";
             expression = "";
-            isNumericFound = false;
+            functionFound = false;
 
             for (int i = 0; i < words.length; i++) {
-                if (isNumericFound) {
+                if (functionFound) {
                     if (words[i].equals("(")) {
                         openParentheses++;
                         if (openParentheses > 1) {
@@ -3998,8 +3996,8 @@ public class Translator {
                     else if (words[i].equals(")")) {
                         openParentheses--;
                         if (openParentheses == 0) {
-                            if (containsFunction(expression, function)) {
-                                params = replaceIsNumericSentence(params);
+                            if (containsFunction(params, function)) {
+                                params = replaceOneParamFunction(params, function, javaFunction);
                             }
                             String[] vparams = G.split(params);
                             String identifier = "";
@@ -4013,7 +4011,7 @@ public class Translator {
                                 else {
 
                                     if (colons == 0) {
-                                        identifier = vparams[t];
+                                        identifier += vparams[t];
                                     }
                                     else {
                                         G.showInfo("Unexpected colon found in "
@@ -4029,7 +4027,7 @@ public class Translator {
                                 identifier = "(" + identifier + ")";
                             }
                             expression += javaFunction + "(" + identifier + ")";
-                            isNumericFound = false;
+                            functionFound = false;
                             params = "";
                         }
                         else {
@@ -4042,7 +4040,7 @@ public class Translator {
                 }
                 else {
                     if (words[i].equalsIgnoreCase(function)) {
-                        isNumericFound = true;
+                        functionFound = true;
                     }
                     else if (G.beginLike(words[i], function + "(")) {
                         expression += replaceOneParamFunction(words[i], function, javaFunction);
@@ -6329,12 +6327,15 @@ public class Translator {
         }
         if (type.equals("@numeric")) {
             if ("-".equals(identifier.substring(0, 1))) {
-                if ("1234567890".contains(identifier.substring(2, 3))) {
+                if (identifier.length() < 2) {
+                    return false;
+                }
+                else if ("1234567890".contains(identifier.substring(2, 3))) {
                     return true;
                 }
             }
             else {
-                if ("1234567890".contains(identifier.substring(0, 3))) {
+                if ("1234567890".contains(identifier.substring(0, 1))) {
                     return true;
                 }
             }
