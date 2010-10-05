@@ -2380,13 +2380,13 @@ public class Translator {
         IdentifierInfo info = null;
         String type = "";
         String parent = "";
-        String[] words = G.split2(strLine, "\t/*-+ .()");
+        String[] words = G.split2(strLine, "!\t/*-+ .()");
         strLine = "";
         String[] parents = new String[30]; // why 30? how nows :P, 30 should be enough :)
         int openParentheses = 0;
 
         for (int i = 0; i < words.length; i++) {
-            if (!(",.()\"'".contains(words[i]))) {
+            if (!("!*-+,.()\"'".contains(words[i]))) {
                 info = getIdentifierInfo(words[i], parent);
                 if (info == null)
                     type = "";
@@ -4712,6 +4712,9 @@ public class Translator {
             m_vbFunctionName = "";
         }
 
+        functionName = functionName.substring(0, 1).toLowerCase()
+                        + functionName.substring(1);
+
         if (!functionName.isEmpty() && functionScope.equals("public"))
             saveFunction(m_vbFunctionName, functionName, functionType);
 
@@ -4722,8 +4725,7 @@ public class Translator {
         return functionScope + " "
                 + modifiers
                 + functionType + " "
-                + functionName.substring(0, 1).toLowerCase()
-                + functionName.substring(1) + "("
+                + functionName + "("
                 + translateParameters(strLine)
                 + ") {"
                 + newline;
