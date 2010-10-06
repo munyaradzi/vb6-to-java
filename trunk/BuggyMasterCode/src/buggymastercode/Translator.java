@@ -6377,10 +6377,10 @@ public class Translator {
             }
         }
         if (type.equals("@numeric")) {
-            return C_NUMERIC_DATA_TYPES.contains(type.toLowerCase());
+            return C_NUMERIC_DATA_TYPES.contains(varType.toLowerCase());
         }
         else
-            return varType.toLowerCase().equals(type.toLowerCase());
+            return varType.toLowerCase().equals(varType.toLowerCase());
     }
 }
 
@@ -6450,6 +6450,7 @@ class IdentifierInfo {
  * TODO: translate default property
  * TODO: translate on error goto controlerror
  * TODO: add import calls for references to vb projects we have translated
+ * TODO: initialize local variables to zero or null string or null date or false
  *
  * TODO: make an html report with a sumary of the work done (total classes translated,
  *       total files created, total projects translated, total functions)
