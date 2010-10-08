@@ -13,24 +13,33 @@ public class Function {
 
     static private final String newline = "\n";
 
-    private Variable returnType = new Variable();
+    private Variable m_returnType = new Variable();
     public String vbDeclaration = "";
     public String javaDeclaration = "";
+    private boolean m_needReturnVariable = false;
 
     public String getJavaName() {
-        return returnType.getJavaName();
+        return m_returnType.getJavaName();
     }
 
     public String getVbName() {
-        return returnType.getVbName();
+        return m_returnType.getVbName();
     }
 
     public Variable getReturnType() {
-        return returnType;
+        return m_returnType;
     }
 
     public String getDeclarations() {
         return vbDeclaration + newline + newline + javaDeclaration;
+    }
+
+    public boolean getNeedReturnVariable() {
+        return m_needReturnVariable;
+    }
+
+    public void setNeedReturnVariable(boolean value) {
+        m_needReturnVariable = value;
     }
 
     @Override

@@ -167,6 +167,13 @@ public class Translator {
     private boolean m_UseGAuxFunctions = false;
     private boolean m_UseCSUtils = false;
 
+    // used to define if the function need a variable rtn to
+    // hold the return value
+    //
+    private boolean m_setReturnValueFound = false;
+    private boolean m_needReturnVariable = false;
+    private Function m_function = null;
+
     public Translator() {
         m_collJavaClassess = new ArrayList<SourceFile>();
         SourceFile source = null;
@@ -672,11 +679,14 @@ public class Translator {
                 return;
             }
             else if (isEndFunction(strLine)) {
+                setNeedReturnValue();
+                m_function = null;
                 m_inFunction = false;
                 return;
             }
             else if (m_inFunction) {
                 checkRaiseEvent(strLine);
+                checkNeedReturnVariable(strLine);
                 return;
             }
             else {
@@ -1104,11 +1114,15 @@ public class Translator {
             if (isFunctionDeclaration(workLine)) {
                 strLine = translateFunctionDeclaration(strLine);
                 checkEventHandler(strLine);
+                strLine = translateFunctionReturnVariable(strLine);
                 return strLine;
             }
             else {
                 if (isEndFunction(workLine)) {
-                    return "}" + newline;
+                    strLine = getReturnLine() + "}" + newline;
+                    m_function = null;
+                    m_inFunction = false;
+                    return strLine;
                 }
                 // function's body
                 //
@@ -1306,6 +1320,11 @@ public class Translator {
     }
 
     private void parseFunctionDeclaration(String strLine) {
+        // first we reset this flag which is used to determine
+        // if the function need a variable rtn to hold the return value
+        //
+        m_setReturnValueFound = false;
+        m_needReturnVariable = false;
         // get out spaces even tabs
         //
         String workLine = G.ltrimTab(strLine).toLowerCase();
@@ -1323,7 +1342,7 @@ public class Translator {
             // Public Function ShowPrintDialog(ByVal
         if (isFunctionDeclaration(workLine)) {
             String functionDeclaration = translateFunctionDeclaration(strLine);
-            String[] words = G.splitSpace(functionDeclaration);//functionDeclaration.split("\\s+");
+            String[] words = G.splitSpace(functionDeclaration);
             if (words.length >= 3) {
                 Function function = new Function();
                 function.vbDeclaration = strLine;
@@ -1336,6 +1355,7 @@ public class Translator {
                     function.getReturnType().setJavaName(words[2]);
                 function.getReturnType().setVbName(m_vbFunctionName);
                 function.getReturnType().setType(words[1]);
+                m_function = function;
                 if (words[0].equals("private")) {
                     m_privateFunctions.add(function);
                 }
@@ -2156,32 +2176,28 @@ public class Translator {
             if (startComment > 0) {
                 String comments = "";
                 comments =  " //" + strLine.substring(startComment);
-                strLine = "return "
-                            + strLine.substring((m_vbFunctionName + " = ").length()
-                                                , startComment).trim()
+                strLine = strLine.substring(0, startComment).trim()
                             + ";"
                             + comments;
-            }
-            else {
-                strLine = "return "
-                            + strLine.substring((m_vbFunctionName + " = ").length());
             }
         }
         if (G.beginLike(strLine,"Set " + m_vbFunctionName + " = ")) {
             if (startComment > 0) {
                 String comments = "";
                 comments =  " //" + strLine.substring(startComment);
-                strLine = "return "
-                            + strLine.substring(("Set " + m_vbFunctionName + " = ").length() 
-                                                , startComment).trim()
+                strLine = strLine.substring(4, startComment).trim()
                             + ";"
                             + comments;
             }
             else {
-                strLine = "return "
-                            + strLine.substring(("Set " + m_vbFunctionName + " = ").length());
+                strLine = strLine.substring(4);
             }
         }
+        // now we replace setences which set the value of return value using
+        // the name of the function like getPrinterName = apiCallGetDefaultPrinter()
+        //
+        strLine = replaceSetReturnValueSentence(strLine);
+
         if (G.beginLike(strLine,"Set ")) {
             strLine = strLine.substring(4);
         }
@@ -2219,6 +2235,7 @@ public class Translator {
         strLine = replaceCCurSentence(strLine);
         strLine = replaceCDateSentence(strLine);
         strLine = replacePropertySetSentence(strLine);
+        strLine = replaceNotSentence(strLine);
 
         // this call has to be the last sentences in this function
         // all the changes have to be done before this call
@@ -2336,6 +2353,23 @@ public class Translator {
         }
     }
 
+    private void checkNeedReturnVariable(String strLine) {
+        if (m_setReturnValueFound) {
+            if (!strLine.trim().isEmpty())
+                m_needReturnVariable = true;
+        }
+        else if (G.beginLike(strLine, m_vbFunctionName + " = ")) {
+            m_setReturnValueFound = true;
+        }
+        else if (strLine.toLowerCase().contains(" " + m_vbFunctionName + " = ")) {
+            m_setReturnValueFound = true;
+        }
+    }
+
+    private void setNeedReturnValue() {
+        m_function.setNeedReturnVariable(m_needReturnVariable);
+    }
+
     private String replaceSlashInLiterals(String strLine) {
         boolean literalFlag = false;
         String workLine = "";
@@ -2360,7 +2394,12 @@ public class Translator {
 
     private String replaceExitSentence(String strLine) {
         if (G.endLike(strLine, "Exit Function")) {
-            return "return " + m_returnValue;
+            if (m_function.getNeedReturnVariable()) {
+                return "return _rtn";
+            }
+            else {
+                return "return " + m_returnValue;
+            }
         }
         else if (G.endLike(strLine, "Exit Sub")) {
             return "return";
@@ -4333,6 +4372,15 @@ public class Translator {
             }
         }
 
+        // to search in public memebers we assign the real name
+        // of this class to the parameter className when we
+        // have the sinonyms 'this' or 'me'
+        //
+        if (className.toLowerCase().equals("this")
+                || className.toLowerCase().equals("me")) {
+            className = m_javaClassName;
+        }
+
         // here we search for public functions, public properties
         //
         itrFile = m_collFiles.iterator();
@@ -4349,6 +4397,7 @@ public class Translator {
                     else if (publicFunction.getVbName().equals(functionName))
                         return publicFunction;
                 }
+                break;
             }
         }
 
@@ -4365,6 +4414,7 @@ public class Translator {
                     if (publicFunction.getJavaName().equals(functionName))
                         return publicFunction;
                 }
+                break;
             }
         }
 
@@ -4455,6 +4505,7 @@ public class Translator {
                         else if (member.getVbName().equals(identifier))
                             return member;
                     }
+                    break;
                 }
             }
         }
@@ -4561,6 +4612,12 @@ public class Translator {
         else if (G.beginLike(strLine, "Private Property "))
             return true;
         else if (G.beginLike(strLine, "Friend Property "))
+            return true;
+        else if (G.beginLike(strLine, "Function "))
+            return true;
+        else if (G.beginLike(strLine, "Sub "))
+            return true;
+        else if (G.beginLike(strLine, "Property "))
             return true;
         else
             return false;
@@ -4729,6 +4786,55 @@ public class Translator {
                 + translateParameters(strLine)
                 + ") {"
                 + newline;
+    }
+
+    private String translateFunctionReturnVariable(String strLine) {
+        m_function = getFunction(m_vbFunctionName, "me");
+        if (m_function != null) {
+            if (m_function.getNeedReturnVariable()) {
+                strLine += getTabs()
+                        + "    " + m_function.getReturnType().dataType
+                        + " _rtn = " + m_returnValue + ";" + newline;
+            }
+        }
+        /*else {
+            m_function = getFunction(m_vbFunctionName, "me");
+        }*/
+        return strLine;
+    }
+
+    private String getReturnLine() {
+        String returnLine = "";
+        if (m_function.getNeedReturnVariable()) {
+            returnLine = "    return _rtn;" + newline + getTabs();
+        }
+        return returnLine;
+    }
+
+    private String replaceNotSentence(String strLine) {
+        if (strLine.contains(" Not "))
+            strLine = strLine.replace(" Not ", " !");
+        else if (strLine.contains(" Not("))
+            strLine = strLine.replace(strLine, " !(");
+        return strLine;
+    }
+
+    private String replaceSetReturnValueSentence(String strLine) {
+        if (m_inFunction) {
+            if (m_function != null) {
+                String toSearch = m_function.getJavaName() + " = ";
+                if (strLine.contains(toSearch)) {
+                    if (m_function.getNeedReturnVariable())
+                        strLine = strLine.replace(toSearch, "_rtn = ");
+                    else
+                        strLine = strLine.replace(toSearch, "return ");
+                }
+            }
+            /*else {
+                m_function = getFunction(m_vbFunctionName, "me");
+            }*/
+        }
+        return strLine;
     }
 
     private String getIfNeedToBeSyncrhonized() {
@@ -5679,6 +5785,9 @@ public class Translator {
         m_returnValue = "";
         m_imports = new String[100];
         m_importCount = 0;
+        m_setReturnValueFound = false;
+        m_needReturnVariable = false;
+        m_function = null;
 
         if (name.contains(".")) {
             if (name.length() > 0) {
@@ -6442,7 +6551,7 @@ class IdentifierInfo {
  * TODO: translate byref for arrays. this is for array type params that are resized
  *       by the the function code. we have to search for redim
  * TODO_DONE: translate redim
- * TODO: translate instr
+ * TODO_DONE: translate instr
  * TODO: translate database access. replace recordsets.
  * TODO: translate globals (be aware of multi threading)
  * TODO: file functions (print, open, getattr, etc.)
