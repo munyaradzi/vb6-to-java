@@ -3014,45 +3014,68 @@ public class Translator {
     }
 
     private String replaceAmpersand(String strLine) {
+        int openParentheses = 0;
         boolean ampFound = false;
         String rtn = "";
-        String[] words = getWordsFromSentence(strLine);
+        String source = "";
+        String[] words = G.split(strLine); //getWordsFromSentence(strLine);
 
         for (int i = 0; i < words.length; i++) {
-            if (words[i].equals("&")) {
-                rtn += "+";
-                ampFound = true;
+
+            if (words[i].equals("(")) {
+                openParentheses++;
             }
-            else {
-                if (ampFound) {
-                    if (words[i].equals(" "))
-                        rtn += " ";
-                    else {
-                        rtn += getCastToString(words[i]);
+            else if (words[i].equals(")")) {
+                openParentheses--;
+                if (openParentheses == 0) {
+                    if (ampFound) {
+                        rtn += getCastToString("(" + replaceAmpersand(source) + ")");
                         ampFound = false;
                     }
+                    else
+                        rtn += "(" + replaceAmpersand(source) + ")";
+                    source = "";
+                }
+            }
+            else if (openParentheses > 0) {
+                source += words[i];
+            }
+            else {
+                if (words[i].equals("&")) {
+                    rtn += "+";
+                    ampFound = true;
                 }
                 else {
-                    if (i < words.length-1) {
-                        if (words[i+1].equals("&")) {
-                            rtn += getCastToString(words[i]);
-                        }
+                    if (ampFound) {
+                        if (words[i].equals(" "))
+                            rtn += " ";
                         else {
-                            if (i < words.length-2) {
-                                if (words[i+2].equals("&")) {
-                                    rtn += getCastToString(words[i]);
+                            rtn += getCastToString(words[i]);
+                            ampFound = false;
+                        }
+                    }
+                    else {
+                        if (i < words.length-1) {
+                            if (words[i+1].equals("&")) {
+                                rtn += getCastToString(words[i]);
+                            }
+                            else {
+                                if (i < words.length-2) {
+                                    if (words[i+2].equals("&")) {
+                                        rtn += getCastToString(words[i]);
+                                    }
+                                    else {
+                                        rtn += words[i];
+                                    }
                                 }
                                 else {
                                     rtn += words[i];
                                 }
                             }
-                            else {
-                                rtn += words[i];
-                            }
                         }
-                    }
-                    else {
-                        rtn += words[i];
+                        else {
+                            rtn += words[i];
+                        }
                     }
                 }
             }
@@ -3249,7 +3272,7 @@ public class Translator {
                                         end += vparams[t];
                                     }
                                     else {
-                                        G.showInfo("Unexpected colon found in Mid function's params: " + params);
+                                        showError("Unexpected colon found in Mid function's params: " + params);
                                     }
                                 }
                             }
@@ -3346,7 +3369,7 @@ public class Translator {
                                         length += vparams[t];
                                     }
                                     else {
-                                        G.showInfo("Unexpected colon found in Left function's params: " + params);
+                                        showError("Unexpected colon found in Left function's params: " + params);
                                     }
                                 }
                             }
@@ -3438,7 +3461,7 @@ public class Translator {
                                         lenght += vparams[t];
                                     }
                                     else {
-                                        G.showInfo("Unexpected colon found in Right function's params: " + params);
+                                        showError("Unexpected colon found in Right function's params: " + params);
                                     }
                                 }
                             }
@@ -3527,7 +3550,7 @@ public class Translator {
                                         identifier += vparams[t];
                                     }
                                     else {
-                                        G.showInfo("Unexpected colon found in LCase function's params: " + params);
+                                        showError("Unexpected colon found in LCase function's params: " + params);
                                     }
                                 }
                             }
@@ -3615,7 +3638,7 @@ public class Translator {
                                         identifier += vparams[t];
                                     }
                                     else {
-                                        G.showInfo("Unexpected colon found in UCase function's params: " + params);
+                                        showError("Unexpected colon found in UCase function's params: " + params);
                                     }
                                 }
                             }
@@ -3703,7 +3726,7 @@ public class Translator {
                                         identifier += vparams[t];
                                     }
                                     else {
-                                        G.showInfo("Unexpected colon found in Len function's params: " + params);
+                                        showError("Unexpected colon found in Len function's params: " + params);
                                     }
                                 }
                             }
@@ -3808,7 +3831,7 @@ public class Translator {
                                         param4 += vparams[t];
                                     }
                                     else {
-                                        G.showInfo("Unexpected colon found in InStr function's params: " + params);
+                                        showError("Unexpected colon found in InStr function's params: " + params);
                                     }
                                 }
                             }
@@ -4053,7 +4076,7 @@ public class Translator {
                                         identifier += vparams[t];
                                     }
                                     else {
-                                        G.showInfo("Unexpected colon found in "
+                                        showError("Unexpected colon found in "
                                                 + function
                                                 + " function's params: " + params);
                                     }
@@ -4442,8 +4465,28 @@ public class Translator {
             else
                 return identifier;
         }
+        else if (isComplexExpression(identifier)) {
+            identifier = identifier.trim();
+            if (identifier.startsWith("("))
+                return "String.valueOf" + identifier;
+            else
+                return "String.valueOf(" + identifier + ")";
+        }
         else
             return identifier;
+    }
+
+    private boolean isComplexExpression(String expression) {
+        if (expression.contains("+"))
+            return true;
+        if (expression.contains("-"))
+            return true;
+        if (expression.contains("*"))
+            return true;
+        if (expression.contains("/"))
+            return true;
+        else
+            return false;
     }
 
     private Variable getVariable(String identifier) {
@@ -6491,6 +6534,12 @@ public class Translator {
         else
             return varType.toLowerCase().equals(varType.toLowerCase());
     }
+
+    private void showError(String msg) {
+        msg = "module: " + m_vbClassName + newline + msg;
+        msg = "function: " + m_vbFunctionName + newline + msg;
+        G.showInfo(msg);
+    }
 }
 
 class IdentifierInfo {
@@ -6555,11 +6604,12 @@ class IdentifierInfo {
  * TODO: translate database access. replace recordsets.
  * TODO: translate globals (be aware of multi threading)
  * TODO: file functions (print, open, getattr, etc.)
- * TODO: translate Not sentence eg return Not cancel (this is parcially translated functionName = Not Cancel)
+ * TODO_DONE: translate Not sentence eg return Not cancel (this is parcially translated functionName = Not Cancel)
  * TODO: translate default property
  * TODO: translate on error goto controlerror
  * TODO: add import calls for references to vb projects we have translated
  * TODO: initialize local variables to zero or null string or null date or false
+ * TODO: translate replace function
  *
  * TODO: make an html report with a sumary of the work done (total classes translated,
  *       total files created, total projects translated, total functions)
