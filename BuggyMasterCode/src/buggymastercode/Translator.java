@@ -3013,12 +3013,128 @@ public class Translator {
         return rtn;
     }
 
+    private String putParentheses(String strLine) {
+        int openParentheses = 0;
+        String rtn = "";
+        String source = "";
+
+        String[] words = G.split(strLine);
+
+        for (int i = 0; i < words.length; i++) {
+
+            if (words[i].equals("(")) {
+                if (openParentheses == 0) {
+                    if (!source.isEmpty()) {
+                        rtn += putParenthesesAux(source);
+                        source = "";
+                    }
+                }
+                openParentheses++;
+            }
+            else if (words[i].equals(")")) {
+                openParentheses--;
+                if (openParentheses == 0) {
+                    rtn += "(" + putParentheses(source) + ")";
+                    source = "";
+                }
+            }
+            else {
+                source += words[i];
+            }
+        }
+        if (!source.isEmpty()) {
+            rtn += putParenthesesAux(source);
+        }
+        return rtn;
+    }
+
+    private String putParenthesesAux(String strLine) {
+        String rtn = "";
+        String source = "";
+        String[] words = G.split(strLine, ",");
+        for (int i = 0; i < words.length; i++) {
+            if (words[i].equals(",")) {
+                if (!source.isEmpty()) {
+                    rtn += putParenthesesAux2(source) + ",";
+                    source = "";
+                }
+                else
+                    rtn += ",";
+            }
+            else {
+                source += words[i];
+            }
+        }
+        if (!source.isEmpty()) {
+            rtn += putParenthesesAux2(source);
+        }
+        return rtn;
+    }
+    
+    private String putParenthesesAux2(String strLine) {
+        if (strLine.contains("&")) {
+            String rtn = "";
+            String[] words = G.split(strLine, "&");
+            for (int i = 0; i < words.length; i++) {
+                if (words[i].trim().isEmpty()) {
+                    rtn += words[i];
+                }
+                else if (!"+-*/".contains(words[i].trim().substring(0, 1))) {
+                    if(containsMathOperators(words[i])) {
+                        if (words[i].startsWith(" "))
+                            rtn += " ";
+                        rtn += "(" + words[i].trim() + ")";
+                        if (words[i].endsWith(" "))
+                            rtn += " ";
+                    }
+                    else {
+                        rtn += words[i];
+                    }
+                }
+            }
+            return rtn;
+        }
+        else
+            return strLine;
+    }
+    private boolean containsMathOperators(String strLine) {
+        if(strLine.contains("+")) {
+            return true;
+        }
+        else if(strLine.contains("-")) {
+            return true;
+        }
+        else if(strLine.contains("*")) {
+            return true;
+        }
+        else if(strLine.contains("/")) {
+            return true;
+        }
+        else
+            return false;
+
+    }
+
     private String replaceAmpersand(String strLine) {
+        if (strLine.contains("&")) {
+            // we need to put parentheses to enforce
+            // operator precedence
+            //
+            strLine = putParentheses(strLine);
+
+            return replaceAmpersandAux(strLine);
+        }
+        else {
+            return strLine;
+        }
+    }
+
+    private String replaceAmpersandAux(String strLine) {
         int openParentheses = 0;
         boolean ampFound = false;
         String rtn = "";
         String source = "";
-        String[] words = G.split(strLine); //getWordsFromSentence(strLine);
+        String[] words = G.split(strLine);
 
         for (int i = 0; i < words.length; i++) {
 
@@ -3029,11 +3145,37 @@ public class Translator {
                 openParentheses--;
                 if (openParentheses == 0) {
                     if (ampFound) {
-                        rtn += getCastToString("(" + replaceAmpersand(source) + ")");
+                        rtn += getCastToString("(" + replaceAmpersandAux(source) + ")");
                         ampFound = false;
                     }
-                    else
-                        rtn += "(" + replaceAmpersand(source) + ")";
+                    else {
+                        //rtn += "(" + replaceAmpersand(source) + ")";
+                        
+                        //---------------------------------------------------
+                        if (i < words.length-1) {
+                            if (words[i+1].equals("&")) {
+                                rtn += getCastToString("(" + replaceAmpersandAux(source) + ")");
+                            }
+                            else {
+                                if (i < words.length-2) {
+                                    if (words[i+2].equals("&")) {
+                                        rtn += getCastToString("(" + replaceAmpersandAux(source) + ")");
+                                    }
+                                    else {
+                                        rtn += "(" + replaceAmpersandAux(source) + ")";
+                                    }
+                                }
+                                else {
+                                    rtn += "(" + replaceAmpersandAux(source) + ")";
+                                }
+                            }
+                        }
+                        else {
+                            rtn += "(" + replaceAmpersandAux(source) + ")";
+                        }
+                        //---------------------------------------------------
+                         
+                    }
                     source = "";
                 }
             }
@@ -6579,7 +6721,7 @@ class IdentifierInfo {
  */
 
 /*
- * TODO: file mError.bas line 72 {s = Replace(s, "$" & i + 1, X(i))}
+ * TODO_DONE: file mError.bas line 72 {s = Replace(s, "$" & i + 1, X(i))}
  *       the code is translated as
  *              {s = Replace(s, "$" + ((Integer) i).ToString() + 1, X(i));}
  *       it is wrong because i + 1 must to be evaluated first and then has to apply
