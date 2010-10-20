@@ -1171,25 +1171,25 @@ public class Translator {
 
     private String translateDateConstant(String strLine) {
         String rtn = "";
-        String[] words = G.split(strLine);
+        String[] words = G.split2(strLine);
         for (int i = 0; i < words.length; i++) {
             if (words[i].length() >= 8) {
                 if (words[i].charAt(0) == '#') {
                     if (words[i].charAt(words[i].length() - 1) == '#') {
                         if (m_AddAuxFunctionsToClass) {
                             m_addDateAuxFunction = true;
-                            words[i] = "getDateFromString("
+                            words[i] = "getDateFromString(\""
                                         + words[i].substring(1, words[i].length() - 1)
-                                        + ")";
+                                        + "\")";
                         }
                         // when preference are setting to use G class or CSUtils
                         // it is translated using G.{auxfunction}
                         //
                         else {
                             m_addDateAuxFunctionToG = m_UseGAuxFunctions;
-                            words[i] = "G.getDateFromString("
+                            words[i] = "G.getDateFromString(\""
                                         + words[i].substring(1, words[i].length() - 1)
-                                        + ")";
+                                        + "\")";
                         }
                     }
                 }
@@ -1842,7 +1842,10 @@ public class Translator {
             if (m_previousWasReturn)
                 return comments + newline;
             else
-                return "return null;" + comments + newline;
+                if (m_function.getNeedReturnVariable())
+                    return "return _rtn;" + comments + newline;
+                else
+                    return "return null;" + comments + newline;
         }
         else {
             if (m_previousWasReturn) {
@@ -1850,7 +1853,10 @@ public class Translator {
                 return "";
             }
             else {
-                return "return null;" + newline;
+                if (m_function.getNeedReturnVariable())
+                    return "return _rtn;" + newline;
+                else
+                    return "return null;" + newline;
             }
         }
     }
@@ -2425,7 +2431,7 @@ public class Translator {
         int openParentheses = 0;
 
         for (int i = 0; i < words.length; i++) {
-            if (!("!*-+,.()\"'".contains(words[i]))) {
+            if (!("!*-+,.()\"[]'".contains(words[i]))) {
                 info = getIdentifierInfo(words[i], parent);
                 if (info == null)
                     type = "";
@@ -2473,6 +2479,14 @@ public class Translator {
                 openParentheses++;
             }
             else if (words[i].equals(")")) {
+                openParentheses--;
+                parent = parents[openParentheses];
+            }
+            else if (words[i].equals("[")) {
+                parents[openParentheses] = parent;
+                openParentheses++;
+            }
+            else if (words[i].equals("]")) {
                 openParentheses--;
                 parent = parents[openParentheses];
             }
@@ -4420,6 +4434,12 @@ public class Translator {
             if (words[i].equalsIgnoreCase("vbNullString")) {
                 words[i] = "\"\"";
             }
+            else if (words[i].equalsIgnoreCase("False")) {
+                words[i] = "false";
+            }
+            else if (words[i].equalsIgnoreCase("True")) {
+                words[i] = "true";
+            }
             expression += words[i];// + " ";
         }
         return expression.trim();
@@ -5007,12 +5027,35 @@ public class Translator {
     private String replaceSetReturnValueSentence(String strLine) {
         if (m_inFunction) {
             if (m_function != null) {
-                String toSearch = m_function.getJavaName() + " = ";
+                String toSearch = m_function.getVbName() + " = ";
+                if (strLine.startsWith(toSearch)) {
+                    if (m_function.getNeedReturnVariable())
+                        strLine = "_rtn = " + strLine.substring(toSearch.length());
+                    else
+                        strLine = "return " + strLine.substring(toSearch.length());
+                }
+                toSearch = " " + toSearch;
                 if (strLine.contains(toSearch)) {
                     if (m_function.getNeedReturnVariable())
-                        strLine = strLine.replace(toSearch, "_rtn = ");
+                        strLine = strLine.replace(toSearch, " _rtn = ");
                     else
-                        strLine = strLine.replace(toSearch, "return ");
+                        strLine = strLine.replace(toSearch, " return ");
+                }
+                else {
+                    toSearch = m_function.getJavaName() + " = ";
+                    if (strLine.startsWith(toSearch)) {
+                        if (m_function.getNeedReturnVariable())
+                            strLine = "_rtn = " + strLine.substring(toSearch.length());
+                        else
+                            strLine = "return " + strLine.substring(toSearch.length());
+                    }
+                    toSearch = " " + toSearch;
+                    if (strLine.contains(toSearch)) {
+                        if (m_function.getNeedReturnVariable())
+                            strLine = strLine.replace(toSearch, " _rtn = ");
+                        else
+                            strLine = strLine.replace(toSearch, " return ");
+                    }
                 }
             }
             /*else {
@@ -5133,9 +5176,9 @@ public class Translator {
                 params += getParam(words[i]) + ", ";
             }
             if (params.isEmpty())
-                return params;
+                return params.trim();
             else
-                return params.substring(0,params.length()-2);
+                return params.substring(0,params.length()-2).trim();
         }
         else
             return "";
@@ -5144,7 +5187,7 @@ public class Translator {
     private String getParam(String strParam) {
         String paramName = "";
         String vbParamName = "";
-        String dataType = "";
+        String dataType = "Object";
         String[] words = G.splitSpace(strParam);//strParam.split("\\s+");
 
         // empty string
@@ -5687,11 +5730,17 @@ public class Translator {
                 }
             }
         }
+        boolean isArray = false;
         if (!identifier.isEmpty()) {
+            isArray = identifier.endsWith("()");
+            if (isArray) {
+                identifier = identifier.substring(0, identifier.length() - 2);
+            }
             Variable var = new Variable();
             var.setVbName(vbIdentifier);
             var.setJavaName(identifier);
             var.setType(dataType);
+            var.isArray = isArray;
             var.isEventGenerator = isEventGenerator;
             if (isEventGenerator) {
                 addToEventListeners(vbIdentifier,
@@ -5707,8 +5756,11 @@ public class Translator {
         dataType = getDataType(dataType);
 
         saveVariable(vbIdentifier, identifier, dataType);
-
-        return "private " + dataType + " " + identifier + ";" + misc + newline;
+        
+        if (isArray)
+            return "private " + dataType + "[] " + identifier + getInitialValueForType(dataType) + ";" + misc + newline;
+        else
+            return "private " + dataType + " " + identifier + getInitialValueForType(dataType) + ";" + misc + newline;
     }
 
     private String translatePublicMember(String strLine) {
@@ -5770,15 +5822,31 @@ public class Translator {
 
         saveVariable(vbIdentifier, identifier, dataType, false, true);
 
+        boolean isArray = identifier.endsWith("()");
+        if (isArray) {
+            identifier = identifier.substring(0, identifier.length() - 2);
+        }
+
         Variable var = new Variable();
         var.setVbName(vbIdentifier);
         var.setJavaName(identifier);
         var.packageName = m_packageName;
         var.setType(dataType);
         var.isPublic = true;
+        var.isArray = isArray;
         m_publicVariables.add(var);
 
-        return "public " + dataType + " " + identifier + ";" + misc + newline;
+        if (isArray)
+            return "public " + dataType + "[] " + identifier + getInitialValueForType(dataType) + ";" + misc + newline;
+        else
+            return "public " + dataType + " " + identifier + getInitialValueForType(dataType) + ";" + misc + newline;
+    }
+
+    private String getInitialValueForType(String dataType) {
+        String iniValue = getDefaultForReturnType(dataType);
+        if (!iniValue.isEmpty())
+            iniValue = " = " + iniValue;
+        return iniValue;
     }
 
     private String getIdentifier(String word) {
@@ -6157,10 +6225,18 @@ public class Translator {
                     identifier = words[0];
                 }
 
-                saveVariableInType(identifier, identifier, dataType);
+                String vbIdentifier = identifier;
+                if (!identifier.isEmpty()) {
+                    if (identifier.length()>2)
+                        identifier = identifier.substring(0, 1).toLowerCase() + identifier.substring(1);
+                    else
+                        identifier = identifier.substring(0, 1).toLowerCase();
+                }
+
+                saveVariableInType(vbIdentifier, identifier, dataType);
 
                 Variable var = new Variable();
-                var.setVbName(identifier);
+                var.setVbName(vbIdentifier);
                 var.setJavaName(identifier);
                 var.setType(dataType);
                 var.isPublic = true;
@@ -6750,8 +6826,9 @@ class IdentifierInfo {
  * TODO: translate default property
  * TODO: translate on error goto controlerror
  * TODO: add import calls for references to vb projects we have translated
- * TODO: initialize local variables to zero or null string or null date or false
+ * TODO_DONE: initialize local variables to zero or null string or null date or false
  * TODO: translate replace function
+ * TODO_DONE: replace literal dates which are sourronded by #
  *
  * TODO: make an html report with a sumary of the work done (total classes translated,
  *       total files created, total projects translated, total functions)
