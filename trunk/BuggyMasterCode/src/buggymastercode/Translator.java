@@ -996,7 +996,9 @@ public class Translator {
         if (m_inWith) {
             if (!m_withDeclaration && !m_endWithDeclaration) {
                 boolean evalWith = false;
-                if (strLine.contains(" ."))
+                if (strLine.startsWith("."))
+                    evalWith = true;
+                else if (strLine.contains(" ."))
                     evalWith = true;
                 else if (strLine.contains("(."))
                     evalWith = true;
@@ -5559,13 +5561,29 @@ public class Translator {
                 constValue = "0x" + constValue.substring(2);
             }
             else {
-                return "*TODO: (the data type can't be found for the value ["
-                        + constValue + "])" + strLine + newline;
+                IdentifierInfo info = null;
+                info = getIdentifierInfo(constValue, "");
+                if (info != null) {
+                    if (info.isFunction)
+                        dataType = info.function.getReturnType().dataType;
+                    else
+                        dataType = info.variable.dataType;
+                }
+                else {
+                    return "*TODO: (the data type can't be found for the value ["
+                            + constValue + "])" + strLine + newline;
+                }
             }
         }
 
         String vbIdentifier = identifier;
         identifier = identifier.toUpperCase();
+
+        Variable var = new Variable();
+        var.setVbName(vbIdentifier);
+        var.setJavaName(identifier);
+        var.setType(dataType);
+        m_memberVariables.add(var);
 
         saveVariable(vbIdentifier, identifier, dataType);
 
@@ -5677,13 +5695,29 @@ public class Translator {
                 constValue = "0x" + constValue.substring(2);
             }
             else {
-                return "*TODO: (the data type can't be found for the value ["
-                        + constValue + "])" + strLine + newline;
+                IdentifierInfo info = null;
+                info = getIdentifierInfo(constValue, "");
+                if (info != null) {
+                    if (info.isFunction)
+                        dataType = info.function.getReturnType().dataType;
+                    else
+                        dataType = info.variable.dataType;
+                }
+                else {
+                    return "*TODO: (the data type can't be found for the value ["
+                            + constValue + "])" + strLine + newline;
+                }
             }
         }
 
         String vbIdentifier = identifier;
         identifier = identifier.toUpperCase();
+
+        Variable var = new Variable();
+        var.setVbName(vbIdentifier);
+        var.setJavaName(identifier);
+        var.setType(dataType);
+        m_memberVariables.add(var);
 
         saveVariable(vbIdentifier, identifier, dataType);
 
@@ -6829,6 +6863,7 @@ class IdentifierInfo {
  * TODO_DONE: initialize local variables to zero or null string or null date or false
  * TODO: translate replace function
  * TODO_DONE: replace literal dates which are sourronded by #
+ * TODO: resolve params array
  *
  * TODO: make an html report with a sumary of the work done (total classes translated,
  *       total files created, total projects translated, total functions)
