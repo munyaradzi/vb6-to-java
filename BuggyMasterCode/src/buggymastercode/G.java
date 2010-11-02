@@ -457,7 +457,8 @@ public class G {
      *<br>     return[13] = "."
      *<br>     return[14] = "var"
      *<br>     return[15] = ")"
-     *<br>     return[16] = " "var.var.var""
+     *<br>     return[16] = " "
+     *<br>     return[16] = ""var.var.var""
      *
      * @param strLine
      * @return
