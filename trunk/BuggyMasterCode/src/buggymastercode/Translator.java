@@ -990,7 +990,10 @@ public class Translator {
         // function expecific stuff
         //
         strLine = translateCode(strLine, false);
+        return strLine;
+    }
 
+    private String translateWithSentence(String strLine) {
         // translate inner with block
         //
         if (m_inWith) {
@@ -2230,6 +2233,7 @@ public class Translator {
         strLine = replaceWithSentence(strLine);
         strLine = replaceEndWithSentence(strLine);
         strLine = replaceRedimSentence(strLine);
+        strLine = translateWithSentence(strLine);
         strLine = replaceVbNameWithJavaName(strLine);
         strLine = replaceExitSentence(strLine);
         strLine = replaceSlashInLiterals(strLine);
@@ -2427,13 +2431,13 @@ public class Translator {
         IdentifierInfo info = null;
         String type = "";
         String parent = "";
-        String[] words = G.split2(strLine, "!\t/*-+ .()");
+        String[] words = G.split2(strLine, "!\t/*-+ ,.()[]");
         strLine = "";
         String[] parents = new String[30]; // why 30? how nows :P, 30 should be enough :)
         int openParentheses = 0;
 
         for (int i = 0; i < words.length; i++) {
-            if (!("!*-+,.()\"[]'".contains(words[i]))) {
+            if (!("!\t/*-+ ,.()[]'\"".contains(words[i]))) {
                 info = getIdentifierInfo(words[i], parent);
                 if (info == null)
                     type = "";
@@ -4665,6 +4669,12 @@ public class Translator {
         //
         if (expression.contains("(")) {
             int i = expression.indexOf("(");
+            if (i > 0) {
+                identifier = expression.substring(0, i);
+            }
+        }
+        else if (expression.contains("[")) {
+            int i = expression.indexOf("[");
             if (i > 0) {
                 identifier = expression.substring(0, i);
             }
