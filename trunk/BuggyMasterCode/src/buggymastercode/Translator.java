@@ -218,12 +218,14 @@ public class Translator {
             m_collJavaClassess.add(source);
 
         Preference pref = PreferenceObject.getPreference(G.C_AUX_FUN_ID);
-        if (pref.getValue().equals(G.C_AUX_FUN_IN_CLASS_SOURCE))
-            m_AddAuxFunctionsToClass = true;
-        else if (pref.getValue().equals(G.C_AUX_FUN_IN_G_CLASS))
-            m_UseGAuxFunctions = true;
-        else if (pref.getValue().equals(G.C_AUX_FUN_IN_CS_LIBRARY))
-            m_UseCSUtils = true;
+        if (pref != null) {
+            if (pref.getValue().equals(G.C_AUX_FUN_IN_CLASS_SOURCE))
+                m_AddAuxFunctionsToClass = true;
+            else if (pref.getValue().equals(G.C_AUX_FUN_IN_G_CLASS))
+                m_UseGAuxFunctions = true;
+            else if (pref.getValue().equals(G.C_AUX_FUN_IN_CS_LIBRARY))
+                m_UseCSUtils = true;
+        }
     }
 
     public void setCaller(TranslatorWorker caller) {
@@ -2248,6 +2250,7 @@ public class Translator {
         strLine = replaceCDateSentence(strLine);
         strLine = replacePropertySetSentence(strLine);
         strLine = replaceNotSentence(strLine);
+        strLine = replaceADODBSentence(strLine);
 
         // this call has to be the last sentences in this function
         // all the changes have to be done before this call
@@ -5409,6 +5412,10 @@ public class Translator {
         else if (dataType.equalsIgnoreCase("variant")) {
             dataType = "Object";
         }
+        else if (isADODBType(dataType)) {
+            dataType = translateADODBType(dataType);
+        }
+
         // else: if is not one of the above list we return
         // the same value we received
         //
@@ -6802,6 +6809,96 @@ public class Translator {
         msg = "function: " + m_vbFunctionName + newline + msg;
         G.showInfo(msg);
     }
+
+    // ADODB
+    //
+    private String replaceADODBSentence(String strLine) {
+        Preference pref = PreferenceObject.getPreference(G.C_AUX_ADO_REPLACE_ID);
+        if (pref != null) {
+            if (!pref.getValue().equals("0")) {
+                strLine = replaceADODBConnection(strLine);
+                strLine = replaceADODBRecordset(strLine);
+                strLine = replaceADODBFields(strLine);
+                strLine = replaceADODBField(strLine);
+            }
+        }
+        return strLine;
+    }
+
+    private String replaceADODBConnection(String strLine) {
+        return strLine;
+    }
+    private String replaceADODBRecordset(String strLine) {
+        return strLine;
+    }
+    private String replaceADODBFields(String strLine) {
+        return strLine;
+    }
+    private String replaceADODBField(String strLine) {
+        return strLine;
+    }
+    private boolean isADODBType(String dataType) {
+        if (dataType.equalsIgnoreCase("ADODB.Connection")) {
+            return true;
+        }
+        else if (dataType.equalsIgnoreCase("Connection")) {
+            return true;
+        }
+        else if (dataType.equalsIgnoreCase("ADODB.Recordset")) {
+            return true;
+        }
+        else if (dataType.equalsIgnoreCase("Recordset")) {
+            return true;
+        }
+        else if (dataType.equalsIgnoreCase("ADODB.Fields")) {
+            return true;
+        }
+        else if (dataType.equalsIgnoreCase("Fields")) {
+            return true;
+        }
+        else if (dataType.equalsIgnoreCase("ADODB.Field")) {
+            return true;
+        }
+        else if (dataType.equalsIgnoreCase("Field")) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    private String translateADODBType(String dataType) {
+        if (dataType.equalsIgnoreCase("ADODB.Connection")) {
+            addToImportList("import java.sql.Connection;");
+            return "Connection";
+        }
+        else if (dataType.equalsIgnoreCase("Connection")) {
+            addToImportList("import java.sql.Connection;");
+            return "Connection";
+        }
+        else if (dataType.equalsIgnoreCase("ADODB.Recordset")) {
+            return "DBRecordSet";
+        }
+        else if (dataType.equalsIgnoreCase("Recordset")) {
+            return "DBRecordSet";
+        }
+        else if (dataType.equalsIgnoreCase("ADODB.Fields")) {
+            addToImportList("import org.apache.commons.beanutils.DynaBean;");
+            return "DynaBean";
+        }
+        else if (dataType.equalsIgnoreCase("Fields")) {
+            addToImportList("import org.apache.commons.beanutils.DynaBean;");
+            return "DynaBean";
+        }
+        else if (dataType.equalsIgnoreCase("ADODB.Field")) {
+            return "Object";
+        }
+        else if (dataType.equalsIgnoreCase("Field")) {
+            return "Object";
+        }
+        else {
+            return dataType;
+        }
+    }
 }
 
 class IdentifierInfo {
@@ -6874,6 +6971,7 @@ class IdentifierInfo {
  * TODO: translate replace function
  * TODO_DONE: replace literal dates which are sourronded by #
  * TODO: resolve params array
+ * TODO: translate IsEmpty for variants
  *
  * TODO: make an html report with a sumary of the work done (total classes translated,
  *       total files created, total projects translated, total functions)
