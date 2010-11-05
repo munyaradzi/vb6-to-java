@@ -28,6 +28,7 @@ public class G {
     static public final String C_AUX_FUN_IN_CLASS_SOURCE = "in class source";
     static public final String C_AUX_FUN_IN_G_CLASS = "in G class";
     static public final String C_AUX_FUN_IN_CS_LIBRARY = "in CSUtil library";
+    static public final String C_AUX_ADO_REPLACE_ID = "ADO-Replace";
 
     /**
      * value = " +-/*,;"
