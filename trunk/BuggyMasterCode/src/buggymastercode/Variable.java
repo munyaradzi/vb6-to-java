@@ -18,6 +18,7 @@ public class Variable {
     public boolean isLong = false;
     public boolean isInt = false;
     public boolean isBoolean = false;
+    public boolean isParam = false;
     public boolean isPublic = false;
     public boolean isArray = false;
     public boolean isEventGenerator = false;
