@@ -15,12 +15,16 @@ public class ClassObject {
     private String m_packageName = "";
     private String m_vbName = "";
     private String m_javaName = "";
+    private int m_isPublicEnum = 0;
+    private String m_enumParentClass = "";
 
     public void setId(int value) {m_id = value;}
     public int getId() {return m_id;}
     public void setPackageName(String value) {m_packageName = value;}
     public void setVbName(String value) {m_vbName = value;}
     public void setJavaName(String value) {m_javaName = value;}
+    public void setIsPublicEnum(boolean value) {m_isPublicEnum = value ? 1: 0;}
+    public void setEnumParentClass(String value) {m_enumParentClass = value;}
 
     public boolean saveClass() {
         if (m_id == Db.CS_NO_ID) {
@@ -31,11 +35,13 @@ public class ClassObject {
                 return false;
             }
 
-            String sqlstmt = "insert into tclass (cl_id, cl_packagename, cl_vbname, cl_javaname) values ("
+            String sqlstmt = "insert into tclass (cl_id, cl_packagename, cl_vbname, cl_javaname, cl_ispublicenum, cl_enumparentclass) values ("
                             + id.getId().toString()
                             + ", " + Db.getString(m_packageName)
                             + ", " + Db.getString(m_vbName)
                             + ", " + Db.getString(m_javaName)
+                            + ", " + Integer.toString(m_isPublicEnum)
+                            + ", " + Db.getString(m_enumParentClass)
                             + ")";
 
             if (Db.db.execute(sqlstmt)) {

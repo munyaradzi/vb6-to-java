@@ -44,14 +44,14 @@ public class BuggyMasterCodeView extends FrameView {
 
         initComponents();
 
-        getFrame().setIconImage(new ImageIcon("C:\\dev\\proyectos.nb\\BuggyMasterCode\\src\\buggymastercode\\resources\\grasshopper.png").getImage());
+        ResourceMap resourceMap = getResourceMap();
+        getFrame().setIconImage(resourceMap.getImageIcon("app.icon").getImage());
 
         cbFiles.removeAllItems();
         cbProject.removeAllItems();
         cmdCancel.setEnabled(false);
 
         // status bar initialization - message timeout, idle icon and busy animation, etc
-        ResourceMap resourceMap = getResourceMap();
         int messageTimeout = resourceMap.getInteger("StatusBar.messageTimeout");
         messageTimer = new Timer(messageTimeout, new ActionListener() {
             public void actionPerformed(ActionEvent e) {
