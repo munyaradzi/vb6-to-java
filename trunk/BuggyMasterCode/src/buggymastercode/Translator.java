@@ -162,6 +162,7 @@ public class Translator {
     private TranslatorWorker m_caller = null;
 
     private ClassObject m_typeClassObject;
+    private ClassObject m_enumClassObject;
 
     private boolean m_AddAuxFunctionsToClass = false;
     private boolean m_UseGAuxFunctions = false;
@@ -173,6 +174,8 @@ public class Translator {
     private boolean m_setReturnValueFound = false;
     private boolean m_needReturnVariable = false;
     private Function m_function = null;
+
+    private boolean m_isBasFile = false;
 
     public Translator() {
         m_collJavaClassess = new ArrayList<SourceFile>();
@@ -5404,6 +5407,7 @@ public class Translator {
             dataType = "float";
         }
         else if (dataType.equalsIgnoreCase("date")) {
+            addToImportList("import java.util.Date;");
             dataType = "Date";
         }
         else if (dataType.equalsIgnoreCase("string")) {
@@ -5647,6 +5651,18 @@ public class Translator {
 
     private void saveVariableInType(String vbIdentifier, String identifier, String dataType) {
         m_variableObject.setClId(m_typeClassObject.getId());
+        m_variableObject.setVbName(vbIdentifier);
+        m_variableObject.setJavaName(identifier);
+        m_variableObject.setFunId(Db.CS_NO_ID);
+        m_variableObject.setDataType(dataType);
+        m_variableObject.setIsParameter(false);
+        m_variableObject.setIsPublic(true);
+        m_variableObject.getVariableIdFromVariableName();
+        m_variableObject.saveVariable();
+    }
+
+    private void saveVariableInEnum(String vbIdentifier, String identifier, String dataType) {
+        m_variableObject.setClId(m_enumClassObject.getId());
         m_variableObject.setVbName(vbIdentifier);
         m_variableObject.setJavaName(identifier);
         m_variableObject.setFunId(Db.CS_NO_ID);
@@ -6052,6 +6068,7 @@ public class Translator {
         m_functionObject = new FunctionObject();
         m_variableObject = new VariableObject();
         m_typeClassObject = new ClassObject();
+        m_enumClassObject = new ClassObject();
     }
 
     public void initTranslator(String name) {
@@ -6092,6 +6109,7 @@ public class Translator {
         m_setReturnValueFound = false;
         m_needReturnVariable = false;
         m_function = null;
+        m_isBasFile = false;
 
         if (name.contains(".")) {
             if (name.length() > 0) {
@@ -6099,6 +6117,7 @@ public class Translator {
                 if ( ext.equals("bas") || ext.equals("cls") || ext.equals("frm") ) {
                     m_isVbSource = true;
                 }
+                m_isBasFile = ext.equals("bas");
             }
         }
     }
@@ -6117,6 +6136,30 @@ public class Translator {
         m_typeClassObject.setJavaName(className);
         m_typeClassObject.getClassIdFromClassName();
         m_typeClassObject.saveClass();
+    }
+
+    private void saveEnumClassInDB(String className, boolean isPublic) {
+        int i = className.indexOf("'");
+        if (i > 0) {
+            className = className.substring(0, i - 1).trim();
+        }
+        i = className.indexOf(" ");
+        if (i > 0) {
+            className = className.substring(0, i - 1).trim();
+        }
+        m_enumClassObject.setPackageName(m_packageName);
+        m_enumClassObject.setVbName(className);
+        m_enumClassObject.setJavaName(className);
+        m_enumClassObject.getClassIdFromClassName();
+        if (isPublic) {
+            m_enumClassObject.setIsPublicEnum(true);
+            m_enumClassObject.setEnumParentClass("");
+        }
+        else {
+            m_enumClassObject.setIsPublicEnum(false);
+            m_enumClassObject.setEnumParentClass(m_javaClassName);
+        }
+        m_enumClassObject.saveClass();
     }
 
     private void addToType(String strLine) {
@@ -6172,18 +6215,16 @@ public class Translator {
             }
         }
 
-        if (strLine.trim().length() == 8) {
-            if (strLine.substring(0,8).toLowerCase().equals("end type")) {
-                m_inType = false;
-                m_type += "}" + comments + newline + newline;
-                m_collTypes.add(m_type);
-                Type type = m_types.get(m_types.size()-1);
-                type.getVbCode().append(strLine);
-                type.getJavaCode().append(m_type);
-                m_type = "";
-                if (type.isPublic)
-                    m_caller.addPublicType(type);
-            }
+        if (G.beginLike(strLine, "end type")) {
+            m_inType = false;
+            m_type += "}" + comments + newline + newline;
+            m_collTypes.add(m_type);
+            Type type = m_types.get(m_types.size()-1);
+            type.getVbCode().append(strLine);
+            type.getJavaCode().append(m_type);
+            m_type = "";
+            if (type.isPublic)
+                m_caller.addPublicType(type);
         }
         else {
             String dataType = "";
@@ -6306,44 +6347,48 @@ public class Translator {
 
         if (strLine.length() > 5) {
             if (strLine.substring(0, 5).toLowerCase().equals("enum ")) {
-                m_enum += "private class " + strLine.substring(5) + " {" + newline;
+                String enumClass = strLine.substring(5);
+                saveEnumClassInDB(enumClass, m_isBasFile);
+                m_enum += "private class " + enumClass + " {" + newline;
                 return;
             }
         }
 
         if (strLine.length() > 12) {
             if (strLine.substring(0, 12).toLowerCase().equals("public enum ")) {
-                m_enum += "public class " + strLine.substring(12) + " {" + newline;
+                String enumClass = strLine.substring(12);
+                saveEnumClassInDB(enumClass, true);
+                m_enum += "public class " + enumClass + " {" + newline;
                 return;
             }
         }
 
         if (strLine.length() > 13) {
             if (strLine.substring(0, 13).toLowerCase().equals("private enum ")) {
-                m_enum += "private class " + strLine.substring(13) + " {" + newline;
+                String enumClass = strLine.substring(13);
+                saveEnumClassInDB(enumClass, false);
+                m_enum += "private class " + enumClass + " {" + newline;
                 return;
             }
         }
 
-        if (strLine.trim().length() == 8) {
-            if (strLine.substring(0, 8).toLowerCase().equals("end enum")) {
-                m_inEnum = false;
-                int lastColon = 0;
-                for (int i = 0; i < m_enum.length(); i++) {
-                    if (m_enum.charAt(i) == ',') {
-                        lastColon = i;
-                    }
-                    else if (m_enum.charAt(i) == '\'') {
-                        break;
-                    }
+        if (G.beginLike(strLine,"end enum")) {
+            m_inEnum = false;
+            int lastColon = 0;
+            for (int i = 0; i < m_enum.length(); i++) {
+                if (m_enum.charAt(i) == ',') {
+                    lastColon = i;
                 }
-                if (lastColon > 0) {
-                    m_enum = m_enum.substring(0,lastColon) + m_enum.substring(lastColon+1);
+                else if (m_enum.charAt(i) == '\'') {
+                    break;
                 }
-                m_enum += "}" + newline + newline;
-                m_collEnums.add(m_enum);
-                m_enum = "";
             }
+            if (lastColon > 0) {
+                m_enum = m_enum.substring(0,lastColon) + m_enum.substring(lastColon+1);
+            }
+            m_enum += "}" + newline + newline;
+            m_collEnums.add(m_enum);
+            m_enum = "";
         }
         else {
             String constValue = "";
@@ -6360,7 +6405,6 @@ public class Translator {
                 // complete sentence eg: enum_member = enum_value
                 //
                 if (words.length >= 3) {
-
                     if (words[1].charAt(0) == '=') {
                         constValue = words[2];
                     }
@@ -6374,16 +6418,19 @@ public class Translator {
                     }
                 }
 
-                if (constValue.isEmpty())
-                    m_enum += "    " + identifier.toUpperCase() + "," + misc + newline;
-                else
+                if (constValue.isEmpty()) {
+                    m_enum += "    public static int " + identifier.toUpperCase() + ";" + misc + newline;
+                }
+                else {
                     if (constValue.length() > 2) {
                         if (constValue.substring(0, 2).equalsIgnoreCase("&h")) {
                             constValue = "0x" + constValue.substring(2);
                         }
                     }
-                    m_enum += "    " + identifier.toUpperCase() + " = "
-                            + constValue + "," + misc + newline;
+                    m_enum += "    public static int " + identifier.toUpperCase() + " = "
+                            + constValue + ";" + misc + newline;
+                }
+                saveVariableInEnum(identifier, identifier, "int");
             }
             else {
                 m_enum += strLine;

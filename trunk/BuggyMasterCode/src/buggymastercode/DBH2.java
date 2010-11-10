@@ -70,7 +70,9 @@ public class DBH2 implements DBConnection {
                 "cl_id int PRIMARY KEY, " +
                 "cl_javaname varchar(255) DEFAULT '' NOT NULL," +
                 "cl_vbname varchar(255) DEFAULT '' NOT NULL," +
-                "cl_packagename varchar(255) DEFAULT '' NOT NULL)");
+                "cl_packagename varchar(255) DEFAULT '' NOT NULL," +
+                "cl_ispublicenum tinyint DEFAULT 0 NOT NULL," +
+                "cl_enumparentclass varchar(255) DEFAULT '' NOT NULL)");
         //stat.execute("drop table tfunction");
         stat.execute("CREATE TABLE IF NOT EXISTS tfunction (" +
                 "cl_id int DEFAULT 0 NOT NULL," +
