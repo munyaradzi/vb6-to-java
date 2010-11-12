@@ -22,6 +22,8 @@ public class Variable {
     public boolean isPublic = false;
     public boolean isArray = false;
     public boolean isEventGenerator = false;
+    public boolean isEnumMember = false;
+    public String className = "";
     public String dataType = "";
     public String packageName = "";
 
