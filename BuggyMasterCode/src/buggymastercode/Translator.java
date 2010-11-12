@@ -15,6 +15,7 @@ import java.util.Iterator;
 public class Translator {
 
     static private final String newline = "\n";
+    static private final String C_TAB = "    ";
     static private final String outerTabHandler = "                  ";
     static private final String innerTabHandler = outerTabHandler + "  ";
     static private final String C_NUMBERS = "-+0123456789";
@@ -176,6 +177,13 @@ public class Translator {
     private Function m_function = null;
 
     private boolean m_isBasFile = false;
+
+    // to translate On Error
+    //
+    private boolean m_onErrorFound = false;
+    private boolean m_onErrorResumeNext = false;
+    private String m_onErrorLabel = "";
+    private boolean m_onCatchBlock = false;
 
     public Translator() {
         m_collJavaClassess = new ArrayList<SourceFile>();
@@ -1129,7 +1137,12 @@ public class Translator {
             }
             else {
                 if (isEndFunction(workLine)) {
-                    strLine = getReturnLine() + "}" + newline;
+                    String onErrorLabelNotFound = checkOnErrorLabelFound();
+                    String endOfPreviousOnError = getEndOfPreviousOnError(C_TAB);
+                    strLine = onErrorLabelNotFound
+                                + endOfPreviousOnError
+                                + getReturnLine()
+                                + "}" + newline;
                     m_function = null;
                     m_inFunction = false;
                     return strLine;
@@ -1164,6 +1177,10 @@ public class Translator {
                         return translateForSentence(strLine);
                     else if (isNextSentence(workLine))
                         return translateNextSentence(strLine);
+                    else if (isOnErrorSentence(workLine))
+                        return translateOnErrorSentence(strLine);
+                    else if (isOnErrorLabelSentence(workLine))
+                        return translateOnErrorLabelSentence(strLine);
                     else
                         return translateSentenceWithNewLine(strLine);
                         // loop block
@@ -1335,6 +1352,14 @@ public class Translator {
         //
         m_setReturnValueFound = false;
         m_needReturnVariable = false;
+
+        // On Error flag is reset in every function
+        //
+        m_onErrorFound = false;
+        m_onErrorResumeNext = false;
+        m_onErrorLabel = "";
+        m_onCatchBlock = false;
+
         // get out spaces even tabs
         //
         String workLine = G.ltrimTab(strLine).toLowerCase();
@@ -1538,6 +1563,48 @@ public class Translator {
         }
     }
 
+    private boolean isOnErrorSentence(String strLine) {
+        if (G.beginLike(strLine, "On Error ")) {
+            return true;
+        }
+        else {
+            int startComment = getStartComment(strLine);
+            if (startComment >= 0) {
+                strLine = strLine.substring(0, startComment-1);
+            }
+            strLine = G.ltrimTab(strLine);
+            if (strLine.equalsIgnoreCase("On Error")) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+    }
+
+    private boolean isOnErrorLabelSentence(String strLine) {
+        if (m_onErrorLabel.isEmpty()) {
+            return false;
+        }
+        else if (G.beginLike(strLine, m_onErrorLabel)) {
+            return true;
+        }
+        else {
+            int startComment = getStartComment(strLine);
+            if (startComment >= 0) {
+                strLine = strLine.substring(0, startComment-1);
+            }
+            strLine = G.ltrimTab(strLine);
+            if (strLine.equalsIgnoreCase(m_onErrorLabel)) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+    }
+
+    /*
     private String translateComments(String strLine) {
         // We only translate ' in // if the line doesn't contain a // yet
         // because if the line does, it means that the comments
@@ -1553,6 +1620,7 @@ public class Translator {
         }
         return strLine;
     }
+    */
 
     private String translateCaseSentence(String strLine) {
         String switchStatetment = "";
@@ -1764,7 +1832,7 @@ public class Translator {
             if (javaSentenceBlock.contains("\n")) {
                 return comments
                         + "if (" + javaSentenceIf + ") { " + newline
-                        + getTabs() + "    "
+                        + getTabs() + C_TAB
                         + javaSentenceBlock.replace("\n", "\n    ") + newline
                         + getTabs() + "}"  + newline;
             }
@@ -2117,7 +2185,7 @@ public class Translator {
                             + translateSentence(collection) + ".size();"
                             + " " + m_iterators[m_iteratorIndex] + "++) {"
                             + comments + newline
-                            + getTabs() + "    "
+                            + getTabs() + C_TAB
                             + iterator + " = " + collection 
                             + ".getItem(" + m_iterators[m_iteratorIndex] + ");" + newline;
         }
@@ -2164,11 +2232,70 @@ public class Translator {
         if (startComment >= 0) {
             String comments = "";
             comments =  "//" + strLine.substring(startComment);
-            return "}" + comments + newline;
+            return "} " + comments + newline;
         }
         else {
             return "}" + newline;
         }
+    }
+
+    private String checkOnErrorLabelFound() {
+        if (!m_onErrorLabel.isEmpty())
+            return "//*TODO:** the error label " + m_onErrorLabel + " couldn't be found" + newline + getTabs();
+        else
+            return "";
+    }
+
+    private String getEndOfPreviousOnError(String tabs) {
+        if (m_onErrorFound) 
+            return tabs + "}" + newline + getTabs();
+        else
+            return "";
+    }
+
+    private String translateOnErrorSentence(String strLine) {
+        // On Error Goto error_label
+        // On Error Resume Next
+        // On Error Goto 0
+        //
+        String onErrorLabelNotFound = checkOnErrorLabelFound();
+        m_onErrorResumeNext = false;
+        m_onErrorLabel = "";
+        String comments = "";
+        int startComment = getStartComment(strLine);
+        if (startComment >= 0) {
+            comments =  " //" + strLine.substring(startComment);
+            strLine = strLine.substring(9, startComment).trim();
+        }
+        else
+            strLine = strLine.substring(9).trim();
+
+        String trySentence = "";
+        if (strLine.equalsIgnoreCase("Resume next")) {
+            m_onErrorResumeNext = true;
+            m_onErrorFound = false;
+        }
+        else if (G.beginLike(strLine, "GoTo")) {
+            m_onErrorLabel = strLine.substring(5).trim() + ":";
+            trySentence = "try {";
+        }
+
+        String endOfPreviousOnError = getEndOfPreviousOnError("");
+
+        return endOfPreviousOnError
+                + onErrorLabelNotFound
+                + trySentence
+                + comments + newline;
+    }
+
+    private String translateOnErrorLabelSentence(String strLine) {
+        m_onErrorLabel = "";
+        String comments = "";
+        int startComment = getStartComment(strLine);
+        if (startComment >= 0) {
+            comments =  " //" + strLine.substring(startComment);
+        }
+        return "} catch (Exception ex) {" + comments + newline;
     }
 
     private String translateSentenceWithNewLine(String strLine) {
@@ -2178,7 +2305,10 @@ public class Translator {
     private String translateSentenceWithColon(String strLine) {
         strLine = translateSentence(strLine);
         if (!strLine.trim().isEmpty()) {
-            if (";}".contains(strLine.substring(strLine.length() - 1))) {
+            if (strLine.startsWith("/*") && strLine.endsWith("*/")) {
+                return strLine;
+            }
+            else if (";}".contains(strLine.substring(strLine.length() - 1))) {
                 return strLine;
             }
         }
@@ -2234,6 +2364,7 @@ public class Translator {
         strLine = replaceInStrSentence(strLine);
         strLine = replaceVbWords(strLine);
         strLine = replaceIsNothing(strLine);
+        strLine = replaceNothing(strLine);
         strLine = translateFunctionCall(strLine);
         strLine = replaceWithSentence(strLine);
         strLine = replaceEndWithSentence(strLine);
@@ -2254,6 +2385,9 @@ public class Translator {
         strLine = replacePropertySetSentence(strLine);
         strLine = replaceNotSentence(strLine);
         strLine = replaceADODBSentence(strLine);
+        strLine = replaceResumeSentence(strLine);
+        strLine = replaceGotoSentence(strLine);
+        strLine = replaceLabelSentence(strLine);
 
         // this call has to be the last sentences in this function
         // all the changes have to be done before this call
@@ -2340,7 +2474,7 @@ public class Translator {
             }
         }
         if (handler.isEmpty())
-            handler = "//*TODO:**the event handler couldn't be translated: "
+            handler = "//*TODO:** the event handler couldn't be translated: "
                             + strLine + newline;
         return handler;
     }
@@ -2482,7 +2616,11 @@ public class Translator {
                         }
                     }
                     type = info.variable.dataType;
-                    words[i] = info.variable.getJavaName();
+                    if (info.variable.isEnumMember)
+                        words[i] = info.variable.className
+                                    + "." + info.variable.getJavaName();
+                    else
+                        words[i] = info.variable.getJavaName();
                 }
                 parent = type;
             }
@@ -2645,6 +2783,21 @@ public class Translator {
 
     private String replaceIsNothing(String strLine) {
         return strLine.replaceAll("Is Nothing", "== null");
+    }
+
+    private String replaceNothing(String strLine) {
+        if (strLine.contains("Nothing")) {
+            strLine = strLine.replaceAll(" Nothing ", " null");
+            strLine = strLine.replaceAll("\\(Nothing\\)", "(null)");
+            strLine = strLine.replaceAll("\\(Nothing,", "(null,");
+            strLine = strLine.replaceAll(", Nothing\\)", ", null)");
+            strLine = strLine.replaceAll(" Nothing,", ", null,");
+            // ", Nothing" or "= Nothing"
+            if (strLine.endsWith(" Nothing"))
+                strLine = strLine.substring(0, strLine.length() - 8) + " null";
+
+        }
+        return strLine;
     }
 
     private String replaceRedimSentence(String strLine) {
@@ -3000,7 +3153,7 @@ public class Translator {
             found = false;
             for (int j = 0; j < m_memberVariables.size(); j++) {
                 /*System.out.println(m_memberVariables.get(j)
-                        + "    " + words[i]
+                        + C_TAB + words[i]
                         );*/
                 if (words[i].equalsIgnoreCase(m_memberVariables.get(j).getJavaName())) {
                     rtn += m_memberVariables.get(j).getJavaName();
@@ -3024,7 +3177,7 @@ public class Translator {
             found = false;
             for (int j = 0; j < m_functionVariables.size(); j++) {
                 /*System.out.println(m_functionVariables.get(j)
-                        + "    " + words[i]
+                        + C_TAB + words[i]
                         );*/
                 if (words[i].equalsIgnoreCase(m_functionVariables.get(j).getJavaName())) {
                     rtn += m_functionVariables.get(j).getJavaName();
@@ -4847,6 +5000,13 @@ public class Translator {
     }
 
     private String translateFunctionDeclaration(String strLine) {
+        // On Error flag is reset in every function
+        //
+        m_onErrorFound = false;
+        m_onErrorResumeNext = false;
+        m_onErrorLabel = "";
+        m_onCatchBlock = false;
+
         String functionName = "";
         String functionType = "";
         String functionScope = "";
@@ -5016,7 +5176,7 @@ public class Translator {
         if (m_function != null) {
             if (m_function.getNeedReturnVariable()) {
                 strLine += getTabs()
-                        + "    " + m_function.getReturnType().dataType
+                        + C_TAB + m_function.getReturnType().dataType
                         + " _rtn = " + m_returnValue + ";" + newline;
             }
         }
@@ -5040,6 +5200,27 @@ public class Translator {
         else if (strLine.contains(" Not("))
             strLine = strLine.replace(strLine, " !(");
         return strLine;
+    }
+
+    private String replaceResumeSentence(String strLine) {
+        if (strLine.toLowerCase().contains("resume("))
+            return "/**TODO:** resume found: " + strLine + "*/";
+        else
+            return strLine;
+    }
+
+    private String replaceGotoSentence(String strLine) {
+        if (G.beginLike(strLine.trim(), "GoTo "))
+            return "//*TODO:** goto found: " + strLine;
+        else
+            return strLine;
+    }
+
+    private String replaceLabelSentence(String strLine) {
+        if (strLine.trim().endsWith(":"))
+            return "//*TODO:** label found: " + strLine;
+        else
+            return strLine;
     }
 
     private String replaceSetReturnValueSentence(String strLine) {
@@ -5132,12 +5313,12 @@ public class Translator {
         }
 
         if (eventName.isEmpty()) {
-            return "//*TODO:**The event declaration couldn't be translated. "
+            return "//*TODO:** the event declaration couldn't be translated. "
                     + newline
                     + strLine;
         }
         else {
-            m_listenerInterface += "    "
+            m_listenerInterface += C_TAB
                                     + eventScope + " "
                                     + "void "
                                     + eventName.substring(0, 1).toLowerCase()
@@ -5145,7 +5326,7 @@ public class Translator {
                                     + translateParameters(strLine)
                                     + ");"
                                     + newline;
-            m_adapterClass += "    "
+            m_adapterClass += C_TAB
                                     + eventScope + " "
                                     + "void "
                                     + eventName.substring(0, 1).toLowerCase()
@@ -5240,7 +5421,7 @@ public class Translator {
                 paramName = getParamName(words[1]);
             }
             else
-                return "[*TODO: param declaration unsuported -> "
+                return "[*TODO:** param declaration unsuported -> "
                         + words[0]+ " " + words[1] + "]";
         }
         // param_name As param_type
@@ -5281,7 +5462,7 @@ public class Translator {
                 paramName = getParamName(words[1]);
             }
             else
-                return "[*TODO: param declaration unsuported -> "
+                return "[*TODO:** param declaration unsuported -> "
                         + words[0]+ " " + words[1]
                         + words[2]+ " " + words[3] + "]";
         }
@@ -5305,7 +5486,7 @@ public class Translator {
                 paramName = getParamName(words[2]);
             }
             else
-                return "[*TODO: param declaration unsuported -> "
+                return "[*TODO:** param declaration unsuported -> "
                         + words[0]+ " " + words[1]
                         + words[2]+ " " + words[3]
                         + words[4]+ "]";
@@ -5321,7 +5502,7 @@ public class Translator {
                 paramName = getParamName(words[1]);
             }
             else
-                return "[*TODO: param declaration unsuported -> "
+                return "[*TODO:** param declaration unsuported -> "
                         + words[0]+ " " + words[1] 
                         + words[2]+ " " + words[3]
                         + words[4]+ " " + words[5] + "]";
@@ -5336,14 +5517,14 @@ public class Translator {
                 paramName = getParamName(words[2]);
             }
             else
-                return "[*TODO: param declaration unsuported -> "
+                return "[*TODO:** param declaration unsuported -> "
                         + words[0]+ " " + words[1]
                         + words[2]+ " " + words[3]
                         + words[4]+ " " + words[5]
                         + words[6]+ "]";
         }
         else
-            return "[*TODO: param declaration unsuported -> "
+            return "[*TODO:** param declaration unsuported -> "
                     + words[0]+ " " + words[1]
                     + words[2]+ " " + words[3]
                     + words[4]+ " " + words[5] + "]";
@@ -5591,7 +5772,7 @@ public class Translator {
                         dataType = info.variable.dataType;
                 }
                 else {
-                    return "*TODO: (the data type can't be found for the value ["
+                    return "*TODO:** (the data type can't be found for the value ["
                             + constValue + "])" + strLine + newline;
                 }
             }
@@ -5737,7 +5918,7 @@ public class Translator {
                         dataType = info.variable.dataType;
                 }
                 else {
-                    return "*TODO: (the data type can't be found for the value ["
+                    return "*TODO:** (the data type can't be found for the value ["
                             + constValue + "])" + strLine + newline;
                 }
             }
@@ -6110,6 +6291,10 @@ public class Translator {
         m_needReturnVariable = false;
         m_function = null;
         m_isBasFile = false;
+        m_onErrorFound = false;
+        m_onErrorResumeNext = false;
+        m_onErrorLabel = "";
+        m_onCatchBlock = false;
 
         if (name.contains(".")) {
             if (name.length() > 0) {
@@ -6430,7 +6615,7 @@ public class Translator {
                     m_enum += "    public static int " + identifier.toUpperCase() + " = "
                             + constValue + ";" + misc + newline;
                 }
-                saveVariableInEnum(identifier, identifier, "int");
+                saveVariableInEnum(identifier, identifier.toUpperCase(), "int");
             }
             else {
                 m_enum += strLine;
@@ -6493,9 +6678,13 @@ public class Translator {
         m_wasSingleLineIf = false;
         strLine = G.ltrimTab(strLine);
 
+        if (m_onCatchBlock) {
+            m_tabCount++;
+            m_onCatchBlock = false;
+        }
         // If
         //
-        if (G.beginLike(strLine, "If ")) {
+        else if (G.beginLike(strLine, "If ")) {
             int startComment = getStartComment(strLine);
             if (startComment >= 0) {
                 strLine = strLine.substring(0, startComment-1);
@@ -6636,6 +6825,12 @@ public class Translator {
         else if (G.beginLike(strLine, "Friend Property ")) {
             m_tabCount++;
         }
+        // On error
+        //
+        else if (G.beginLike(strLine, "On Error ")) {
+            m_tabCount++;
+            m_onErrorFound = true;
+        }
     }
 
     private void checkEndBlock(String strLine) {
@@ -6712,17 +6907,36 @@ public class Translator {
         //
         else if (strLine.trim().equalsIgnoreCase("End Function")) {
             m_tabCount--;
+            if (m_onErrorFound)
+                m_tabCount--;
         }
         // End Sub
         //
         else if (strLine.trim().equalsIgnoreCase("End Sub")) {
             m_tabCount--;
+            if (m_onErrorFound)
+                m_tabCount--;
         }
         // End Property
         //
         else if (strLine.trim().equalsIgnoreCase("End Property")) {
             m_tabCount--;
+            if (m_onErrorFound)
+                m_tabCount--;
         }
+        // Label Error
+        //
+        else if (isOnErrorLabelSentence(strLine)) {
+            m_tabCount--;
+            m_onCatchBlock = true;
+        }
+        // End On Error
+        //
+        else if (isOnErrorSentence(strLine)) {
+            if (m_onErrorFound)
+                m_tabCount--;
+        }
+
         if (m_tabCount < 1) {
             m_tabCount = 1;
         }
@@ -6735,7 +6949,8 @@ public class Translator {
         if (startComment >= 0) {
             strLine = strLine.substring(0, startComment-1);
         }
-
+        // En Function
+        //
         if (strLine.trim().equalsIgnoreCase("End Function")) {
             return true;
         }

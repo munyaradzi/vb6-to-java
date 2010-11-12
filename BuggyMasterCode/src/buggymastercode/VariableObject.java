@@ -117,10 +117,31 @@ public class VariableObject {
             String variableName,
             String className,
             String[] references) {
+        Variable var = null;
+        var = getVariableFromName(variableName, className, references, false, false);
+        if (var == null) {
+            var = getVariableFromName(variableName, className, references, true, false);
+            if (var == null) {
+                var = getVariableFromName(variableName, className, references, false, true);
+                if (var != null)
+                    var.isEnumMember = true;
+            }
+            else
+                var.isEnumMember = true;
+        }
+        return var;
+    }
+
+    private static Variable getVariableFromName(
+            String variableName,
+            String className,
+            String[] references,
+            boolean searchForPrivateEnums,
+            boolean searchForPublicEnums) {
 
         if (variableName.trim().isEmpty())
             return null;
-        if (className.trim().isEmpty())
+        if (className.trim().isEmpty() && !searchForPublicEnums)
             return null;
 
         if ("=;/+-:.(){}[]*\\".contains(variableName))
@@ -137,15 +158,25 @@ public class VariableObject {
         }
 
         G.setHourglass();
-        String sqlstmt = "select v.*, cl_packagename"
+        String sqlstmt = "select v.*, cl_packagename, cl_javaname"
                             + " from tvariable v inner join tclass c"
                             + " on v.cl_id = c.cl_id and v.fun_id = 0"
                             + " where"
                             + " (var_vbname = " + Db.getString(variableName)
-                            + " or var_javaname = " + Db.getString(variableName)
-                            + ") and (cl_vbname = " + Db.getString(className)
+                            + " or var_javaname = " + Db.getString(variableName);
+
+        if (searchForPrivateEnums) {
+            sqlstmt += ") and (cl_enumparentclass = " + Db.getString(className)
+                            + ")";
+        }
+        else if(searchForPublicEnums) {
+            sqlstmt += ") and (cl_ispublicenum <> 0)";
+        }
+        else {
+            sqlstmt += ") and (cl_vbname = " + Db.getString(className)
                             + " or cl_javaname = " + Db.getString(className)
                             + ")";
+        }
         if (!packageName.isEmpty()) {
             sqlstmt += " and (cl_packagename = " + Db.getString(packageName) + ")";
         }
@@ -171,6 +202,7 @@ public class VariableObject {
                         var.setVbName(row.get("var_vbname").toString());
                         var.isParam = (Byte)row.get("var_isparameter") != 0 ? true : false;
                         var.isPublic = (Byte)row.get("var_ispublic") != 0 ? true : false;
+                        var.className = row.get("cl_javaname").toString();
                         var.setType(row.get("var_datatype").toString());
                         break;
                     }
