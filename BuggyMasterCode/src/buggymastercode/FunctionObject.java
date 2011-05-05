@@ -6,6 +6,8 @@
 package buggymastercode;
 
 import java.util.Iterator;
+import java.util.Map;
+import org.apache.commons.beanutils.BasicDynaBean;
 import org.apache.commons.beanutils.DynaBean;
 
 /**
@@ -150,6 +152,7 @@ public class FunctionObject {
         else {
             Function fun = null;
             for (int i = 0; i < references.length; i++) {
+                /*
                 for (Iterator<DynaBean> j = rs.getRows().iterator(); j.hasNext();) {
                     DynaBean row = j.next();
                     if (row.get("cl_packagename").toString().equals(references[i])) {
@@ -161,6 +164,25 @@ public class FunctionObject {
                         break;
                     }
                 }
+                */
+
+                /**/
+                if (!(rs.isBOF() && rs.isEOF()))
+                    rs.moveFirst();
+
+                while (!rs.isEOF()) {
+                    if (rs.getFields("cl_packagename").getValue().toString().equals(references[i])) {
+                        fun = new Function();
+                        fun.getReturnType().packageName = rs.getFields("cl_packagename").toString();
+                        fun.getReturnType().setJavaName(rs.getFields("fun_javaname").toString());
+                        fun.getReturnType().setVbName(rs.getFields("fun_vbname").toString());
+                        fun.getReturnType().setType(rs.getFields("fun_datatype").toString());
+                        break;
+                    }
+                    rs.moveNext();
+                }
+                /**/
+
                 if (fun != null)
                     break;
             }
