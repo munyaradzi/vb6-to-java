@@ -7082,6 +7082,7 @@ public class Translator {
                 strLine = replaceADODBRecordset(strLine);
                 strLine = replaceADODBFields(strLine);
                 strLine = replaceADODBField(strLine);
+                strLine = translateADODBBofAndEof(strLine);
             }
         }
         return strLine;
@@ -7145,20 +7146,91 @@ public class Translator {
         }
         else if (dataType.equalsIgnoreCase("ADODB.Fields")) {
             addToImportList("import org.apache.commons.beanutils.DynaBean;");
-            return "DynaBean";
+            return "DBFields";
         }
         else if (dataType.equalsIgnoreCase("Fields")) {
             addToImportList("import org.apache.commons.beanutils.DynaBean;");
-            return "DynaBean";
+            return "DBFields";
         }
         else if (dataType.equalsIgnoreCase("ADODB.Field")) {
-            return "Object";
+            return "DBField";
         }
         else if (dataType.equalsIgnoreCase("Field")) {
-            return "Object";
+            return "DBField";
         }
         else {
             return dataType;
+        }
+    }
+    private String translateADODBBofAndEof(String strLine) {
+        boolean isBofOrEof = false;
+        int k = 0;
+        strLine = G.ltrimTab(strLine);
+        String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
+
+        if (words.length > 0) {
+            for (int i = 0; i < words.length; i++) {
+                if(G.endLike(words[i], ".bof") || G.endLike(words[i], ".eof")) {
+                    isBofOrEof = true;
+                    k = i;
+                    break;
+                }
+            }
+            if (isBofOrEof) {
+                if (words.length >= k + 2) {
+                    if (words[k+1].equalsIgnoreCase("&&")
+                            && (G.endLike(words[k+2], ".bof")
+                                || G.endLike(words[k+2], ".eof")
+                                )
+                       ) {
+                        strLine = "";
+                        int i = -1;
+                        do {
+                            i++;
+                            if(G.endLike(words[i], ".bof") || G.endLike(words[i], ".eof")) {
+                                String var = words[i].substring(0, words[i].length()-4);
+                                IdentifierInfo info = null;
+                                info = getIdentifierInfo(var, "");
+                                if (info != null) {
+                                    String dataType = "";
+                                    if (info.isFunction) {
+                                        dataType = info.function.getReturnType().dataType;
+                                    }
+                                    else {
+                                        dataType = info.variable.dataType;
+                                    }
+                                    if (dataType.equals("DBRecordSet")) {
+                                        strLine += var + ".getRows().isEmpty()";
+                                        i = i + 3; // "rs.EOF && rs.BOF  ..."
+                                                   //    i   i+1   i+2   i+3
+                                    }
+                                    else {
+                                        strLine += words[i] + " ";
+                                    }
+                                }
+                                else {
+                                    strLine += words[i] + " ";
+                                }
+                            }
+                            else {
+                                strLine += words[i] + " ";
+                            }
+                        } while (i < words.length);
+                        return strLine;
+                    }
+                    else
+                        return strLine;
+                }
+                else {
+                    return strLine;
+                }
+            }
+            else {
+                return strLine;
+            }
+        }
+        else {
+            return strLine;
         }
     }
 }

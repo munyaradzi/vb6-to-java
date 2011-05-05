@@ -126,6 +126,7 @@ public class DBH2 implements DBConnection {
             try {
                 Statement stmt = m_cn.createStatement();
                 ResultSet rset = stmt.executeQuery(sqlstmt);
+                rs.setMetaData(rset.getMetaData());
 
                 RowSetDynaClass rsdc = new RowSetDynaClass(rset);
                 rs.setRows((List<DynaBean>) rsdc.getRows());
@@ -154,6 +155,7 @@ public class DBH2 implements DBConnection {
             try {
                 sqlstmt.execute();
                 ResultSet rset = (ResultSet) sqlstmt.getObject(1);
+                rs.setMetaData(rset.getMetaData());
 
                 RowSetDynaClass rsdc = new RowSetDynaClass(rset);
                 rs.setRows((List<DynaBean>) rsdc.getRows());
