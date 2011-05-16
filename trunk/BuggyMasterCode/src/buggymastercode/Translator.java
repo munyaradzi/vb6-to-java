@@ -1085,6 +1085,7 @@ public class Translator {
     }
 
     private String translateCodeAux(String strLine, boolean inDeclaration) {
+
         // get out spaces even tabs
         //
         String workLine = G.ltrimTab(strLine).toLowerCase();
@@ -3119,7 +3120,7 @@ public class Translator {
                         }
                     }
                 }
-                // special case when in vb whe have a SUB call
+                // special case when in vb we have a SUB call
                 // with only one parameter sourronded by parentheses
                 // like Col.Remove (Ctrl.Key)
                 //
@@ -6250,6 +6251,7 @@ public class Translator {
         m_variableObject = new VariableObject();
         m_typeClassObject = new ClassObject();
         m_enumClassObject = new ClassObject();
+        createADODBClasses();
     }
 
     public void initTranslator(String name) {
@@ -7079,10 +7081,10 @@ public class Translator {
         if (pref != null) {
             if (!pref.getValue().equals("0")) {
                 strLine = replaceADODBConnection(strLine);
-                strLine = replaceADODBRecordset(strLine);
+                strLine = replaceADODBRecordSet(strLine);
                 strLine = replaceADODBFields(strLine);
                 strLine = replaceADODBField(strLine);
-                strLine = translateADODBBofAndEof(strLine);
+                //strLine = translateADODBBofAndEof(strLine);
             }
         }
         return strLine;
@@ -7091,7 +7093,7 @@ public class Translator {
     private String replaceADODBConnection(String strLine) {
         return strLine;
     }
-    private String replaceADODBRecordset(String strLine) {
+    private String replaceADODBRecordSet(String strLine) {
         return strLine;
     }
     private String replaceADODBFields(String strLine) {
@@ -7107,10 +7109,10 @@ public class Translator {
         else if (dataType.equalsIgnoreCase("Connection")) {
             return true;
         }
-        else if (dataType.equalsIgnoreCase("ADODB.Recordset")) {
+        else if (dataType.equalsIgnoreCase("ADODB.RecordSet")) {
             return true;
         }
-        else if (dataType.equalsIgnoreCase("Recordset")) {
+        else if (dataType.equalsIgnoreCase("RecordSet")) {
             return true;
         }
         else if (dataType.equalsIgnoreCase("ADODB.Fields")) {
@@ -7138,10 +7140,10 @@ public class Translator {
             addToImportList("import java.sql.Connection;");
             return "Connection";
         }
-        else if (dataType.equalsIgnoreCase("ADODB.Recordset")) {
+        else if (dataType.equalsIgnoreCase("ADODB.RecordSet")) {
             return "DBRecordSet";
         }
-        else if (dataType.equalsIgnoreCase("Recordset")) {
+        else if (dataType.equalsIgnoreCase("RecordSet")) {
             return "DBRecordSet";
         }
         else if (dataType.equalsIgnoreCase("ADODB.Fields")) {
@@ -7162,6 +7164,40 @@ public class Translator {
             return dataType;
         }
     }
+    private void createADODBClasses() {
+        // Connection
+        m_classObject.setPackageName("ADODB");
+        m_classObject.setVbName("Connection");
+        m_classObject.setJavaName("DBConnection");
+        m_classObject.getClassIdFromClassName();
+        m_classObject.saveClass();
+        
+        // RecordSet
+        m_classObject.setPackageName("ADODB");
+        m_classObject.setVbName("RecordSet");
+        m_classObject.setJavaName("DBRecordSet");
+        m_classObject.getClassIdFromClassName();
+        m_classObject.saveClass();
+
+        saveFunction("BOF", "isBOF", "boolean");
+        saveFunction("EOF", "isEOF", "boolean");
+
+        // Fields
+        m_classObject.setPackageName("ADODB");
+        m_classObject.setVbName("Fields");
+        m_classObject.setJavaName("DBFields");
+        m_classObject.getClassIdFromClassName();
+        m_classObject.saveClass();
+
+        // Field
+        m_classObject.setPackageName("ADODB");
+        m_classObject.setVbName("Field");
+        m_classObject.setJavaName("DBField");
+        m_classObject.getClassIdFromClassName();
+        m_classObject.saveClass();
+    }
+
+    /* TODO: delete - it has been depreceated ADO is translated using DBRecordSet
     private String translateADODBBofAndEof(String strLine) {
         boolean isBofOrEof = false;
         int k = 0;
@@ -7232,7 +7268,7 @@ public class Translator {
         else {
             return strLine;
         }
-    }
+    }*/
 }
 
 class IdentifierInfo {
