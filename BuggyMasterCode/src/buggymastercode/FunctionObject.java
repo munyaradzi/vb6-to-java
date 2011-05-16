@@ -171,12 +171,12 @@ public class FunctionObject {
                     rs.moveFirst();
 
                 while (!rs.isEOF()) {
-                    if (rs.getFields("cl_packagename").getValue().toString().equals(references[i])) {
+                    if (rs.getFields("cl_packagename").getValue().toString().equalsIgnoreCase(references[i])) {
                         fun = new Function();
-                        fun.getReturnType().packageName = rs.getFields("cl_packagename").toString();
-                        fun.getReturnType().setJavaName(rs.getFields("fun_javaname").toString());
-                        fun.getReturnType().setVbName(rs.getFields("fun_vbname").toString());
-                        fun.getReturnType().setType(rs.getFields("fun_datatype").toString());
+                        fun.getReturnType().packageName = rs.getFields("cl_packagename").getValue().toString();
+                        fun.getReturnType().setJavaName(rs.getFields("fun_javaname").getValue().toString());
+                        fun.getReturnType().setVbName(rs.getFields("fun_vbname").getValue().toString());
+                        fun.getReturnType().setType(rs.getFields("fun_datatype").getValue().toString());
                         break;
                     }
                     rs.moveNext();

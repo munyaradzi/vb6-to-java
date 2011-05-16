@@ -88,6 +88,11 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
         if (G.getToken(vbpFile, "Reference", line, value)) {
             while (!value.text.isEmpty()) {
                 references[k] = getReferenceName(value.text);
+                if (isAdoDBReference(references[k])) {
+                    k++;
+                    line++;
+                    references[k] = "ADODB";
+                }
                 k++;
                 line++;
                 if (!G.getToken(vbpFile, "Reference", line, value)) {
@@ -371,5 +376,14 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
             }
         }
         return rtn;
+    }
+
+    private boolean isAdoDBReference(String reference) {
+        if (G.beginLike(reference, "msado21")) {
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 }
