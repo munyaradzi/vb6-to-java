@@ -85,6 +85,8 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
         String[] references = new String[500];
         references[k] = m_packageName;
         k++;
+        references[k] = "VBA";
+        k++;
         if (G.getToken(vbpFile, "Reference", line, value)) {
             while (!value.text.isEmpty()) {
                 references[k] = getReferenceName(value.text);

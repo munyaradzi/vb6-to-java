@@ -82,7 +82,7 @@ public class FunctionObject {
         G.setHourglass();
         setId(Db.CS_NO_ID);
         String sqlstmt = "select fun_id from tfunction"
-                            + " where fun_vbname = " + Db.getString(m_vbName)
+                            + " where lower(fun_vbname) = " + Db.getString(m_vbName.toLowerCase())
                             + " and fun_javaname = " + Db.getString(m_javaName)
                             + " and cl_id = " + Integer.toString(m_cl_id);
         DBRecordSet rs = new DBRecordSet();
@@ -130,13 +130,13 @@ public class FunctionObject {
                             + " from tfunction f inner join tclass c"
                             + " on f.cl_id = c.cl_id"
                             + " where"
-                            + " (fun_vbname = " + Db.getString(functionName)
+                            + " (lower(fun_vbname) = " + Db.getString(functionName.toLowerCase())
                             + " or fun_javaname = " + Db.getString(functionName)
-                            + ") and (cl_vbname = " + Db.getString(className)
+                            + ") and (lower(cl_vbname) = " + Db.getString(className.toLowerCase())
                             + " or cl_javaname = " + Db.getString(className)
                             + ")";
         if (!packageName.isEmpty()) {
-            sqlstmt += " and (cl_packagename = " + Db.getString(packageName) + ")";
+            sqlstmt += " and (lower(cl_packagename) = " + Db.getString(packageName.toLowerCase()) + ")";
         }
         sqlstmt += " order by fun_javaname;";
         DBRecordSet rs = new DBRecordSet();
@@ -152,21 +152,6 @@ public class FunctionObject {
         else {
             Function fun = null;
             for (int i = 0; i < references.length; i++) {
-                /*
-                for (Iterator<DynaBean> j = rs.getRows().iterator(); j.hasNext();) {
-                    DynaBean row = j.next();
-                    if (row.get("cl_packagename").toString().equals(references[i])) {
-                        fun = new Function();
-                        fun.getReturnType().packageName = row.get("cl_packagename").toString();
-                        fun.getReturnType().setJavaName(row.get("fun_javaname").toString());
-                        fun.getReturnType().setVbName(row.get("fun_vbname").toString());
-                        fun.getReturnType().setType(row.get("fun_datatype").toString());
-                        break;
-                    }
-                }
-                */
-
-                /**/
                 if (!(rs.isBOF() && rs.isEOF()))
                     rs.moveFirst();
 
@@ -181,8 +166,6 @@ public class FunctionObject {
                     }
                     rs.moveNext();
                 }
-                /**/
-
                 if (fun != null)
                     break;
             }
