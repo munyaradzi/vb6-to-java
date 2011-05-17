@@ -93,7 +93,7 @@ public class VariableObject {
         G.setHourglass();
         setId(Db.CS_NO_ID);
         String sqlstmt = "select var_id from tvariable"
-                            + " where var_vbname = " + Db.getString(m_vbName)
+                            + " where lower(var_vbname) = " + Db.getString(m_vbName.toLowerCase())
                             + " and cl_id = " + Integer.toString(m_cl_id)
                             + " and fun_id = " + Integer.toString(m_fun_id);
         DBRecordSet rs = new DBRecordSet();
@@ -162,7 +162,7 @@ public class VariableObject {
                             + " from tvariable v inner join tclass c"
                             + " on v.cl_id = c.cl_id and v.fun_id = 0"
                             + " where"
-                            + " (var_vbname = " + Db.getString(variableName)
+                            + " (lower(var_vbname) = " + Db.getString(variableName.toLowerCase())
                             + " or var_javaname = " + Db.getString(variableName);
 
         if (searchForPrivateEnums) {
@@ -173,12 +173,12 @@ public class VariableObject {
             sqlstmt += ") and (cl_ispublicenum <> 0)";
         }
         else {
-            sqlstmt += ") and (cl_vbname = " + Db.getString(className)
+            sqlstmt += ") and (lower(cl_vbname) = " + Db.getString(className.toLowerCase())
                             + " or cl_javaname = " + Db.getString(className)
                             + ")";
         }
         if (!packageName.isEmpty()) {
-            sqlstmt += " and (cl_packagename = " + Db.getString(packageName) + ")";
+            sqlstmt += " and (lower(cl_packagename) = " + Db.getString(packageName.toLowerCase()) + ")";
         }
         DBRecordSet rs = new DBRecordSet();
         if (!Db.db.openRs(sqlstmt, rs)) {

@@ -1170,10 +1170,20 @@ public class Translator {
                         return translateEndSelectSentence(strLine);
                     else if (isExitFunctionSentence(workLine))
                         return translateExitFunctionSentence(strLine);
+                    else if (isDoWhileSentence(workLine))
+                        return translateDoWhileSentence(strLine);
+                    else if (isDoSentence(workLine))
+                        return translateDoSentence(strLine);
                     else if (isWhileSentence(workLine))
                         return translateWhileSentence(strLine);
+                    else if (isLoopUntilSentence(workLine))
+                        return translateLoopUntilWhileSentence(strLine, true);
+                    else if (isLoopWhileSentence(workLine))
+                        return translateLoopUntilWhileSentence(strLine, false);
                     else if (isWendSentence(workLine))
                         return translateWendSentence(strLine);
+                    else if (isLoopSentence(workLine))
+                        return translateLoopSentence(strLine);
                     else if (isForSentence(workLine))
                         return translateForSentence(strLine);
                     else if (isNextSentence(workLine))
@@ -1426,6 +1436,22 @@ public class Translator {
             return false;
     }
 
+    private boolean isDoWhileSentence(String strLine) {
+        if (G.beginLike(strLine, "Do While ")) {
+            return true;
+        }
+        else
+            return false;
+    }
+
+    private boolean isDoSentence(String strLine) {
+        if (strLine.equalsIgnoreCase("Do") || G.beginLike(strLine, "Do ")) {
+            return true;
+        }
+        else
+            return false;
+    }
+
     private boolean isWhileSentence(String strLine) {
         if (G.beginLike(strLine, "While ")) {
             return true;
@@ -1507,6 +1533,43 @@ public class Translator {
         }
     }
 
+    private boolean isLoopUntilSentence(String strLine) {
+        if (G.beginLike(strLine, "Loop Until")) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    private boolean isLoopWhileSentence(String strLine) {
+        if (G.beginLike(strLine, "Loop While")) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    private boolean isLoopSentence(String strLine) {
+        if (G.beginLike(strLine, "Loop ")) {
+            return true;
+        }
+        else {
+            int startComment = getStartComment(strLine);
+            if (startComment >= 0) {
+                strLine = strLine.substring(0, startComment-1);
+            }
+            strLine = G.ltrimTab(strLine);
+            if (strLine.equalsIgnoreCase("Loop")) {
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+    }
+    
     private boolean isWendSentence(String strLine) {
         if (G.beginLike(strLine, "Wend ")) {
             return true;
@@ -1940,6 +2003,22 @@ public class Translator {
         }
     }
 
+    private String translateDoWhileSentence(String strLine) {
+        // the 'do while' is a while sentence in java. 
+        // it only exists in vb 6 to allow 'exit do', because
+        // 'exit while' is not a recognized expresion in vb 6
+        //
+        strLine = strLine.substring(3); // remove the do
+        return translateWhileSentence(strLine);
+    }
+
+    private String translateDoSentence(String strLine) {
+        if (strLine.length() > 2)
+            return "do " + strLine.substring(3);
+        else
+            return "do";
+    }
+    
     private String translateWhileSentence(String strLine) {
         // the while block can contain an or more call sentence
         // and one or more logic operators and unary operators
@@ -1961,14 +2040,14 @@ public class Translator {
 
         String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
 
-        // we start in 1 because word[0] is "If"
+        // we start in 1 because word[0] is "While"
         //
         for (int i = 1; i < words.length; i++) {
             // typical sentence:
-                // " if x then " -> 3 words
-                // " if x and z then " -> 5 words
-                // " if x and callFunction() then " -> 5 words
-                // " if ((x or z) and y) or callFunction(param1, param2, param3)) then " -> too many words :)
+                // " while x " -> 2 words
+                // " while x and z " -> 4 words
+                // " while x and callFunction() " -> 4 words
+                // " while ((x or z) and y) or callFunction(param1, param2, param3)) " -> too many words :)
                 //
             // rules
                 // 1- we have to add parentheses
@@ -2213,6 +2292,32 @@ public class Translator {
         }
     }
 
+    private String translateLoopUntilWhileSentence(String strLine, boolean isWhile) {
+        // the 'loop while' and the 'loop until' are a while sentence in java. 
+        // it only exists in vb 6 to allow 'exit do', because
+        // 'exit while' is not a recognized expresion in vb 6
+        //
+                                        // remove the 'loop while' or 'loop until'
+        strLine = translateWhileSentence(strLine.substring(11));
+        if (isWhile)
+            strLine = "} " + strLine;
+        else
+            strLine = "} while !(" + strLine.substring(6) + ")";
+        return strLine;
+    }
+
+    private String translateLoopSentence(String strLine) {
+        int startComment = getStartComment(strLine);
+        if (startComment >= 0) {
+            String comments = "";
+            comments =  "//" + strLine.substring(startComment);
+            return "}" + comments + newline;
+        }
+        else {
+            return "}" + newline;
+        }
+    }
+    
     private String translateWendSentence(String strLine) {
         int startComment = getStartComment(strLine);
         if (startComment >= 0) {
@@ -5601,6 +5706,9 @@ public class Translator {
         else if (isADODBType(dataType)) {
             dataType = translateADODBType(dataType);
         }
+        else if (isVBStandarObject(dataType)) {
+            dataType = translateVBStandarObject(dataType);
+        }
 
         // else: if is not one of the above list we return
         // the same value we received
@@ -6252,6 +6360,7 @@ public class Translator {
         m_typeClassObject = new ClassObject();
         m_enumClassObject = new ClassObject();
         createADODBClasses();
+        createVBClasses();
     }
 
     public void initTranslator(String name) {
@@ -7195,80 +7304,43 @@ public class Translator {
         m_classObject.setJavaName("DBField");
         m_classObject.getClassIdFromClassName();
         m_classObject.saveClass();
+        
+        m_classObject.setId(0);
     }
+    
+    // Visual Basic Standar Objects
+    
+    private void createVBClasses() {
+        // Connection
+        m_classObject.setPackageName("VBA");
+        m_classObject.setVbName("Collection");
+        m_classObject.setJavaName("ArrayList");
+        m_classObject.getClassIdFromClassName();
+        m_classObject.saveClass();
 
-    /* TODO: delete - it has been depreceated ADO is translated using DBRecordSet
-    private String translateADODBBofAndEof(String strLine) {
-        boolean isBofOrEof = false;
-        int k = 0;
-        strLine = G.ltrimTab(strLine);
-        String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
-
-        if (words.length > 0) {
-            for (int i = 0; i < words.length; i++) {
-                if(G.endLike(words[i], ".bof") || G.endLike(words[i], ".eof")) {
-                    isBofOrEof = true;
-                    k = i;
-                    break;
-                }
-            }
-            if (isBofOrEof) {
-                if (words.length >= k + 2) {
-                    if (words[k+1].equalsIgnoreCase("&&")
-                            && (G.endLike(words[k+2], ".bof")
-                                || G.endLike(words[k+2], ".eof")
-                                )
-                       ) {
-                        strLine = "";
-                        int i = -1;
-                        do {
-                            i++;
-                            if(G.endLike(words[i], ".bof") || G.endLike(words[i], ".eof")) {
-                                String var = words[i].substring(0, words[i].length()-4);
-                                IdentifierInfo info = null;
-                                info = getIdentifierInfo(var, "");
-                                if (info != null) {
-                                    String dataType = "";
-                                    if (info.isFunction) {
-                                        dataType = info.function.getReturnType().dataType;
-                                    }
-                                    else {
-                                        dataType = info.variable.dataType;
-                                    }
-                                    if (dataType.equals("DBRecordSet")) {
-                                        strLine += var + ".getRows().isEmpty()";
-                                        i = i + 3; // "rs.EOF && rs.BOF  ..."
-                                                   //    i   i+1   i+2   i+3
-                                    }
-                                    else {
-                                        strLine += words[i] + " ";
-                                    }
-                                }
-                                else {
-                                    strLine += words[i] + " ";
-                                }
-                            }
-                            else {
-                                strLine += words[i] + " ";
-                            }
-                        } while (i < words.length);
-                        return strLine;
-                    }
-                    else
-                        return strLine;
-                }
-                else {
-                    return strLine;
-                }
-            }
-            else {
-                return strLine;
-            }
+        saveFunction("count", "size", "int");
+        saveFunction("item", "get", "Object");
+        saveFunction("remove", "remove", "void");
+        
+        m_classObject.setId(0);
+    }
+    private boolean isVBStandarObject(String dataType) {
+        if (dataType.equalsIgnoreCase("Collection")) {
+            return true;
         }
         else {
-            return strLine;
+            return false;
         }
-    }*/
+    }
+    private String translateVBStandarObject(String dataType) {
+        if (dataType.equalsIgnoreCase("Collection")) {
+            addToImportList("import java.util.ArrayList;");
+            return "ArrayList";
+        }
+        else {
+            return dataType;
+        }
+    }
 }
 
 class IdentifierInfo {

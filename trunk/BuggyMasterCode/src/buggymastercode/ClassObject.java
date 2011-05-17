@@ -81,8 +81,8 @@ public class ClassObject {
         G.setHourglass();
         setId(Db.CS_NO_ID);
         String sqlstmt = "select cl_id from tclass"
-                            + " where cl_vbname = " + Db.getString(m_vbName)
-                            + " and cl_packagename = " + Db.getString(m_packageName);
+                            + " where lower(cl_vbname) = " + Db.getString(m_vbName.toLowerCase())
+                            + " and lower(cl_packagename) = " + Db.getString(m_packageName.toLowerCase());
         DBRecordSet rs = new DBRecordSet();
         if (!Db.db.openRs(sqlstmt, rs)) {
             G.setDefaultCursor();
