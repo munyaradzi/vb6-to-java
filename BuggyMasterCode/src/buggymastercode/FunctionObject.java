@@ -126,7 +126,7 @@ public class FunctionObject {
         }
 
         G.setHourglass();
-        String sqlstmt = "select f.*, cl_packagename"
+        String sqlstmt = "select f.*, cl_javaname, cl_packagename"
                             + " from tfunction f inner join tclass c"
                             + " on f.cl_id = c.cl_id"
                             + " where"
@@ -158,6 +158,7 @@ public class FunctionObject {
                 while (!rs.isEOF()) {
                     if (rs.getFields("cl_packagename").getValue().toString().equalsIgnoreCase(references[i])) {
                         fun = new Function();
+                        fun.setJavaClassName(rs.getFields("cl_javaname").getValue().toString());
                         fun.getReturnType().packageName = rs.getFields("cl_packagename").getValue().toString();
                         fun.getReturnType().setJavaName(rs.getFields("fun_javaname").getValue().toString());
                         fun.getReturnType().setVbName(rs.getFields("fun_vbname").getValue().toString());

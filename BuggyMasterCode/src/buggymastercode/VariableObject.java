@@ -118,13 +118,19 @@ public class VariableObject {
             String className,
             String[] references) {
         Variable var = null;
-        var = getVariableFromName(variableName, className, references, false, false);
+        // member variables
+        var = getVariableFromName(variableName, className, references, false, false, false);
         if (var == null) {
-            var = getVariableFromName(variableName, className, references, true, false);
+            // constants in private enums
+            var = getVariableFromName(variableName, className, references, true, false, false);
             if (var == null) {
-                var = getVariableFromName(variableName, className, references, false, true);
+                // constants in public enums
+                var = getVariableFromName(variableName, className, references, false, true, false);
                 if (var != null)
                     var.isEnumMember = true;
+                else
+                    // global variables
+                    var = getVariableFromName(variableName, className, references, false, false, true);
             }
             else
                 var.isEnumMember = true;
@@ -137,8 +143,15 @@ public class VariableObject {
             String className,
             String[] references,
             boolean searchForPrivateEnums,
-            boolean searchForPublicEnums) {
+            boolean searchForPublicEnums,
+            boolean searchForPublicMembers) {
 
+        // this is to translate some global object of vb
+        // using variables for example err is translate to ex
+        //
+        if (searchForPublicMembers && className.trim().isEmpty())
+            className = "VBA";
+        
         if (variableName.trim().isEmpty())
             return null;
         if (className.trim().isEmpty() && !searchForPublicEnums)

@@ -202,7 +202,6 @@ public class Translator {
             fun.getReturnType().setJavaName("substring");
             fun.getReturnType().setType("String");
             source.getPublicFunctions().add(fun);
-            m_collJavaClassess.add(source);
 
             // toLowerCase
             //
@@ -210,7 +209,6 @@ public class Translator {
             fun.getReturnType().setJavaName("toLowerCase");
             fun.getReturnType().setType("String");
             source.getPublicFunctions().add(fun);
-            m_collJavaClassess.add(source);
 
             // toUpperCase
             //
@@ -218,7 +216,6 @@ public class Translator {
             fun.getReturnType().setJavaName("toUpperCase");
             fun.getReturnType().setType("String");
             source.getPublicFunctions().add(fun);
-            m_collJavaClassess.add(source);
 
             // trim
             //
@@ -226,7 +223,8 @@ public class Translator {
             fun.getReturnType().setJavaName("trim");
             fun.getReturnType().setType("String");
             source.getPublicFunctions().add(fun);
-            m_collJavaClassess.add(source);
+        
+        m_collJavaClassess.add(source);
 
         Preference pref = PreferenceObject.getPreference(G.C_AUX_FUN_ID);
         if (pref != null) {
@@ -238,7 +236,7 @@ public class Translator {
                 m_UseCSUtils = true;
         }
     }
-
+    
     public void setCaller(TranslatorWorker caller) {
         m_caller = caller;
     }
@@ -1061,6 +1059,12 @@ public class Translator {
     }
 
     private String translateCode(String strLine, boolean inDeclaration) {
+        
+        
+        if (G.beginLike(strLine.trim(), "strErr = Mid(strErr, 1, InStr(1, strErr, \"tabla\")")) {
+            int i = 0;
+        }
+        
         // first we extract comments
         // so the code only works over executable code
         //
@@ -1393,14 +1397,21 @@ public class Translator {
                 Function function = new Function();
                 function.vbDeclaration = strLine;
                 function.javaDeclaration = functionDeclaration;
-                if (words[2].contains("(")) {
-                    int i = words[2].indexOf("(");
-                    function.getReturnType().setJavaName(words[2].substring(0, i));
+                function.setJavaClassName(m_javaClassName);
+                int k = 2;
+                int t = 1;
+                if (words[1].equals("static")) {
+                    k = 3;
+                    t = 2;
+                }
+                if (words[k].contains("(")) {
+                    int i = words[k].indexOf("(");
+                    function.getReturnType().setJavaName(words[k].substring(0, i));
                 }
                 else
-                    function.getReturnType().setJavaName(words[2]);
+                    function.getReturnType().setJavaName(words[k]);
                 function.getReturnType().setVbName(m_vbFunctionName);
-                function.getReturnType().setType(words[1]);
+                function.getReturnType().setType(words[t]);
                 m_function = function;
                 if (words[0].equals("private")) {
                     m_privateFunctions.add(function);
@@ -2458,19 +2469,23 @@ public class Translator {
         }
         strLine = replaceMemberVariables(strLine);
         strLine = replaceFunctionVariables(strLine);
-        strLine = replaceAmpersand(strLine);
+        //strLine = replaceAmpersand(strLine);
         strLine = replaceMidSentence(strLine);
         strLine = replaceLeftSentence(strLine);
         strLine = replaceRightSentence(strLine);
         strLine = replaceLCaseSentence(strLine);
         strLine = replaceUCaseSentence(strLine);
         strLine = replaceLenSentence(strLine);
+        strLine = replaceReplaceSentence(strLine);
         strLine = replaceStringComparison(strLine, "==");
         strLine = replaceStringComparison(strLine, "!=");
         strLine = replaceInStrSentence(strLine);
         strLine = replaceVbWords(strLine);
         strLine = replaceIsNothing(strLine);
         strLine = replaceNothing(strLine);
+        
+        strLine = replaceAmpersand(strLine);
+        
         strLine = translateFunctionCall(strLine);
         strLine = replaceWithSentence(strLine);
         strLine = replaceEndWithSentence(strLine);
@@ -2690,6 +2705,18 @@ public class Translator {
                 else if (info.isFunction) {
                     type = info.function.getReturnType().dataType;
                     words[i] = info.function.getJavaName();
+                    String functionClassName = info.function.getJavaClassName();
+                    // if the function doesn't have a parent and it is not declared
+                    // in this class it must be a statict function (the equivalent
+                    // java to vb6 public functions in bas files)
+                    //
+                    if (parent.isEmpty() 
+                            && !functionClassName.equals(m_javaClassName)
+                            && !functionClassName.isEmpty()) {
+                        // we need to add the class name to access the function
+                        //
+                        words[i] = functionClassName + '.' + words[i];
+                    }
                     if (i + 1 < words.length) {
                         if (!words[i + 1].equals("("))
                             words[i] += "()";
@@ -2732,6 +2759,7 @@ public class Translator {
             }
             else if (words[i].equals("(")) {
                 parents[openParentheses] = parent;
+                parent = "";
                 openParentheses++;
             }
             else if (words[i].equals(")")) {
@@ -2740,6 +2768,7 @@ public class Translator {
             }
             else if (words[i].equals("[")) {
                 parents[openParentheses] = parent;
+                parent = "";
                 openParentheses++;
             }
             else if (words[i].equals("]")) {
@@ -3419,55 +3448,92 @@ public class Translator {
         boolean ampFound = false;
         String rtn = "";
         String source = "";
+        String functionCall = "";
         String[] words = G.split(strLine);
 
         for (int i = 0; i < words.length; i++) {
 
+            // all the code between parentheses is
+            // saved in the source variable and then 
+            // replaceAmpersandAux is called pasing 
+            // source to process &
+            //
             if (words[i].equals("(")) {
                 openParentheses++;
             }
             else if (words[i].equals(")")) {
                 openParentheses--;
+                // if we faund the closing parentheses
+                //
                 if (openParentheses == 0) {
+                    // if before the parent
+                    //
                     if (ampFound) {
-                        rtn += getCastToString("(" + replaceAmpersandAux(source) + ")");
+                        rtn += getCastToString(functionCall 
+                                + "(" + replaceAmpersandAux(source) + ")");
                         ampFound = false;
                     }
                     else {
-                        //rtn += "(" + replaceAmpersand(source) + ")";
-                        
-                        //---------------------------------------------------
                         if (i < words.length-1) {
+                            // if the next is & we have something like this:
+                            // (i+2)& " row"
+                            // we need to cast to string source
+                            //
                             if (words[i+1].equals("&")) {
-                                rtn += getCastToString("(" + replaceAmpersandAux(source) + ")");
+                                rtn += getCastToString(functionCall 
+                                        + "(" + replaceAmpersandAux(source) + ")");
                             }
                             else {
+                                // if the next is & we have something like this:
+                                // (i+2) & " row"
+                                // we need to cast to string source
+                                //
                                 if (i < words.length-2) {
                                     if (words[i+2].equals("&")) {
-                                        rtn += getCastToString("(" + replaceAmpersandAux(source) + ")");
+                                        rtn += getCastToString(functionCall 
+                                                + "(" + replaceAmpersandAux(source) + ")");
                                     }
+                                    // we only need to call replaceAmpersandAux
+                                    // to translate source
+                                    //
                                     else {
-                                        rtn += "(" + replaceAmpersandAux(source) + ")";
+                                        rtn += functionCall + "(" 
+                                                + replaceAmpersandAux(source) + ")";
                                     }
                                 }
+                                // we only need to call replaceAmpersandAux
+                                // to translate source
+                                //
                                 else {
-                                    rtn += "(" + replaceAmpersandAux(source) + ")";
+                                    rtn += functionCall + "(" 
+                                            + replaceAmpersandAux(source) + ")";
                                 }
                             }
                         }
+                        // we only need to call replaceAmpersandAux
+                        // to translate source because there is no more words
+                        // to translate
+                        //
                         else {
-                            rtn += "(" + replaceAmpersandAux(source) + ")";
+                            rtn += functionCall + "(" 
+                                    + replaceAmpersandAux(source) + ")";
                         }
                         //---------------------------------------------------
                          
                     }
                     source = "";
+                    functionCall = "";
                 }
             }
+            // we need to put all the code sourronded by parantheses in source
+            //
             else if (openParentheses > 0) {
                 source += words[i];
             }
             else {
+                // replace & with + and set the flag on
+                // to process the next word
+                //
                 if (words[i].equals("&")) {
                     rtn += "+";
                     ampFound = true;
@@ -3477,17 +3543,36 @@ public class Translator {
                         if (words[i].equals(" "))
                             rtn += " ";
                         else {
+                            // we need to cast to string this word
+                            // because the previous was an &
+                            //
                             rtn += getCastToString(words[i]);
                             ampFound = false;
                         }
                     }
                     else {
+                        // if there is more words after this
+                        //
                         if (i < words.length-1) {
+                            // if the next word is an &
+                            //
                             if (words[i+1].equals("&")) {
+                                // we need to cast to string this word
+                                //
                                 rtn += getCastToString(words[i]);
+                            }
+                            // if the next word is an open parentheses
+                            // we save this word in source to 
+                            // process this when all the code sourronded
+                            // by parentheses will be translated
+                            //
+                            else if (words[i+1].equals("(")){
+                                functionCall = words[i]; 
                             }
                             else {
                                 if (i < words.length-2) {
+                                    // we need to cast to string this word
+                                    //
                                     if (words[i+2].equals("&")) {
                                         rtn += getCastToString(words[i]);
                                     }
@@ -3740,6 +3825,9 @@ public class Translator {
                     else if (G.beginLike(words[i],"mid$(")) {
                         expression += replaceMidSentence(words[i]);
                     }
+                    else if (containsMid(words[i])) {
+                        expression += replaceMidSentence(words[i]);
+                    }
                     else {
                         expression += words[i];
                     }
@@ -3830,6 +3918,9 @@ public class Translator {
                         expression += replaceLeftSentence(words[i]);
                     }
                     else if (G.beginLike(words[i],"left$(")) {
+                        expression += replaceLeftSentence(words[i]);
+                    }
+                    else if (containsLeft(words[i])) {
                         expression += replaceLeftSentence(words[i]);
                     }
                     else {
@@ -3925,6 +4016,9 @@ public class Translator {
                     else if (G.beginLike(words[i],"right$(")) {
                         expression += replaceRightSentence(words[i]);
                     }
+                    else if (containsLeft(words[i])) {
+                        expression += replaceRightSentence(words[i]);
+                    }
                     else {
                         expression += words[i];
                     }
@@ -4013,6 +4107,9 @@ public class Translator {
                     else if (G.beginLike(words[i],"lcase$(")) {
                         expression += replaceLCaseSentence(words[i]);
                     }
+                    else if (containsLCase(words[i])) {
+                        expression += replaceLCaseSentence(words[i]);
+                    }
                     else {
                         expression += words[i];
                     }
@@ -4099,6 +4196,9 @@ public class Translator {
                         expression += replaceUCaseSentence(words[i]);
                     }
                     else if (G.beginLike(words[i],"ucase$(")) {
+                        expression += replaceUCaseSentence(words[i]);
+                    }
+                    else if (containsUCase(words[i])) {
                         expression += replaceUCaseSentence(words[i]);
                     }
                     else {
@@ -4376,6 +4476,9 @@ public class Translator {
                     else if (G.beginLike(words[i],"instr(")) {
                         expression += replaceInStrSentence(words[i]);
                     }
+                    else if (containsInStr(words[i])) {
+                        expression += replaceInStrSentence(words[i]);
+                    }
                     else {
                         expression += words[i];
                     }
@@ -4385,6 +4488,110 @@ public class Translator {
         return expression.trim();
     }
 
+    private String replaceReplaceSentence(String expression) {
+        boolean replaceFound = false;
+
+        expression = G.ltrimTab(expression);
+
+        if (containsReplace(expression)) {
+
+            int openParentheses = 0;
+            String[] words = G.split(expression);
+            String params = "";
+            expression = "";
+            replaceFound = false;
+
+            for (int i = 0; i < words.length; i++) {
+                if (replaceFound) {
+                    if (words[i].equals("(")) {
+                        openParentheses++;
+                        if (openParentheses > 1) {
+                            params += words[i];
+                        }
+                    }
+                    // look for a close parentheses without an open parentheses
+                    else if (words[i].equals(")")) {
+                        openParentheses--;
+                        if (openParentheses == 0) {
+                            if (containsReplace(params)) {
+                                params = replaceReplaceSentence(params);
+                            }
+                            String[] vparams = G.split(params);
+                            String identifier = "";
+                            String toSearch = "";
+                            String newValue = "";
+
+                            int colons = 0;
+                            identifier = "";
+                            for (int t = 0; t < vparams.length; t++) {
+                                if (vparams[t].equals(",")) {
+                                    colons++;
+                                }
+                                else {
+
+                                    if (colons == 0) {
+                                        identifier += vparams[t];
+                                    }
+                                    else if (colons == 1) {
+                                        toSearch += vparams[t];
+                                    }
+                                    else if (colons == 2) {
+                                        newValue += vparams[t];
+                                    }
+                                    else {
+                                        showError("Unexpected colon found in Replace function's params: " + params);
+                                    }
+                                }
+                            }
+                            if (toSearch.isEmpty())
+                                showError("Missing parameter in Replace function");
+                            if (newValue.isEmpty())
+                                showError("Missing parameter in Replace function");
+                            // identifier can be a complex expresion
+                            // like ' "an string plus" + a_var '
+                            //
+                            if (G.contains(identifier, " ")) {
+                                identifier = "(" + identifier + ")";
+                            }
+                            expression += identifier 
+                                            + ".replace(" + toSearch.trim()
+                                            + ", " + newValue.trim() + ")";
+                            replaceFound = false;
+                            params = "";
+                        }
+                        else {
+                            params = params.trim() + words[i];
+                        }
+                    }
+                    else {
+                        params += words[i];
+                    }
+                }
+                else {
+                    if (words[i].equalsIgnoreCase("replace")) {
+                        replaceFound = true;
+                    }
+                    else if (words[i].equalsIgnoreCase("replace$")) {
+                        replaceFound = true;
+                    }
+                    else if (G.beginLike(words[i],"replace(")) {
+                        expression += replaceReplaceSentence(words[i]);
+                    }
+                    else if (G.beginLike(words[i],"replace$(")) {
+                        expression += replaceReplaceSentence(words[i]);
+                    }
+                    else if (containsReplace(words[i])) {
+                        expression += replaceReplaceSentence(words[i]);
+                    }
+                    else {
+                        expression += words[i];
+                    }
+                }
+            }
+        }
+        return expression.trim();
+    }
+    
     private String replaceIsNumericSentence(String expression) {
         if (containsFunction(expression, "IsNumeric")) {
             if (m_AddAuxFunctionsToClass) {
@@ -4677,6 +4884,30 @@ public class Translator {
         return containsFunction(expression, "instr");
     }
 
+    private boolean containsReplace(String expression) {
+        if (expression.toLowerCase().contains(" replace(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains("(replace(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains(" replace$(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains("(replace$(")) {
+            return true;
+        } 
+        else if (G.beginLike(expression,"replace(")) {
+            return true;
+        }
+        else if (G.beginLike(expression,"replace$(")) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
     private boolean containsFunction(String expression, String function) {
         function = function.toLowerCase();
         expression = expression.toLowerCase();
@@ -4853,7 +5084,8 @@ public class Translator {
                     else if (publicFunction.getVbName().equals(functionName))
                         return publicFunction;
                 }
-                break;
+                if (!className.isEmpty())
+                    break;
             }
         }
 
@@ -4886,6 +5118,15 @@ public class Translator {
 
     private String getCastToString(String identifier) {
         Variable var = getVariable(identifier);
+        if (var == null) {
+            IdentifierInfo info = getIdentifierInfo(identifier);
+            if (info != null) {
+                if (!info.isFunction) 
+                    var = info.variable;
+                else
+                    var = info.function.getReturnType();
+            }
+        }
         if (var != null) {
             if (var.isString)
                 return identifier;
@@ -4907,6 +5148,51 @@ public class Translator {
         }
         else
             return identifier;
+    }
+    
+    private IdentifierInfo getIdentifierInfo(String expression) {
+        IdentifierInfo info = null;
+        String type = "";
+        String parent = "";
+        String[] words = G.split2(expression, ".()[]");
+        String[] parents = new String[30]; // why 30? how nows :P, 30 should be enough :)
+        int openParentheses = 0;
+
+        for (int i = 0; i < words.length; i++) {
+            if (!(".()[]".contains(words[i]))) {
+                if (openParentheses == 0) {
+                    info = getIdentifierInfo(words[i], parent);
+                    if (info == null)
+                        type = "";
+                    else if (info.isFunction) {
+                        type = info.function.getReturnType().dataType;
+                    }
+                    else {
+                        type = info.variable.dataType;
+                    }
+                    parent = type;
+                }
+            }
+            else if (words[i].equals("(")) {
+                parents[openParentheses] = parent;
+                parent = "";
+                openParentheses++;
+            }
+            else if (words[i].equals(")")) {
+                openParentheses--;
+                parent = parents[openParentheses];
+            }
+            else if (words[i].equals("[")) {
+                parents[openParentheses] = parent;
+                parent = "";
+                openParentheses++;
+            }
+            else if (words[i].equals("]")) {
+                openParentheses--;
+                parent = parents[openParentheses];
+            }
+        }    
+        return info;
     }
 
     private boolean isComplexExpression(String expression) {
@@ -5266,7 +5552,12 @@ public class Translator {
 
         m_returnValue = getDefaultForReturnType(functionType);
 
-        String modifiers = getIfNeedToBeSyncrhonized();
+        String modifiers = "";
+        
+        if (m_isBasFile)
+            modifiers = "static ";
+        
+        modifiers += getIfNeedToBeSyncrhonized();
 
         return functionScope + " "
                 + modifiers
@@ -7311,7 +7602,7 @@ public class Translator {
     // Visual Basic Standar Objects
     
     private void createVBClasses() {
-        // Connection
+        // Collection
         m_classObject.setPackageName("VBA");
         m_classObject.setVbName("Collection");
         m_classObject.setJavaName("ArrayList");
@@ -7321,6 +7612,15 @@ public class Translator {
         saveFunction("count", "size", "int");
         saveFunction("item", "get", "Object");
         saveFunction("remove", "remove", "void");
+
+        m_classObject.setPackageName("VBA");
+        m_classObject.setVbName("VBA");
+        m_classObject.setJavaName("VBA");
+        m_classObject.getClassIdFromClassName();
+        m_classObject.saveClass();
+
+        m_functionObject.setId(0);
+        saveVariable("Err", "ex", "Object", false, true);
         
         m_classObject.setId(0);
     }
