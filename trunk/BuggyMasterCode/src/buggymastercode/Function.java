@@ -13,11 +13,20 @@ public class Function {
 
     static private final String newline = "\n";
 
+    private String m_javaClassName = "";
     private Variable m_returnType = new Variable();
     public String vbDeclaration = "";
     public String javaDeclaration = "";
     private boolean m_needReturnVariable = false;
 
+    public String getJavaClassName() {
+        return m_javaClassName;
+    }
+
+    public void setJavaClassName(String value) {
+        m_javaClassName = value;
+    }
+    
     public String getJavaName() {
         return m_returnType.getJavaName();
     }
