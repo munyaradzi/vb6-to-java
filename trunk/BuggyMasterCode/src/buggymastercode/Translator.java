@@ -1060,10 +1060,14 @@ public class Translator {
 
     private String translateCode(String strLine, boolean inDeclaration) {
         
-        
-        if (G.beginLike(strLine.trim(), "strErr = Mid(strErr, 1, InStr(1, strErr, \"tabla\")")) {
-            int i = 0;
+        // debug
+        //
+        if (G.beginLike(strLine.trim(), "strErr = strErr & Mid(strOriginalErr, p, q - p)")) {
+            int i = 9999;
         }
+         /* 
+         */
+        // debug
         
         // first we extract comments
         // so the code only works over executable code
@@ -2917,6 +2921,23 @@ public class Translator {
     }
 
     private String replaceIsNothing(String strLine) {
+        // we contemplate Not identifier Is Nothing
+        //
+        String[] words = G.split2(strLine, "!\t/*-+ .()");
+        strLine = "";
+        for (int i = 0; i < words.length; i++) {
+            if (words[i].equals("!")) {
+                if (i + 5 < words.length ) {
+                    if (words[i+3].equalsIgnoreCase("Is")
+                            && words[i+5].equalsIgnoreCase("Nothing")) {
+                        words[i] = "";
+                        words[i+3] = "!=";
+                        words[i+5] = "null";
+                    }
+                }
+            }
+            strLine += words[i];
+        }
         return strLine.replaceAll("Is Nothing", "== null");
     }
 
@@ -3477,6 +3498,7 @@ public class Translator {
                         if (i < words.length-1) {
                             // if the next is & we have something like this:
                             // (i+2)& " row"
+                            
                             // we need to cast to string source
                             //
                             if (words[i+1].equals("&")) {
@@ -3543,11 +3565,25 @@ public class Translator {
                         if (words[i].equals(" "))
                             rtn += " ";
                         else {
-                            // we need to cast to string this word
-                            // because the previous was an &
-                            //
-                            rtn += getCastToString(words[i]);
-                            ampFound = false;
+                            if (i+1 < words.length) {
+                                if (words[i+1].equals("(")) {
+                                    functionCall = words[i];
+                                }
+                                else {
+                                    // we need to cast to string this word
+                                    // because the previous was an &
+                                    //
+                                    rtn += getCastToString(words[i]);
+                                    ampFound = false;                                
+                                }
+                            }
+                            else {
+                                // we need to cast to string this word
+                                // because the previous was an &
+                                //
+                                rtn += getCastToString(words[i]);
+                                ampFound = false;
+                            }
                         }
                     }
                     else {
@@ -4263,7 +4299,7 @@ public class Translator {
                             if (G.contains(identifier, " ")) {
                                 identifier = "(" + identifier + ")";
                             }
-                            expression += identifier + ".lenght()";
+                            expression += identifier + ".length()";
                             lenFound = false;
                             params = "";
                         }
@@ -4942,6 +4978,9 @@ public class Translator {
             else if (words[i].equalsIgnoreCase("True")) {
                 words[i] = "true";
             }
+            else if (words[i].equalsIgnoreCase("vbCrLf")) {
+                words[i] = "\"\\n\"";
+            }
             expression += words[i];// + " ";
         }
         return expression.trim();
@@ -5131,11 +5170,11 @@ public class Translator {
             if (var.isString)
                 return identifier;
             else if (var.isLong)
-                return "((Long) " + identifier + ").ToString()";
+                return "((Long) " + identifier + ").toString()";
             else if (var.isInt)
-                return "((Integer) " + identifier + ").ToString()";
+                return "((Integer) " + identifier + ").toString()";
             else if (var.isBoolean)
-                return "((Boolean) " + identifier + ").ToString()";
+                return "((Boolean) " + identifier + ").toString()";
             else
                 return identifier;
         }
@@ -5979,7 +6018,14 @@ public class Translator {
             dataType = "int";
         }
         else if (dataType.equalsIgnoreCase("long")) {
-            dataType = "long";
+            // the vb6 long is 32 bit so in java it is an int
+            // if we don't do this, we get a lot of errors
+            // because most of the functions use int as the
+            // type for their parameters and the compiler
+            // complaints every time we send a long as a parameter
+            // to a function which expects an integer
+            //
+            dataType = "int"; 
         }
         else if (dataType.equalsIgnoreCase("single")) {
             dataType = "float";
@@ -6404,11 +6450,15 @@ public class Translator {
         dataType = getDataType(dataType);
 
         saveVariable(vbIdentifier, identifier, dataType);
+
+        String modifiers = "";
+        if (m_isBasFile)
+            modifiers = "static ";
         
         if (isArray)
-            return "private " + dataType + "[] " + identifier + getInitialValueForType(dataType) + ";" + misc + newline;
+            return "private " + modifiers + dataType + "[] " + identifier + getInitialValueForType(dataType) + ";" + misc + newline;
         else
-            return "private " + dataType + " " + identifier + getInitialValueForType(dataType) + ";" + misc + newline;
+            return "private " + modifiers + dataType + " " + identifier + getInitialValueForType(dataType) + ";" + misc + newline;
     }
 
     private String translatePublicMember(String strLine) {
@@ -6484,10 +6534,14 @@ public class Translator {
         var.isArray = isArray;
         m_publicVariables.add(var);
 
+        String modifiers = "";
+        if (m_isBasFile)
+            modifiers = "static ";
+        
         if (isArray)
-            return "public " + dataType + "[] " + identifier + getInitialValueForType(dataType) + ";" + misc + newline;
+            return "public " + modifiers + dataType + "[] " + identifier + getInitialValueForType(dataType) + ";" + misc + newline;
         else
-            return "public " + dataType + " " + identifier + getInitialValueForType(dataType) + ";" + misc + newline;
+            return "public " + modifiers + dataType + " " + identifier + getInitialValueForType(dataType) + ";" + misc + newline;
     }
 
     private String getInitialValueForType(String dataType) {
@@ -7682,10 +7736,10 @@ class IdentifierInfo {
 /*
  * TODO_DONE: file mError.bas line 72 {s = Replace(s, "$" & i + 1, X(i))}
  *       the code is translated as
- *              {s = Replace(s, "$" + ((Integer) i).ToString() + 1, X(i));}
+ *              {s = Replace(s, "$" + ((Integer) i).toString() + 1, X(i));}
  *       it is wrong because i + 1 must to be evaluated first and then has to apply
  *       the cast to Integer:
- *              {s = Replace(s, "$" + ((Integer) (i + 1)).ToString(), X(i));}
+ *              {s = Replace(s, "$" + ((Integer) (i + 1)).toString(), X(i));}
  */
 
 /*
