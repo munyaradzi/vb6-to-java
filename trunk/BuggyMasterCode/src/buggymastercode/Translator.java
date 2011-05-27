@@ -324,6 +324,12 @@ public class Translator {
                     m_attributeBlockHasStarted = true;
                     m_vbClassName = strLine.substring(21, strLine.length()-1);
                     m_javaClassName = m_vbClassName;
+                    
+                    // debug
+                    if (m_vbClassName.equalsIgnoreCase("mGlobal")) {
+                        int i = 9999;
+                    }
+                    // debug
                 }
                 else {
                     if (m_attributeBlockHasStarted) {
@@ -708,6 +714,7 @@ public class Translator {
                 }
                 // declarations
                 else {
+                    parsePublicMember(strLine);
                     return;
                 }
             }
@@ -1062,7 +1069,7 @@ public class Translator {
         
         // debug
         //
-        if (G.beginLike(strLine.trim(), "strErr = strErr & Mid(strOriginalErr, p, q - p)")) {
+        if (G.beginLike(strLine.trim(), "strOriginalErr2 = strOriginalErr2 & gErrorDB")) {
             int i = 9999;
         }
          /* 
@@ -1104,7 +1111,7 @@ public class Translator {
             }
         }
         // in declaration
-            // private and public can be modifier of member variables
+            // private and public can be modifiers of member variables
             // or events
             //
         if (inDeclaration) {
@@ -1422,6 +1429,91 @@ public class Translator {
                 }
                 else {
                     m_publicFunctions.add(function);
+                }
+            }
+        }
+    }
+
+    private void parsePublicMember(String strLine) {
+        
+        // get out spaces even tabs
+        //
+        String workLine = G.ltrimTab(strLine).toLowerCase();
+        // dim
+        if (workLine.length() > 4) {
+            if (workLine.substring(0,4).equals("dim ")) {
+                return;
+            }
+        }
+        // in declaration
+            // private and public can be modifiers of member variables
+            // or events
+            //
+        if (workLine.length() > 8) {
+            if (workLine.substring(0,8).equals("private ")) {
+                return;
+            }
+        }
+        if (workLine.length() > 7) {
+            if (workLine.substring(0,7).equals("public ")) {
+                if (workLine.contains(" const ")) {
+                    return;
+                }
+                else if (workLine.contains(" event ")) {
+                    return;
+                }
+                else {
+                    
+                    // form is
+                        // dim variable_name as data_type
+                    strLine = strLine.trim();
+                    String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
+                    String dataType = "";
+                    String identifier = "";
+                    String vbIdentifier = "";
+                    boolean isEventGenerator = false;
+
+                    if (words.length > 1) {
+                        vbIdentifier = words[1];
+                        // with events eg:
+                        //      private withevents my_obj_with_events as CObjetWithEvents ' some comments
+                        //      0       1           2                 3        4          >= 5
+                        //
+                        if (vbIdentifier.equalsIgnoreCase("WithEvents")) {
+                            vbIdentifier = words[2];
+                            identifier = getIdentifier(vbIdentifier);
+                            if (words.length > 4) {
+                                dataType = words[4];
+                            }
+                            isEventGenerator = true;
+                        }
+                        else {
+                            identifier = getIdentifier(vbIdentifier);
+                            if (words.length > 3) {
+                                dataType = words[3];
+                            }
+                        }
+                    }
+                    if (dataType.isEmpty()) {
+                        dataType = "Object";
+                    }
+                    dataType = getDataType(dataType);
+
+                    boolean isArray = identifier.endsWith("()");
+                    if (isArray) {
+                        identifier = identifier.substring(0, identifier.length() - 2);
+                    }
+
+                    Variable var = new Variable();
+                    var.setVbName(vbIdentifier);
+                    var.setJavaName(identifier);
+                    var.className = m_javaClassName;
+                    var.packageName = m_packageName;
+                    var.setType(dataType);
+                    var.isPublic = true;
+                    var.isArray = isArray;
+                    var.isEventGenerator = isEventGenerator;
+                    m_publicVariables.add(var);
                 }
             }
         }
@@ -2473,7 +2565,6 @@ public class Translator {
         }
         strLine = replaceMemberVariables(strLine);
         strLine = replaceFunctionVariables(strLine);
-        //strLine = replaceAmpersand(strLine);
         strLine = replaceMidSentence(strLine);
         strLine = replaceLeftSentence(strLine);
         strLine = replaceRightSentence(strLine);
@@ -2481,15 +2572,15 @@ public class Translator {
         strLine = replaceUCaseSentence(strLine);
         strLine = replaceLenSentence(strLine);
         strLine = replaceReplaceSentence(strLine);
+        strLine = translateVbOperators(strLine);
         strLine = replaceStringComparison(strLine, "==");
         strLine = replaceStringComparison(strLine, "!=");
+        strLine = replaceStringCompareNullString(strLine);
         strLine = replaceInStrSentence(strLine);
         strLine = replaceVbWords(strLine);
         strLine = replaceIsNothing(strLine);
         strLine = replaceNothing(strLine);
-        
         strLine = replaceAmpersand(strLine);
-        
         strLine = translateFunctionCall(strLine);
         strLine = replaceWithSentence(strLine);
         strLine = replaceEndWithSentence(strLine);
@@ -2756,8 +2847,14 @@ public class Translator {
                     if (info.variable.isEnumMember)
                         words[i] = info.variable.className
                                     + "." + info.variable.getJavaName();
-                    else
-                        words[i] = info.variable.getJavaName();
+                    else {
+                        if (info.variable.isPublic) {
+                            words[i] = info.variable.className
+                                        + "." + info.variable.getJavaName();                            
+                        }
+                        else
+                            words[i] = info.variable.getJavaName();
+                    }
                 }
                 parent = type;
             }
@@ -2778,6 +2875,9 @@ public class Translator {
             else if (words[i].equals("]")) {
                 openParentheses--;
                 parent = parents[openParentheses];
+            }
+            else if (words[i].equals(" ")) {
+                parent = "";
             }
             strLine += words[i];
         }
@@ -3263,7 +3363,9 @@ public class Translator {
         String[] words = getWordsFromSentence(workLine);
         if (words.length >= 2) {
             if (!words[0].equals("return")) {
-                if (!words[0].equals("(") && !words[1].equals("(") && !words[2].equals("(")) {
+                if (!words[0].equals("(") 
+                        && !words[1].equals("(") 
+                        && !words[2].equals("(")) {
                     if (!C_SEPARARTORS.contains("_" + words[2] + "_")) {
                         if (!isReservedWord(words[0])) {
                             strLine = words[0] + "(";
@@ -3631,6 +3733,123 @@ public class Translator {
         return rtn;
     }
 
+    private String translateVbOperators(String strLine) {
+        boolean literalFlag = false;
+        boolean previousWasNot = false;
+        boolean previousWasParentheses = false;
+        boolean isFirstWord = true;
+        String javaSentence = "";
+        String comments = "";
+
+        int startComment = getStartComment(strLine);
+        if (startComment >= 0) {
+            comments =  "//" + strLine.substring(startComment);
+            strLine = strLine.substring(0, startComment-1);
+        }
+
+        String[] words = G.splitSpace(strLine);//strLine.split("\\s+");
+        
+        // we don't have to replace the first = in an asignment statetment
+        //
+        int k = 0;
+        if (words.length > 2) {
+            if (words[1].equals("="))
+                k = 2;
+        }
+        
+        for (int i = 0; i < words.length; i++) {
+            // we have to translate "or", "and", and "not"
+
+            for (int j = 0; j < words[i].length(); j++) {
+                if (words[i].charAt(j) == '"') {
+                    literalFlag = !literalFlag;
+                }
+            }
+
+            if (literalFlag) {
+                javaSentence += " " + words[i];
+            }
+            else {
+                if (i > k) {
+                    if (words[i].equalsIgnoreCase("and")) {
+                        javaSentence += " &&";
+                    }
+                    else if (words[i].equalsIgnoreCase(")and")) {
+                        javaSentence += ") &&";
+                    }
+                    else if (words[i].equalsIgnoreCase("and(")) {
+                        javaSentence += " && (";
+                    }
+                    else if (words[i].equalsIgnoreCase("or")) {
+                        javaSentence += " ||";
+                    }
+                    else if (words[i].equalsIgnoreCase(")or")) {
+                        javaSentence += ") ||";
+                    }
+                    else if (words[i].equalsIgnoreCase("or(")) {
+                        javaSentence += " || (";
+                    }
+                    else if (words[i].equalsIgnoreCase("<>")) {
+                        javaSentence += " !=";
+                    }
+                    else if (words[i].equalsIgnoreCase("not")) {
+                        javaSentence += " !";
+                    }
+                    else if (words[i].equals("(")) {
+                        if (previousWasNot)
+                            javaSentence += "(";
+                        else
+                            javaSentence += " (";
+                    }
+                    else if (words[i].equals(")")) {
+                        javaSentence += ")";
+                    }
+                    else if (words[i].equalsIgnoreCase("=")) {
+                        javaSentence += " ==";
+                    }
+                    else {
+                        if (isFirstWord) {
+                            javaSentence += words[i];
+                            isFirstWord = false;
+                        }
+                        else if (previousWasNot || previousWasParentheses) {
+                            javaSentence += words[i];
+                        }
+                        else {
+                            javaSentence += " " + words[i];
+                        }
+                    }
+
+                    // flags
+                    //
+                    if (words[i].equalsIgnoreCase("not")) {
+                        previousWasNot = true;
+                    }
+                    else {
+                        previousWasNot = false;
+                    }
+
+                    if (words[i].charAt(words[i].length()-1) == '(') {
+                        previousWasParentheses = true;
+                    }
+                    else {
+                        previousWasParentheses = false;
+                    }
+                }
+                else {
+                    if (isFirstWord) {
+                        javaSentence += words[i];
+                        isFirstWord = false;
+                    }
+                    else {
+                        javaSentence += " " + words[i];
+                    }
+                }
+            }
+        }
+        return javaSentence + comments + newline;
+    }
+    
     private String replaceStringComparison(String strLine, String operator) {
         boolean equalsFound = false;
         boolean innerEqualFound = false;
@@ -3751,6 +3970,10 @@ public class Translator {
                         rtn += firstOperand + "||";
                         firstOperand = "";
                     }
+                    else if (words[i].equals("=")) {
+                        rtn += firstOperand + "=";
+                        firstOperand = "";
+                    }
                     else
                         firstOperand += words[i];
                 }
@@ -3767,6 +3990,10 @@ public class Translator {
                 rtn += firstOperand;
         }
         return rtn;
+    }
+    
+    private String replaceStringCompareNullString(String expression) {
+        return expression.replace(".equals(\"\")", ".isEmpty()");
     }
 
     private String replaceMidSentence(String expression) {
@@ -4989,18 +5216,28 @@ public class Translator {
     private String processEqualsSentence(String firstOperand, String secondOperand, String operator) {
         boolean isNotEquals = operator.equals("!=");
         if (isStringExpression(firstOperand)) {
-            if (isNotEquals)
-                return "!("
-                        + G.rtrim(firstOperand) + ".equals(" + secondOperand.trim() + ")"
+            if (isNotEquals) {
+                String firstSpace = "";
+                if (firstOperand.startsWith(" "))
+                    firstSpace = " ";
+                return firstSpace 
+                        +"!("
+                        + firstOperand.trim() + ".equals(" + secondOperand.trim() + ")"
                         +")";
+            }
             else
                 return G.rtrim(firstOperand) + ".equals(" + secondOperand.trim() + ")";
         }
         else if (isStringExpression(secondOperand)) {
-            if (isNotEquals)
-                return "!("
-                        + G.rtrim(secondOperand) + ".equals(" + firstOperand.trim() + ")"
+            if (isNotEquals) {
+                String firstSpace = "";
+                if (secondOperand.startsWith(" "))
+                    firstSpace = " ";
+                return firstSpace
+                        +"!("
+                        + secondOperand.trim() + ".equals(" + firstOperand.trim() + ")"
                         + ")";
+            }
             else
                 return G.rtrim(secondOperand) + ".equals(" + firstOperand.trim() + ")";
         }
@@ -5317,6 +5554,27 @@ public class Translator {
             }
         }
 
+        // here we search for public variables declared in bas files
+        //
+        Iterator itrFile = m_collFiles.iterator();
+        while(itrFile.hasNext()) {
+            SourceFile source = (SourceFile)itrFile.next();
+            if (className.isEmpty()
+                    || source.getJavaName().equals(className)
+                    || source.getVbName().equals(className)) {
+                Iterator itrPublicVar = source.getPublicVariables().iterator();
+                while (itrPublicVar.hasNext()) {
+                    Variable publicVar = (Variable)itrPublicVar.next();
+                    if (publicVar.getJavaName().equals(identifier))
+                        return publicVar;
+                    else if (publicVar.getVbName().equals(identifier))
+                        return publicVar;
+                }
+                if (!className.isEmpty())
+                    break;
+            }
+        }
+        
         // if we are here, we must look in the database
         //
         Variable publicVariable = VariableObject.getVariableFromName(
@@ -5395,9 +5653,7 @@ public class Translator {
             j++;
         }
         String[] rtn = new String[j];
-        for (int i = 0; i < j; i++) {
-            rtn[i] = words[i];
-        }
+        System.arraycopy(words, 0, rtn, 0, j);
         return rtn;
     }
 
@@ -6321,7 +6577,7 @@ public class Translator {
                         constValue = words[5];
                     }
                     for (int i = 6; i < words.length; i++) {
-                        misc += " " + words[i] ;
+                        misc += " " + words[i];
                     }
                 }
                 else {
@@ -6329,7 +6585,7 @@ public class Translator {
                         constValue = words[4];
                     }
                     for (int i = 5; i < words.length; i++) {
-                        misc += " " + words[i] ;
+                        misc += " " + words[i];
                     }
                 }
             }
