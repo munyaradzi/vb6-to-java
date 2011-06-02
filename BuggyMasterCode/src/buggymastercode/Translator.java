@@ -186,6 +186,7 @@ public class Translator {
     private boolean m_onCatchBlock = false;
 
     public Translator() {
+        
         m_collJavaClassess = new ArrayList<SourceFile>();
         SourceFile source = null;
         Function fun = null;
@@ -5853,6 +5854,10 @@ public class Translator {
             modifiers = "static ";
         
         modifiers += getIfNeedToBeSyncrhonized();
+        
+        String todoByRef = "";
+        if (strLine.contains("ByRef "))
+            todoByRef = " // TODO: Use of ByRef founded";
 
         return functionScope + " "
                 + modifiers
@@ -5860,6 +5865,7 @@ public class Translator {
                 + functionName + "("
                 + translateParameters(strLine)
                 + ") {"
+                + todoByRef
                 + newline;
     }
 
@@ -6010,6 +6016,11 @@ public class Translator {
                     + strLine;
         }
         else {
+
+            String todoByRef = "";
+            if (strLine.contains(todoByRef))
+                todoByRef = " // TODO: Use of ByRef founded";
+            
             m_listenerInterface += C_TAB
                                     + eventScope + " "
                                     + "void "
@@ -6017,6 +6028,7 @@ public class Translator {
                                     + eventName.substring(1) + "("
                                     + translateParameters(strLine)
                                     + ");"
+                                    + todoByRef
                                     + newline;
             m_adapterClass += C_TAB
                                     + eventScope + " "
@@ -6025,6 +6037,7 @@ public class Translator {
                                     + eventName.substring(1) + "("
                                     + translateParameters(strLine)
                                     + ") {};"
+                                    + todoByRef
                                     + newline;
             m_raiseEvents = true;
             return "";
@@ -7915,7 +7928,8 @@ public class Translator {
         // Collection
         m_classObject.setPackageName("VBA");
         m_classObject.setVbName("Collection");
-        m_classObject.setJavaName("ArrayList");
+        //m_classObject.setJavaName("ArrayList");
+        m_classObject.setJavaName("LinkedMap");
         m_classObject.getClassIdFromClassName();
         m_classObject.saveClass();
 
@@ -7944,8 +7958,9 @@ public class Translator {
     }
     private String translateVBStandarObject(String dataType) {
         if (dataType.equalsIgnoreCase("Collection")) {
-            addToImportList("import java.util.ArrayList;");
-            return "ArrayList";
+            //addToImportList("import java.util.ArrayList;");
+            addToImportList("import org.apache.commons.collections.map.LinkedMap;");
+            return "LinkedMap";
         }
         else {
             return dataType;
