@@ -32,6 +32,8 @@ public class DBH2 implements DBConnection {
     String m_server = "";
     String m_user = "";
     String m_password = "";
+    
+    public String test = "";
 
     @Override
     public boolean connect(String server, String database, String user, String password) {
