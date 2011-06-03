@@ -7329,7 +7329,7 @@ public class Translator {
                 }
 
                 if (constValue.isEmpty()) {
-                    m_enum += "    public static int " + identifier.toUpperCase() + ";" + misc + newline;
+                    m_enum += "    public static final int " + identifier.toUpperCase() + ";" + misc + newline;
                 }
                 else {
                     if (constValue.length() > 2) {
@@ -7337,7 +7337,7 @@ public class Translator {
                             constValue = "0x" + constValue.substring(2);
                         }
                     }
-                    m_enum += "    public static int " + identifier.toUpperCase() + " = "
+                    m_enum += "    public static final int " + identifier.toUpperCase() + " = "
                             + constValue + ";" + misc + newline;
                 }
                 saveVariableInEnum(identifier, identifier.toUpperCase(), "int");
