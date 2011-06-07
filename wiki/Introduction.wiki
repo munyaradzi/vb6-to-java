@@ -27,3 +27,15 @@ When the login window appears press the Ok button. Then choose a vbp or vbg file
 To open a vbp o vbg file use the button. 
 
 <img src="http://vb6-to-java.googlecode.com/svn/wiki/image/open_vbp_vbg.png" />
+
+Press the Translate button to start translating the code.
+
+<img src="http://vb6-to-java.googlecode.com/svn/wiki/image/working.png" />
+
+When the program finish will show the work tab with two editor windows. In the left is the Visual Basic code and the Java code is in the right.
+
+<img src="http://vb6-to-java.googlecode.com/svn/wiki/image/code_translated.png" />
+
+To browse a through the files in your project use the list.
+
+<img src="http://vb6-to-java.googlecode.com/svn/wiki/image/browse_files.png" />
