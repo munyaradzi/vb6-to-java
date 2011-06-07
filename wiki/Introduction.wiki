@@ -22,4 +22,8 @@ After downloading the compiled version which is a zip, you will need to extract 
 
 When the login window appears press the Ok button. Then choose a vbp or vbg file to start translating your projects.
 
-<img src="/image/login.png">
+<img src="http://vb6-to-java.googlecode.com/svn/wiki/image/login.png" />
+
+To open a vbp o vbg file use the button. 
+
+<img src="http://vb6-to-java.googlecode.com/svn/wiki/image/open_vbp_vbg.png" />
