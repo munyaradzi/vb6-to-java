@@ -19,3 +19,5 @@ or download the code from
 http://code.google.com/p/vb6-to-java/source/checkout
 
 After downloading the compiled version which is a zip, you will need to extract all the files to a folder in your system. Run the file run.bat to start the program.
+
+When the login window appears press the Ok button. Then choose a vbp or vbg file to start translating your projects.
