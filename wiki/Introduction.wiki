@@ -28,7 +28,7 @@ To open a vbp o vbg file use the button.
 
 <img src="http://vb6-to-java.googlecode.com/svn/wiki/image/open_vbp_vbg.png" />
 
-Press the Translate button to start translating the code.
+Press the Translate button to start translating the code. The program will show the Progress tab and populate a list with the name of every file translated. 
 
 <img src="http://vb6-to-java.googlecode.com/svn/wiki/image/working.png" />
 
