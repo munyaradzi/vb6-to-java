@@ -36,6 +36,6 @@ When the program finish will show the work tab with two editor windows. In the l
 
 <img src="http://vb6-to-java.googlecode.com/svn/wiki/image/code_translated.png" />
 
-To browse a through the files in your project use the list.
+To browse through the files in your project use the list.
 
 <img src="http://vb6-to-java.googlecode.com/svn/wiki/image/browse_files.png" />
