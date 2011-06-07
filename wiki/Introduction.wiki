@@ -1,0 +1,17 @@
+#summary the introduction page to vb6 to java.
+
+= Introduction =
+
+The goal of this application is to translate Microsoft Visual Basic version 6 code to Java code.
+
+The code related to describe the interface (all the code located in forms before the keyword Attribute) will be ignored by this tool. The tool will translate only Visual Basic code, not interface definition code.
+
+Add your content here.
+
+
+= Details =
+
+Add your content here.  Format your content with:
+  * Text in *bold* or _italic_
+  * Headings, paragraphs, and lists
+  * Automatic links to other wiki pages
