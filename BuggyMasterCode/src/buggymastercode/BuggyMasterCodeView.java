@@ -25,7 +25,6 @@ import java.util.logging.Level;
 import javax.swing.DefaultListModel;
 import javax.swing.Timer;
 import javax.swing.Icon;
-import javax.swing.ImageIcon;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -144,6 +143,8 @@ public class BuggyMasterCodeView extends FrameView {
         jLabel4 = new javax.swing.JLabel();
         cmdChooseFolderOutput = new javax.swing.JButton();
         txOutputFolder = new javax.swing.JTextField();
+        opJava = new javax.swing.JRadioButton();
+        opCSharp = new javax.swing.JRadioButton();
         tabMain = new javax.swing.JTabbedPane();
         pnProgress = new javax.swing.JPanel();
         jScrollPane3 = new javax.swing.JScrollPane();
@@ -176,6 +177,7 @@ public class BuggyMasterCodeView extends FrameView {
         statusMessageLabel = new javax.swing.JLabel();
         statusAnimationLabel = new javax.swing.JLabel();
         progressBar = new javax.swing.JProgressBar();
+        buttonGroup1 = new javax.swing.ButtonGroup();
 
         org.jdesktop.application.ResourceMap resourceMap = org.jdesktop.application.Application.getInstance(buggymastercode.BuggyMasterCodeApp.class).getContext().getResourceMap(BuggyMasterCodeView.class);
         mainPanel.setBackground(resourceMap.getColor("mainPanel.background")); // NOI18N
@@ -231,6 +233,15 @@ public class BuggyMasterCodeView extends FrameView {
         txOutputFolder.setText(resourceMap.getString("txOutputFolder.text")); // NOI18N
         txOutputFolder.setName("txOutputFolder"); // NOI18N
 
+        buttonGroup1.add(opJava);
+        opJava.setSelected(true);
+        opJava.setText(resourceMap.getString("opJava.text")); // NOI18N
+        opJava.setName("opJava"); // NOI18N
+
+        buttonGroup1.add(opCSharp);
+        opCSharp.setText(resourceMap.getString("opCSharp.text")); // NOI18N
+        opCSharp.setName("opCSharp"); // NOI18N
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
@@ -254,9 +265,15 @@ public class BuggyMasterCodeView extends FrameView {
                             .addComponent(cmdChooseFile)
                             .addComponent(cmdChooseFolderOutput))
                         .addGap(13, 13, 13)
-                        .addComponent(cmdTranslate, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(18, 18, 18)
-                        .addComponent(cmdCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE))
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(cmdTranslate, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addGap(18, 18, 18)
+                                .addComponent(cmdCancel, javax.swing.GroupLayout.PREFERRED_SIZE, 80, javax.swing.GroupLayout.PREFERRED_SIZE))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(opJava)
+                                .addGap(18, 18, 18)
+                                .addComponent(opCSharp))))
                     .addGroup(jPanel1Layout.createSequentialGroup()
                         .addContainerGap()
                         .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -286,7 +303,9 @@ public class BuggyMasterCodeView extends FrameView {
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                     .addComponent(jLabel4, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                     .addComponent(txOutputFolder, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                    .addComponent(cmdChooseFolderOutput))
+                    .addComponent(cmdChooseFolderOutput)
+                    .addComponent(opJava)
+                    .addComponent(opCSharp))
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -343,7 +362,7 @@ public class BuggyMasterCodeView extends FrameView {
                 .addContainerGap()
                 .addComponent(jLabel3)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 163, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 168, Short.MAX_VALUE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jSplitPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
@@ -517,7 +536,14 @@ public class BuggyMasterCodeView extends FrameView {
 
                 tabMain.setSelectedComponent(pnProgress);
 
-                TranslatorWorker tw = new TranslatorWorker(this, m_path, vbpFile, m_collFiles);
+                boolean translateToJava = opJava.isSelected();
+                
+                TranslatorWorker tw = new TranslatorWorker(
+                                                this, 
+                                                m_path, 
+                                                vbpFile, 
+                                                m_collFiles,
+                                                translateToJava);
                 tw.execute();
             }
         }
@@ -546,8 +572,12 @@ public class BuggyMasterCodeView extends FrameView {
                 project.setName(getFileName(value.text));
                 String path = getFilePath(vbgFile);
                 String filePath = getFilePath(value.text);
-                if (!filePath.isEmpty())
-                    path += "\\" + filePath;
+                if (!filePath.isEmpty()) {
+                    if (filePath.contains(":"))
+                        path = filePath;
+                    else
+                        path += "\\" + filePath;
+                }
                 project.setPath(path);
                 if (!project.save())
                     return;
@@ -841,7 +871,8 @@ public class BuggyMasterCodeView extends FrameView {
         BuggyMasterCodeApp.getApplication().show(preferences);
     }
 
-    // Variables declaration - do not modify//GEN-BEGIN:variables
+    // Variables declaration - do not modify                     
+    private javax.swing.ButtonGroup buttonGroup1;
     private javax.swing.JComboBox cbFiles;
     private javax.swing.JComboBox cbProject;
     private javax.swing.JButton cmdCancel;
@@ -868,6 +899,8 @@ public class BuggyMasterCodeView extends FrameView {
     private javax.swing.JList lsVbSource;
     private javax.swing.JPanel mainPanel;
     private javax.swing.JMenuBar menuBar;
+    private javax.swing.JRadioButton opCSharp;
+    private javax.swing.JRadioButton opJava;
     private javax.swing.JSplitPane pnCode;
     private javax.swing.JPanel pnProgress;
     private javax.swing.JMenuItem preferencesMenu;
@@ -880,7 +913,7 @@ public class BuggyMasterCodeView extends FrameView {
     private javax.swing.JTextField txOutputFolder;
     private RSyntaxTextArea txSourceCode;
     private RSyntaxTextArea txSourceCodeJava;
-    // End of variables declaration//GEN-END:variables
+    // End of variables declaration                   
 
     private final Timer messageTimer;
     private final Timer busyIconTimer;

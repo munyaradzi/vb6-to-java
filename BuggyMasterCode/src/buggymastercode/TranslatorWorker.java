@@ -30,12 +30,18 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
     private ArrayList<SourceFile> m_collFiles = new ArrayList<SourceFile>();
     private Translator m_translator = new Translator();
     private BuggyMasterCodeView m_caller = null;
+    private boolean m_translateToJava = false;
 
-    public TranslatorWorker(BuggyMasterCodeView caller, String path, String vbpFile, ArrayList<SourceFile> collFiles) {
+    public TranslatorWorker(BuggyMasterCodeView caller, 
+            String path, 
+            String vbpFile, 
+            ArrayList<SourceFile> collFiles,
+            boolean translateToJava) {
         m_path = path;
         m_collFiles = collFiles;
         m_vbpFile = vbpFile;
         m_caller = caller;
+        m_translateToJava = translateToJava;
     }
 
     @Override
@@ -315,6 +321,7 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
             vbFile = m_path + vbFile;
 
             m_translator.initTranslator(vbFile);
+            m_translator.setTranslateToJava(m_translateToJava);
             m_translator.setRaiseEventFunctions(sourceFile.getRaiseEventFunctions());
 
             if (m_translator.isVbSource()) {
@@ -328,7 +335,8 @@ public class TranslatorWorker extends SwingWorker<Boolean, Boolean> {
                     if (m_caller.getCancel())
                         return;
                     m_caller.addVbLine(strLine);
-                    sourceCode.append(strLine + newline);
+                    sourceCode.append(strLine);
+                    sourceCode.append(newline);
                     strLine = m_translator.translate(strLine);
                     m_caller.addJavaLine(strLine);
                     sourceCodeJava.append(strLine);

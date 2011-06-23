@@ -25,7 +25,7 @@ public class Translator {
         "_and_as_byval_byref_case_class_dim_elseif_else_end_each_for_friend_"
      + "_function_global_goto_if_in_is_next_not_of_or_on error_on resume_print_"
      + "_private_public_raise_select_sub_type_while_wend_char_date_double_integer_"
-     + "_long_object_short_string_variant_#if_#end_exit_redim_on_";
+     + "_long_object_short_string_variant_#if_#end_exit_redim_on_me_";
 
     static private final String C_INTERFACE_POSTIFX = "EventI";
     static private final String C_ADAPTER_POSTIFX = "EventA";
@@ -48,6 +48,8 @@ public class Translator {
     private int m_iteratorIndex = 0;
     private String[] m_imports = null;
     private int m_importCount = 0;
+    
+    private boolean m_translateToJava = true;
 
     // member variables of the class which we are translating
     //
@@ -200,28 +202,40 @@ public class Translator {
             // substring
             //
             fun = new Function();
-            fun.getReturnType().setJavaName("substring");
+            if (m_translateToJava)
+                fun.getReturnType().setJavaName("substring");
+            else
+                fun.getReturnType().setJavaName("Substring");
             fun.getReturnType().setType("String");
             source.getPublicFunctions().add(fun);
 
             // toLowerCase
             //
             fun = new Function();
-            fun.getReturnType().setJavaName("toLowerCase");
+            if (m_translateToJava)
+                fun.getReturnType().setJavaName("toLowerCase");
+            else
+                fun.getReturnType().setJavaName("ToLower");
             fun.getReturnType().setType("String");
             source.getPublicFunctions().add(fun);
 
             // toUpperCase
             //
             fun = new Function();
-            fun.getReturnType().setJavaName("toUpperCase");
+            if (m_translateToJava)
+                fun.getReturnType().setJavaName("toUpperCase");
+            else
+                fun.getReturnType().setJavaName("ToUpper");
             fun.getReturnType().setType("String");
             source.getPublicFunctions().add(fun);
 
             // trim
             //
             fun = new Function();
-            fun.getReturnType().setJavaName("trim");
+            if (m_translateToJava)
+                fun.getReturnType().setJavaName("trim");
+            else
+                fun.getReturnType().setJavaName("Trim");
             fun.getReturnType().setType("String");
             source.getPublicFunctions().add(fun);
         
@@ -252,6 +266,10 @@ public class Translator {
 
     public void setSourceFiles(ArrayList<SourceFile> sourceFiles) {
         m_collFiles = sourceFiles;
+    }
+    
+    public void setTranslateToJava(boolean value) {
+        m_translateToJava = value;
     }
 
     public boolean isVbSource() {
@@ -800,10 +818,6 @@ public class Translator {
         }
         // split sentences
         else {
-            // TODO: delete after confirm the change is ok
-            //
-            //m_strBuffer += G.rtrim(strLine.substring(0, strLine.length()-1)) + " ";
-            //
             m_strBuffer += strLine.substring(0, strLine.length()-1).trim() + " ";
             return "";
         }
@@ -1272,10 +1286,16 @@ public class Translator {
                     iOpenParentheses--;
                     if (iOpenParentheses == 0) {
                         if (arrayExpression.contains(" ")) {
-                            rtn += "(" + arrayExpression + ").length";
+                            if (m_translateToJava)
+                                rtn += "(" + arrayExpression + ").length";
+                            else
+                                rtn += "(" + arrayExpression + ").Length";
                         }
                         else {
-                            rtn += arrayExpression + ".length";
+                            if (m_translateToJava)
+                                rtn += arrayExpression + ".length";
+                            else
+                                rtn += arrayExpression + ".Length";
                         }
                         uboundFound = false;
                     }
@@ -1496,7 +1516,7 @@ public class Translator {
                         }
                     }
                     if (dataType.isEmpty()) {
-                        dataType = "Object";
+                        dataType = getObjectTypeName();
                     }
                     dataType = getDataType(dataType);
 
@@ -2567,6 +2587,7 @@ public class Translator {
         strLine = replaceMemberVariables(strLine);
         strLine = replaceFunctionVariables(strLine);
         strLine = replaceMidSentence(strLine);
+        strLine = replaceTypeOfSentence(strLine);
         strLine = replaceLeftSentence(strLine);
         strLine = replaceRightSentence(strLine);
         strLine = replaceLCaseSentence(strLine);
@@ -2574,16 +2595,18 @@ public class Translator {
         strLine = replaceLenSentence(strLine);
         strLine = replaceReplaceSentence(strLine);
         strLine = translateVbOperators(strLine);
-        strLine = replaceStringComparison(strLine, "==");
-        strLine = replaceStringComparison(strLine, "!=");
-        strLine = replaceStringCompareNullString(strLine);
+        if (m_translateToJava) {
+            strLine = replaceStringComparison(strLine, "==");
+            strLine = replaceStringComparison(strLine, "!=");
+            strLine = replaceStringCompareNullString(strLine);
+        }            
         strLine = replaceInStrSentence(strLine);
         strLine = replaceVbWords(strLine);
         strLine = replaceIsNothing(strLine);
         strLine = replaceNothing(strLine);
         strLine = replaceAmpersand(strLine);
-        strLine = translateFunctionCall(strLine);
         strLine = replaceWithSentence(strLine);
+        strLine = translateFunctionCall(strLine);
         strLine = replaceEndWithSentence(strLine);
         strLine = replaceRedimSentence(strLine);
         strLine = translateWithSentence(strLine);
@@ -3175,7 +3198,7 @@ public class Translator {
                                 + " = "
                                 + m_collWiths.get(m_collWiths.size()-1).getJavaName()
                                 + "."
-                                + workLine//.substring(5)
+                                + workLine
                                 + comments;
                 }
                 else {
@@ -3354,6 +3377,16 @@ public class Translator {
             strLine = strLine.substring(5);
         }
 
+        // comments
+        //
+        if (G.beginLike(strLine,"// ")) {
+            return strLine;
+        }
+
+        if (G.beginLike(strLine,"/* ")) {
+            return strLine;
+        }
+        
         int startComment = getStartComment(strLine);
         String workLine = strLine;
         String comments = "";
@@ -3368,7 +3401,7 @@ public class Translator {
                         && !words[1].equals("(") 
                         && !words[2].equals("(")) {
                     if (!C_SEPARARTORS.contains("_" + words[2] + "_")) {
-                        if (!isReservedWord(words[0])) {
+                        if (!isReservedWord(words[0])) {                                
                             strLine = words[0] + "(";
                             String params = "";
                             for (int i = 1; i < words.length; i++) {
@@ -3400,7 +3433,14 @@ public class Translator {
     }
 
     private boolean isReservedWord(String word) {
-        return (C_RESERVED_WORDS.contains("_" + word.toLowerCase() + "_"));
+        if (m_translateToJava)
+            return (C_RESERVED_WORDS.contains("_" + word.toLowerCase() + "_"));
+        else {
+            boolean rtn = C_RESERVED_WORDS.contains("_" + word.toLowerCase() + "_");
+            if (!rtn)
+                rtn = word.equals("Length");
+            return rtn;
+        }
     }
 
     private String replaceMemberVariables(String strLine) {
@@ -3997,18 +4037,88 @@ public class Translator {
         return expression.replace(".equals(\"\")", ".isEmpty()");
     }
 
+    private String replaceTypeOfSentence(String expression) {
+
+        expression = G.ltrimTab(expression);
+        
+        if (containsTypeOf(expression)) {
+
+            boolean typeOfFound = false;
+            boolean firstSpaceFound = false;
+            boolean secondSpaceFound = false;
+            int openParentheses = 0;
+            String[] words = G.split(expression);
+            String params = "";
+            expression = "";           
+
+            for (int i = 0; i < words.length; i++) {
+                if (typeOfFound) {
+                    if (words[i].equals("(")) {
+                        openParentheses++;
+                        params += words[i];
+                    }
+                    // look for a close parentheses without an open parentheses
+                    else if (words[i].equals(")")) {
+                        openParentheses--;
+                        params += words[i];
+                    }
+                    else if (openParentheses == 0) {
+                        if (firstSpaceFound) {
+                            if (secondSpaceFound) {
+                                if (words[i].equalsIgnoreCase("is")) {
+                                    if (m_translateToJava)
+                                        expression += params + " instanceOf ";
+                                    else
+                                        expression += params + ".GetType() ==";
+                                    typeOfFound = false;
+                                    params = "";
+                                }
+                                else {
+                                    params = params.trim() + words[i];
+                                }
+                            }
+                            else if (words[i].equals(" ")) {
+                                secondSpaceFound = true;
+                            }
+                            else {
+                                params += words[i];
+                            }
+                        }
+                        else if (words[i].equals(" ")) {
+                            firstSpaceFound = true;
+                        }
+                        else {
+                            params += words[i];
+                        }
+                    }
+                    else {
+                        params += words[i];
+                    }
+                }
+                else {
+                    if (words[i].equalsIgnoreCase("typeof")) {
+                        typeOfFound = true;
+                    }
+                    else {
+                        expression += words[i];
+                    }
+                }
+            }
+        }
+        return expression.trim();
+    }
+    
     private String replaceMidSentence(String expression) {
-        boolean midFound = false;
 
         expression = G.ltrimTab(expression);
 
         if (containsMid(expression)) {
 
+            boolean midFound = false;
             int openParentheses = 0;
             String[] words = G.split(expression);
             String params = "";
             expression = "";
-            midFound = false;
 
             for (int i = 0; i < words.length; i++) {
                 if (midFound) {
@@ -4058,7 +4168,10 @@ public class Translator {
                             if (G.contains(identifier, " ")) {
                                 identifier = "(" + identifier + ")";
                             }
-                            expression += identifier + ".substring(" + start.trim();
+                            if (m_translateToJava)
+                                expression += identifier + ".substring(" + start.trim();
+                            else
+                                expression += identifier + ".Substring(" + start.trim();
                             if (!end.isEmpty()) {
                                 expression += ", " + end.trim() + ")";
                             }
@@ -4102,17 +4215,16 @@ public class Translator {
     }
 
     private String replaceLeftSentence(String expression) {
-        boolean leftFound = false;
 
         expression = G.ltrimTab(expression);
 
         if (containsLeft(expression)) {
 
+            boolean leftFound = false;
             int openParentheses = 0;
             String[] words = G.split(expression);
             String params = "";
             expression = "";
-            leftFound = false;
 
             for (int i = 0; i < words.length; i++) {
                 if (leftFound) {
@@ -4158,8 +4270,12 @@ public class Translator {
                             if (G.contains(identifier, " ")) {
                                 identifier = "(" + identifier + ")";
                             }
-                            expression += identifier
-                                            + ".substring(0, " + length.trim()+ ")";
+                            if (m_translateToJava)
+                                expression += identifier
+                                                + ".substring(0, " + length.trim()+ ")";
+                            else
+                                expression += identifier
+                                                + ".Substring(0, " + length.trim()+ ")";
                             leftFound = false;
                             params = "";
                         }
@@ -4197,17 +4313,16 @@ public class Translator {
     }
 
     private String replaceRightSentence(String expression) {
-        boolean rightFound = false;
 
         expression = G.ltrimTab(expression);
 
         if (containsRight(expression)) {
 
+            boolean rightFound = false;
             int openParentheses = 0;
             String[] words = G.split(expression);
             String params = "";
             expression = "";
-            rightFound = false;
 
             for (int i = 0; i < words.length; i++) {
                 if (rightFound) {
@@ -4253,9 +4368,14 @@ public class Translator {
                             if (G.contains(identifier, " ")) {
                                 identifier = "(" + identifier + ")";
                             }
-                            expression += identifier
-                                            + ".substring(" + identifier
-                                            + ".length() - " + lenght.trim() + ")";
+                            if (m_translateToJava)
+                                expression += identifier
+                                                + ".substring(" + identifier
+                                                + ".length() - " + lenght.trim() + ")";
+                            else
+                                expression += identifier
+                                                + ".Substring(" + identifier
+                                                + ".Length - " + lenght.trim() + ")";
                             rightFound = false;
                             params = "";
                         }
@@ -4293,12 +4413,12 @@ public class Translator {
     }
 
     private String replaceLCaseSentence(String expression) {
-        boolean lcaseFound = false;
 
         expression = G.ltrimTab(expression);
 
         if (containsLCase(expression)) {
 
+            boolean lcaseFound = false;
             int openParentheses = 0;
             String[] words = G.split(expression);
             String params = "";
@@ -4345,8 +4465,12 @@ public class Translator {
                             if (G.contains(identifier, " ")) {
                                 identifier = "(" + identifier + ")";
                             }
-                            expression += identifier
-                                            + ".toLowerCase()";
+                            if (m_translateToJava)
+                                expression += identifier
+                                                + ".toLowerCase()";
+                            else
+                                expression += identifier
+                                                + ".ToLower()";                                
                             lcaseFound = false;
                             params = "";
                         }
@@ -4384,17 +4508,16 @@ public class Translator {
     }
 
     private String replaceUCaseSentence(String expression) {
-        boolean ucaseFound = false;
 
         expression = G.ltrimTab(expression);
 
         if (containsUCase(expression)) {
 
+            boolean ucaseFound = false;
             int openParentheses = 0;
             String[] words = G.split(expression);
             String params = "";
             expression = "";
-            ucaseFound = false;
 
             for (int i = 0; i < words.length; i++) {
                 if (ucaseFound) {
@@ -4436,8 +4559,12 @@ public class Translator {
                             if (G.contains(identifier, " ")) {
                                 identifier = "(" + identifier + ")";
                             }
-                            expression += identifier
-                                            + ".toUpperCase()";
+                            if (m_translateToJava)
+                                expression += identifier
+                                                + ".toUpperCase()";
+                            else
+                                expression += identifier
+                                                + ".ToUpper()";
                             ucaseFound = false;
                             params = "";
                         }
@@ -4475,17 +4602,16 @@ public class Translator {
     }
 
     private String replaceLenSentence(String expression) {
-        boolean lenFound = false;
 
         expression = G.ltrimTab(expression);
 
         if (containsLen(expression)) {
 
+            boolean lenFound = false;
             int openParentheses = 0;
             String[] words = G.split(expression);
             String params = "";
             expression = "";
-            lenFound = false;
 
             for (int i = 0; i < words.length; i++) {
                 if (lenFound) {
@@ -4527,7 +4653,10 @@ public class Translator {
                             if (G.contains(identifier, " ")) {
                                 identifier = "(" + identifier + ")";
                             }
-                            expression += identifier + ".length()";
+                            if (m_translateToJava)
+                                expression += identifier + ".length()";
+                            else
+                                expression += identifier + ".Length";
                             lenFound = false;
                             params = "";
                         }
@@ -4562,17 +4691,16 @@ public class Translator {
     }
 
     private String replaceInStrSentence(String expression) {
-        boolean inStrFound = false;
 
         expression = G.ltrimTab(expression);
 
         if (containsInStr(expression)) {
 
+            boolean inStrFound = false;
             int openParentheses = 0;
             String[] words = G.split(expression);
             String params = "";
             expression = "";
-            inStrFound = false;
 
             for (int i = 0; i < words.length; i++) {
                 if (inStrFound) {
@@ -4660,16 +4788,28 @@ public class Translator {
                                     }
                                     else { // 1 or vbTextCompare
                                         if (isStringIdentifier(toSearch)) {
-                                            expression += source
-                                                        + ".toLowerCase().indexOf("
-                                                        + toSearch + ".toLowerCase(), "
-                                                        + start.trim() + ")";
+                                            if (m_translateToJava)
+                                                expression += source
+                                                            + ".toLowerCase().indexOf("
+                                                            + toSearch + ".toLowerCase(), "
+                                                            + start.trim() + ")";
+                                            else
+                                                expression += source
+                                                            + ".ToLower().IndexOf("
+                                                            + toSearch + ".ToLower(), "
+                                                            + start.trim() + ")";                                                
                                         }
                                         else {
-                                            expression += source
-                                                        + ".toLowerCase().indexOf(String.valueOf("
-                                                        + toSearch + ").toLowerCase(), "
-                                                        + start.trim() + ")";
+                                            if (m_translateToJava)
+                                                expression += source
+                                                            + ".toLowerCase().indexOf(String.valueOf("
+                                                            + toSearch + ").toLowerCase(), "
+                                                            + start.trim() + ")";
+                                            else
+                                                expression += source
+                                                            + ".ToLower().IndexOf(("
+                                                            + toSearch + ").ToLower(), "
+                                                            + start.trim() + ")";
                                         }
                                     }
                                 }
@@ -4700,14 +4840,24 @@ public class Translator {
                                         }
                                         else { // 1 or vbTextCompare
                                             if (isStringIdentifier(toSearch)) {
-                                                expression += source
-                                                            + ".toLowerCase().indexOf("
-                                                            + toSearch + ".toLowerCase())";
+                                                if (m_translateToJava)
+                                                    expression += source
+                                                                + ".toLowerCase().indexOf("
+                                                                + toSearch + ".toLowerCase())";
+                                                else
+                                                    expression += source
+                                                                + ".ToLower().IndexOf("
+                                                                + toSearch + ".ToLower())";                                                    
                                             }
                                             else {
-                                                expression += source
-                                                            + ".toLowerCase().indexOf(String.valueOf("
-                                                            + toSearch + ").toLowerCase())";
+                                                if (m_translateToJava)
+                                                    expression += source
+                                                                + ".toLowerCase().indexOf(String.valueOf("
+                                                                + toSearch + ").toLowerCase())";
+                                                else
+                                                    expression += source
+                                                                + ".ToLower().IndexOf(("
+                                                                + toSearch + ").ToLower())";
                                             }
                                         }
                                     }
@@ -4753,17 +4903,16 @@ public class Translator {
     }
 
     private String replaceReplaceSentence(String expression) {
-        boolean replaceFound = false;
 
         expression = G.ltrimTab(expression);
 
         if (containsReplace(expression)) {
 
+            boolean replaceFound = false;
             int openParentheses = 0;
             String[] words = G.split(expression);
             String params = "";
             expression = "";
-            replaceFound = false;
 
             for (int i = 0; i < words.length; i++) {
                 if (replaceFound) {
@@ -4933,16 +5082,16 @@ public class Translator {
     }
 
     private String replaceOneParamFunction(String expression, String function, String javaFunction) {
-        boolean functionFound = false;
+        
         expression = G.ltrimTab(expression);
 
         if (containsFunction(expression, function)) {
 
+            boolean functionFound = false;
             int openParentheses = 0;
             String[] words = G.split(expression);
             String params = "";
             expression = "";
-            functionFound = false;
 
             for (int i = 0; i < words.length; i++) {
                 if (functionFound) {
@@ -5018,6 +5167,21 @@ public class Translator {
             }
         }
         return expression.trim();
+    }
+
+    private boolean containsTypeOf(String expression) {
+        if (G.beginLike(expression, "typeof ")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains(" typeof ")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains("(typeof ")) {
+            return true;
+        }
+        else {
+            return false;
+        }
     }
 
     private boolean containsMid(String expression) {
@@ -5208,6 +5372,9 @@ public class Translator {
             }
             else if (words[i].equalsIgnoreCase("vbCrLf")) {
                 words[i] = "\"\\n\"";
+            }
+            else if (words[i].equalsIgnoreCase("me")) {
+                words[i] = "this";
             }
             expression += words[i];// + " ";
         }
@@ -5407,12 +5574,25 @@ public class Translator {
         if (var != null) {
             if (var.isString)
                 return identifier;
+                    
             else if (var.isLong)
-                return "((Long) " + identifier + ").toString()";
+                if (m_translateToJava)
+                    return "((Long) " + identifier + ").toString()";
+                else
+                    return identifier + ".toString()";
+                    
             else if (var.isInt)
-                return "((Integer) " + identifier + ").toString()";
+                if (m_translateToJava)
+                    return "((Integer) " + identifier + ").toString()";
+                else
+                    return identifier + ".toString()";
+                    
             else if (var.isBoolean)
-                return "((Boolean) " + identifier + ").toString()";
+                if (m_translateToJava)
+                    return "((Boolean) " + identifier + ").toString()";
+                else
+                    return identifier + ".toString()";
+                    
             else
                 return identifier;
         }
@@ -5857,7 +6037,7 @@ public class Translator {
         
         String todoByRef = "";
         if (strLine.contains("ByRef "))
-            todoByRef = " // TODO: Use of ByRef founded";
+            todoByRef = " // TODO: Use of ByRef founded " + strLine;
 
         return functionScope + " "
                 + modifiers
@@ -6019,7 +6199,7 @@ public class Translator {
 
             String todoByRef = "";
             if (strLine.contains(todoByRef))
-                todoByRef = " // TODO: Use of ByRef founded";
+                todoByRef = " // TODO: Use of ByRef founded " + strLine;
             
             m_listenerInterface += C_TAB
                                     + eventScope + " "
@@ -6061,10 +6241,10 @@ public class Translator {
                     return getDataType(words[1]);
                 }
                 else
-                    return "Object";
+                    return getObjectTypeName();
             }
             else
-                return "Object";
+                return getObjectTypeName();
         }
     }
 
@@ -6091,7 +6271,7 @@ public class Translator {
     private String getParam(String strParam) {
         String paramName = "";
         String vbParamName = "";
-        String dataType = "Object";
+        String dataType = getObjectTypeName();
         String[] words = G.splitSpace(strParam);//strParam.split("\\s+");
 
         // empty string
@@ -6278,7 +6458,10 @@ public class Translator {
             dataType = "byte";
         }
         else if (dataType.equalsIgnoreCase("boolean")) {
-            dataType = "boolean";
+            if (m_translateToJava)
+                dataType = "boolean";
+           else
+                dataType = "bool";
         }
         else if (dataType.equalsIgnoreCase("double")) {
             dataType = "double";
@@ -6307,7 +6490,10 @@ public class Translator {
             dataType = "String";
         }
         else if (dataType.equalsIgnoreCase("variant")) {
-            dataType = "Object";
+            dataType = getObjectTypeName();
+        }
+        else if (dataType.equalsIgnoreCase("object")) {
+            dataType = getObjectTypeName();
         }
         else if (isADODBType(dataType)) {
             dataType = translateADODBType(dataType);
@@ -6504,11 +6690,22 @@ public class Translator {
 
         saveVariable(vbIdentifier, identifier, dataType);
 
-        return "private static final "
-                + dataType + " "
-                + identifier + " = "
-                + constValue + ";"
-                + comments + newline;
+        if (m_translateToJava) {
+        
+            return "private static final "
+                    + dataType + " "
+                    + identifier + " = "
+                    + constValue + ";"
+                    + comments + newline;
+        }
+        else {
+        
+            return "private const "
+                    + dataType + " "
+                    + identifier + " = "
+                    + constValue + ";"
+                    + comments + newline;
+        }
     }
 
     private void saveFunction(String vbIdentifier, String identifier, String dataType) {
@@ -6650,8 +6847,16 @@ public class Translator {
 
         saveVariable(vbIdentifier, identifier, dataType);
 
-        return "public static final " + dataType + " " + identifier + " = "
-                + constValue + ";" + misc + newline;
+        if (m_translateToJava) {
+
+            return "public static final " + dataType + " " + identifier + " = "
+                    + constValue + ";" + misc + newline;
+        }
+        else {
+
+            return "public const " + dataType + " " + identifier + " = "
+                    + constValue + ";" + misc + newline;
+        }
     }
 
     private String translatePrivateMember(String strLine) {
@@ -6714,7 +6919,7 @@ public class Translator {
             m_memberVariables.add(var);
         }
         if (dataType.isEmpty()) {
-            dataType = "Object";
+            dataType = getObjectTypeName();
         }
         dataType = getDataType(dataType);
 
@@ -6783,7 +6988,7 @@ public class Translator {
             m_memberVariables.add(var);
         }
         if (dataType.isEmpty()) {
-            dataType = "Object";
+            dataType = getObjectTypeName();
         }
         dataType = getDataType(dataType);
 
@@ -6923,7 +7128,7 @@ public class Translator {
             }
         }
         if (dataType.isEmpty()) {
-            dataType = "Object";
+            dataType = getObjectTypeName();
         }
         dataType = getDataType(dataType);
 
@@ -7154,7 +7359,7 @@ public class Translator {
 
                     String size = words[0].substring(words[0].indexOf("(")+1);
                     if (size.equals(")")) {
-                        dataType = "Object[]";
+                        dataType = getObjectTypeName() + "[]";
                     }
                     else {
                         if (words.length >= 3) {
@@ -7176,14 +7381,14 @@ public class Translator {
                                 //
                                 if (words.length >= 5) {
                                     if (words[4].charAt(0) =='\'') {
-                                        dataType = "Object[" + size + "]";
+                                        dataType = getObjectTypeName() + "[" + size + "]";
                                     }
                                     else {
                                         dataType = words[4] + "[" + size + "]";
                                     }
                                 }
                                 else {
-                                    dataType = "Object[" + size + "]";
+                                    dataType = getObjectTypeName() + "[" + size + "]";
                                 }
                             }
                             else {
@@ -7208,11 +7413,11 @@ public class Translator {
                     if (words.length >= 3) {
 
                         if (words[1].charAt(0) =='\'') {
-                            dataType = "Object";
+                            dataType = getObjectTypeName();
                         }
                         else {
                             if (words[2].charAt(0) =='\'') {
-                                dataType = "Object";
+                                dataType = getObjectTypeName();
                             }
                             else {
                                 dataType = words[2];
@@ -7222,14 +7427,14 @@ public class Translator {
                     // implicit sentence eg: type_member {no declaration of type}
                     //
                     else {
-                        dataType = "Object";
+                        dataType = getObjectTypeName();
                     }
                     identifier = words[0];
                 }
 
                 String vbIdentifier = identifier;
                 if (!identifier.isEmpty()) {
-                    if (identifier.length()>2)
+                    if (identifier.length() > 2)
                         identifier = identifier.substring(0, 1).toLowerCase() + identifier.substring(1);
                     else
                         identifier = identifier.substring(0, 1).toLowerCase();
@@ -7259,7 +7464,10 @@ public class Translator {
             if (strLine.substring(0, 5).toLowerCase().equals("enum ")) {
                 String enumClass = strLine.substring(5);
                 saveEnumClassInDB(enumClass, m_isBasFile);
-                m_enum += "private class " + enumClass + " {" + newline;
+                if (m_translateToJava)
+                    m_enum += "private class " + enumClass + " {" + newline;
+                else
+                    m_enum += "private enum " + enumClass + " {" + newline;
                 return;
             }
         }
@@ -7268,7 +7476,10 @@ public class Translator {
             if (strLine.substring(0, 12).toLowerCase().equals("public enum ")) {
                 String enumClass = strLine.substring(12);
                 saveEnumClassInDB(enumClass, true);
-                m_enum += "public class " + enumClass + " {" + newline;
+                if (m_translateToJava)
+                    m_enum += "public class " + enumClass + " {" + newline;
+                else
+                    m_enum += "public enum " + enumClass + " {" + newline;
                 return;
             }
         }
@@ -7277,7 +7488,10 @@ public class Translator {
             if (strLine.substring(0, 13).toLowerCase().equals("private enum ")) {
                 String enumClass = strLine.substring(13);
                 saveEnumClassInDB(enumClass, false);
-                m_enum += "private class " + enumClass + " {" + newline;
+                if (m_translateToJava)
+                    m_enum += "private class " + enumClass + " {" + newline;
+                else
+                    m_enum += "private enum " + enumClass + " {" + newline;
                 return;
             }
         }
@@ -7329,7 +7543,12 @@ public class Translator {
                 }
 
                 if (constValue.isEmpty()) {
-                    m_enum += "    public static final int " + identifier.toUpperCase() + ";" + misc + newline;
+                    if (m_translateToJava)
+                        m_enum += "    public static final int " + identifier.toUpperCase() 
+                                + ";" + misc + newline;
+                    else
+                        m_enum += "    " + identifier.toUpperCase() 
+                                + "," + misc + newline;
                 }
                 else {
                     if (constValue.length() > 2) {
@@ -7337,8 +7556,12 @@ public class Translator {
                             constValue = "0x" + constValue.substring(2);
                         }
                     }
-                    m_enum += "    public static final int " + identifier.toUpperCase() + " = "
-                            + constValue + ";" + misc + newline;
+                    if (m_translateToJava)
+                        m_enum += "    public static final int " + identifier.toUpperCase() + " = "
+                                + constValue + ";" + misc + newline;
+                    else
+                        m_enum += "    " + identifier.toUpperCase() + " = "
+                                + constValue + "," + misc + newline;
                 }
                 saveVariableInEnum(identifier, identifier.toUpperCase(), "int");
             }
@@ -7934,7 +8157,7 @@ public class Translator {
         m_classObject.saveClass();
 
         saveFunction("count", "size", "int");
-        saveFunction("item", "get", "Object");
+        saveFunction("item", "get", getObjectTypeName());
         saveFunction("remove", "remove", "void");
 
         m_classObject.setPackageName("VBA");
@@ -7944,7 +8167,7 @@ public class Translator {
         m_classObject.saveClass();
 
         m_functionObject.setId(0);
-        saveVariable("Err", "ex", "Object", false, true);
+        saveVariable("Err", "ex", getObjectTypeName(), false, true);
         
         m_classObject.setId(0);
     }
@@ -7965,6 +8188,12 @@ public class Translator {
         else {
             return dataType;
         }
+    }
+    private String getObjectTypeName() {
+        if (m_translateToJava)
+            return "Object";
+        else
+            return "object";
     }
 }
 
