@@ -2594,6 +2594,7 @@ public class Translator {
         strLine = replaceUCaseSentence(strLine);
         strLine = replaceLenSentence(strLine);
         strLine = replaceReplaceSentence(strLine);
+        strLine = replaceIffSentence(strLine);
         strLine = translateVbOperators(strLine);
         if (m_translateToJava) {
             strLine = replaceStringComparison(strLine, "==");
@@ -5004,6 +5005,106 @@ public class Translator {
         }
         return expression.trim();
     }
+
+    private String replaceIffSentence(String expression) {
+
+        expression = G.ltrimTab(expression);
+
+        if (containsIff(expression)) {
+
+            boolean iifFound = false;
+            int openParentheses = 0;
+            String[] words = G.split(expression);
+            String params = "";
+            expression = "";
+
+            for (int i = 0; i < words.length; i++) {
+                if (iifFound) {
+                    if (words[i].equals("(")) {
+                        openParentheses++;
+                        if (openParentheses > 1) {
+                            params += words[i];
+                        }
+                    }
+                    // look for a close parentheses without an open parentheses
+                    else if (words[i].equals(")")) {
+                        openParentheses--;
+                        if (openParentheses == 0) {
+                            if (containsMid(params)) {
+                                params = replaceIffSentence(params);
+                            }
+                            String[] vparams = G.split(params);
+                            String identifier = "";
+                            String trueValue = "";
+                            String falseValue = "";
+
+                            int colons = 0;
+                            identifier = "";
+                            for (int t = 0; t < vparams.length; t++) {
+                                if (vparams[t].equals(",")) {
+                                    colons++;
+                                }
+                                else {
+
+                                    if (colons == 0) {
+                                        identifier += vparams[t];
+                                    }
+                                    else if (colons == 1) {
+                                        trueValue += vparams[t];
+                                    }
+                                    else if (colons == 2) {
+                                        falseValue += vparams[t];
+                                    }
+                                    else {
+                                        showError("Unexpected colon found in Mid function's params: " + params);
+                                    }
+                                }
+                            }
+                            if (trueValue.isEmpty()) {
+                                showError("trueValue was missing in iif function's params : " + params);
+                            }
+                            if (falseValue.isEmpty()) {
+                                showError("falseValue was missing in iif function's params : " + params);
+                            }
+                            // identifier can be a complex expresion
+                            // like ' "an string plus" + a_var '
+                            //
+                            if (G.contains(identifier, " ")) {
+                                identifier = "(" + identifier + ")";
+                            }
+                            expression += identifier + "?" 
+                                            + trueValue.trim() 
+                                            +" : " 
+                                            + falseValue.trim() + ")";
+                            iifFound = false;
+                            params = "";
+                        }
+                        else {
+                            params = params.trim() + words[i];
+                        }
+                    }
+                    else {
+                        params += words[i];
+                    }
+                }
+                else {
+                    if (words[i].equalsIgnoreCase("iif")) {
+                        iifFound = true;
+                    }
+                    else if (G.beginLike(words[i],"iif(")) {
+                        expression += replaceMidSentence(words[i]);
+                    }
+                    else if (containsMid(words[i])) {
+                        expression += replaceMidSentence(words[i]);
+                    }
+                    else {
+                        expression += words[i];
+                    }
+                }
+            }
+        }
+        return expression.trim();
+    }
     
     private String replaceIsNumericSentence(String expression) {
         if (containsFunction(expression, "IsNumeric")) {
@@ -5336,6 +5437,21 @@ public class Translator {
         }
     }
 
+    private boolean containsIff(String expression) {
+        if (expression.toLowerCase().contains(" iff(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains("(iif(")) {
+            return true;
+        }
+        else if (G.beginLike(expression,"iif(")) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+    
     private boolean containsFunction(String expression, String function) {
         function = function.toLowerCase();
         expression = expression.toLowerCase();
