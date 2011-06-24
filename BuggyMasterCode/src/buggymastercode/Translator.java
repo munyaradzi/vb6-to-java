@@ -2594,7 +2594,6 @@ public class Translator {
         strLine = replaceUCaseSentence(strLine);
         strLine = replaceLenSentence(strLine);
         strLine = replaceReplaceSentence(strLine);
-        strLine = replaceIffSentence(strLine);
         strLine = translateVbOperators(strLine);
         if (m_translateToJava) {
             strLine = replaceStringComparison(strLine, "==");
@@ -2606,8 +2605,8 @@ public class Translator {
         strLine = replaceIsNothing(strLine);
         strLine = replaceNothing(strLine);
         strLine = replaceAmpersand(strLine);
-        strLine = replaceWithSentence(strLine);
         strLine = translateFunctionCall(strLine);
+        strLine = replaceWithSentence(strLine);
         strLine = replaceEndWithSentence(strLine);
         strLine = replaceRedimSentence(strLine);
         strLine = translateWithSentence(strLine);
@@ -2629,6 +2628,12 @@ public class Translator {
         strLine = replaceResumeSentence(strLine);
         strLine = replaceGotoSentence(strLine);
         strLine = replaceLabelSentence(strLine);
+        
+        // this has to be at the end because the ? : sintax
+        // add some complexity that we don't need to process
+        // in any of the previews function
+        //
+        strLine = replaceIifSentence(strLine);
 
         // this call has to be the last sentences in this function
         // all the changes have to be done before this call
@@ -2809,6 +2814,11 @@ public class Translator {
     }
 
     private String replaceVbNameWithJavaName(String strLine) {
+    
+        if (strLine.toLowerCase().contains("m_fProperties.WidthChanged".toLowerCase())) {
+            int i = 0;
+        }
+        
         IdentifierInfo info = null;
         String type = "";
         String parent = "";
@@ -2816,6 +2826,7 @@ public class Translator {
         strLine = "";
         String[] parents = new String[30]; // why 30? how nows :P, 30 should be enough :)
         int openParentheses = 0;
+        boolean previousWasPeriod = false;
 
         for (int i = 0; i < words.length; i++) {
             if (!("!\t/*-+ ,.()[]'\"".contains(words[i]))) {
@@ -2869,16 +2880,21 @@ public class Translator {
                         }
                     }
                     type = info.variable.dataType;
-                    if (info.variable.isEnumMember)
-                        words[i] = info.variable.className
-                                    + "." + info.variable.getJavaName();
-                    else {
-                        if (info.variable.isPublic) {
+                    if (!previousWasPeriod) {
+                        if (info.variable.isEnumMember)
                             words[i] = info.variable.className
-                                        + "." + info.variable.getJavaName();                            
+                                        + "." + info.variable.getJavaName();
+                        else {
+                            if (info.variable.isPublic) {
+                                words[i] = info.variable.className
+                                            + "." + info.variable.getJavaName();                            
+                            }
+                            else
+                                words[i] = info.variable.getJavaName();
                         }
-                        else
-                            words[i] = info.variable.getJavaName();
+                    }
+                    else {
+                        words[i] = info.variable.getJavaName();
                     }
                 }
                 parent = type;
@@ -2900,10 +2916,12 @@ public class Translator {
             else if (words[i].equals("]")) {
                 openParentheses--;
                 parent = parents[openParentheses];
+                parents[openParentheses] = "";
             }
             else if (words[i].equals(" ")) {
                 parent = "";
             }
+            previousWasPeriod = words[i].equals(".");
             strLine += words[i];
         }
         return strLine;
@@ -3125,6 +3143,7 @@ public class Translator {
     }
 
     private String replaceWithSentence(String strLine) {
+        
         if (G.beginLike(strLine, "with ")) {
             m_withDeclaration = true;
 
@@ -3143,8 +3162,11 @@ public class Translator {
             String packageName = "";
             String type = "";
             String parent = "";
+            String parentJavaName = "";
             workLine = workLine.substring(i + 5).trim();
+            boolean startWithPeriod = false;
             if (workLine.charAt(0) == '.') {
+                startWithPeriod = true;
                 if (workLine.length() > 1) {
                     workLine = workLine.substring(1);
                 }
@@ -3153,8 +3175,13 @@ public class Translator {
                 }
             }
             String[] words = G.split3(workLine,".");
-            if (m_collWiths.size() > 0) {
+            if (m_collWiths.size() > 0 && startWithPeriod) {
                 parent = m_collWiths.get(m_collWiths.size()-1).dataType;
+                parentJavaName = m_collWiths.get(m_collWiths.size()-1).getJavaName() + ".";
+            }
+            else {
+                parent = "";
+                parentJavaName = "";
             }
             for (i = 0; i < words.length; i++) {
                 info = getIdentifierInfo(words[i], parent);
@@ -3197,8 +3224,7 @@ public class Translator {
                                 + " "
                                 + var.getJavaName()
                                 + " = "
-                                + m_collWiths.get(m_collWiths.size()-1).getJavaName()
-                                + "."
+                                + parentJavaName
                                 + workLine
                                 + comments;
                 }
@@ -3207,7 +3233,7 @@ public class Translator {
                                 + var.dataType
                                 + " "
                                 + var.getJavaName()
-                                + " = " + workLine//.substring(5)
+                                + " = " + workLine
                                 + comments;
                     m_inWith = true;
                 }
@@ -3230,8 +3256,7 @@ public class Translator {
                                     + " "
                                     + var.getJavaName()
                                     + " = "
-                                    + m_collWiths.get(m_collWiths.size()-1).getJavaName()
-                                    + "."
+                                    + parentJavaName
                                     + info.function.getJavaName()
                                     + params
                                     + comments;
@@ -3263,6 +3288,8 @@ public class Translator {
                 }
             }
             m_collWiths.add(var);
+            m_functionVariables.add(var);
+            
         }
         else {
             m_withDeclaration = false;
@@ -5006,11 +5033,11 @@ public class Translator {
         return expression.trim();
     }
 
-    private String replaceIffSentence(String expression) {
+    private String replaceIifSentence(String expression) {
 
         expression = G.ltrimTab(expression);
 
-        if (containsIff(expression)) {
+        if (containsIif(expression)) {
 
             boolean iifFound = false;
             int openParentheses = 0;
@@ -5030,8 +5057,8 @@ public class Translator {
                     else if (words[i].equals(")")) {
                         openParentheses--;
                         if (openParentheses == 0) {
-                            if (containsMid(params)) {
-                                params = replaceIffSentence(params);
+                            if (containsIif(params)) {
+                                params = replaceIifSentence(params);
                             }
                             String[] vparams = G.split(params);
                             String identifier = "";
@@ -5056,15 +5083,15 @@ public class Translator {
                                         falseValue += vparams[t];
                                     }
                                     else {
-                                        showError("Unexpected colon found in Mid function's params: " + params);
+                                        showError("Unexpected colon found in IIf function's params: " + params);
                                     }
                                 }
                             }
                             if (trueValue.isEmpty()) {
-                                showError("trueValue was missing in iif function's params : " + params);
+                                showError("trueValue was missing in IIf function's params : " + params);
                             }
                             if (falseValue.isEmpty()) {
-                                showError("falseValue was missing in iif function's params : " + params);
+                                showError("falseValue was missing in IIf function's params : " + params);
                             }
                             // identifier can be a complex expresion
                             // like ' "an string plus" + a_var '
@@ -5072,7 +5099,7 @@ public class Translator {
                             if (G.contains(identifier, " ")) {
                                 identifier = "(" + identifier + ")";
                             }
-                            expression += identifier + "?" 
+                            expression += identifier + " ? " 
                                             + trueValue.trim() 
                                             +" : " 
                                             + falseValue.trim() + ")";
@@ -5092,10 +5119,10 @@ public class Translator {
                         iifFound = true;
                     }
                     else if (G.beginLike(words[i],"iif(")) {
-                        expression += replaceMidSentence(words[i]);
+                        expression += replaceIifSentence(words[i]);
                     }
-                    else if (containsMid(words[i])) {
-                        expression += replaceMidSentence(words[i]);
+                    else if (containsIif(words[i])) {
+                        expression += replaceIifSentence(words[i]);
                     }
                     else {
                         expression += words[i];
@@ -5437,8 +5464,8 @@ public class Translator {
         }
     }
 
-    private boolean containsIff(String expression) {
-        if (expression.toLowerCase().contains(" iff(")) {
+    private boolean containsIif(String expression) {
+        if (expression.toLowerCase().contains(" iif(")) {
             return true;
         }
         else if (expression.toLowerCase().contains("(iif(")) {
