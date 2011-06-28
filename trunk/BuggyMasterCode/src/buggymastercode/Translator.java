@@ -2815,7 +2815,7 @@ public class Translator {
 
     private String replaceVbNameWithJavaName(String strLine) {
     
-        if (strLine.toLowerCase().contains("m_fProperties.WidthChanged".toLowerCase())) {
+        if (strLine.toLowerCase().contains("TransparentChanged".toLowerCase())) {
             int i = 0;
         }
         
@@ -2824,13 +2824,13 @@ public class Translator {
         String parent = "";
         String[] words = G.split2(strLine, "!\t/*-+ ,.()[]");
         strLine = "";
-        String[] parents = new String[30]; // why 30? how nows :P, 30 should be enough :)
+        String[] parents = new String[30]; // why 30? who nows :P, 30 should be enough :)
         int openParentheses = 0;
         boolean previousWasPeriod = false;
 
         for (int i = 0; i < words.length; i++) {
             if (!("!\t/*-+ ,.()[]'\"".contains(words[i]))) {
-                info = getIdentifierInfo(words[i], parent);
+                info = getIdentifierInfo(words[i], parent, !parent.isEmpty());
                 if (info == null)
                     type = "";
                 else if (info.isFunction) {
@@ -2934,12 +2934,12 @@ public class Translator {
         boolean addParentheses = false;
         String[] words = G.split2(strLine, "\t/*-+ .()");
         strLine = "";
-        String[] parents = new String[30]; // why 30? how nows :P, 30 should be enough :)
+        String[] parents = new String[30]; // why 30? who nows :P, 30 should be enough :)
         int openParentheses = 0;
 
         for (int i = 0; i < words.length; i++) {
             if (!(",.()\"'".contains(words[i]))) {
-                info = getIdentifierInfo(words[i], parent);
+                info = getIdentifierInfo(words[i], parent, !parent.isEmpty());
                 if (info == null)
                     type = "";
                 else if (info.isFunction) {
@@ -3050,12 +3050,17 @@ public class Translator {
             }
             else if (words[i].equals("(")) {
                 parents[openParentheses] = parent;
+                parent = "";
                 openParentheses++;
             }
             else if (words[i].equals(")")) {
                 openParentheses--;
                 parent = parents[openParentheses];
             }
+            else if (words[i].equals(" ")) {
+                parent = "";
+            }
+            
             strLine += words[i];
         }
         if (addParentheses)
@@ -3184,7 +3189,7 @@ public class Translator {
                 parentJavaName = "";
             }
             for (i = 0; i < words.length; i++) {
-                info = getIdentifierInfo(words[i], parent);
+                info = getIdentifierInfo(words[i], parent, !parent.isEmpty());
                 if (info == null)
                     type = "";
                 else if (info.isFunction)
@@ -3362,7 +3367,7 @@ public class Translator {
             return strLine;
     }
 
-    private IdentifierInfo getIdentifierInfo(String identifier, String parent) {
+    private IdentifierInfo getIdentifierInfo(String identifier, String className, boolean isField) {
         // - get the object from this class (member variables)
         // if the object is not found then
         // - get the object from the database (public variables)
@@ -3370,14 +3375,14 @@ public class Translator {
         //         other packages in the order set in the vbp's
         //         reference list
         IdentifierInfo info = null;
-        Variable var = getVariable(identifier, parent);
+        Variable var = getVariable(identifier, className, isField);
         if (var != null) {
             info = new IdentifierInfo();
             info.isFunction = false;
             info.variable = var;
         }
         else {
-            Function function = getFunction(identifier, parent);
+            Function function = getFunction(identifier, className);
             if (function != null) {
                 info = new IdentifierInfo();
                 info.isFunction = true;
@@ -5578,7 +5583,7 @@ public class Translator {
             parent = m_collWiths.get(m_collWiths.size()-1).dataType;
         }
         for (int i = 0; i < words.length; i++) {
-            info = getIdentifierInfo(words[i], parent);
+            info = getIdentifierInfo(words[i], parent, !parent.isEmpty());
             if (info == null)
                 type = "";
             else if (info.isFunction)
@@ -5755,13 +5760,13 @@ public class Translator {
         String type = "";
         String parent = "";
         String[] words = G.split2(expression, ".()[]");
-        String[] parents = new String[30]; // why 30? how nows :P, 30 should be enough :)
+        String[] parents = new String[30]; // why 30? who nows :P, 30 should be enough :)
         int openParentheses = 0;
 
         for (int i = 0; i < words.length; i++) {
             if (!(".()[]".contains(words[i]))) {
                 if (openParentheses == 0) {
-                    info = getIdentifierInfo(words[i], parent);
+                    info = getIdentifierInfo(words[i], parent, !parent.isEmpty());
                     if (info == null)
                         type = "";
                     else if (info.isFunction) {
@@ -5809,10 +5814,10 @@ public class Translator {
     }
 
     private Variable getVariable(String identifier) {
-        return getVariable(identifier, "");
+        return getVariable(identifier, "", false);
     }
 
-    private Variable getVariable(String expression, String className) {
+    private Variable getVariable(String expression, String className, boolean isField) {
         String identifier = "";
 
         // in vb arrays use parentheses to define the index
@@ -5837,20 +5842,22 @@ public class Translator {
             return null;
         }
 
-        for (int i = 0; i < m_functionVariables.size(); i++) {
-            if (identifier.equals(m_functionVariables.get(i).getVbName())) {
-                return m_functionVariables.get(i);
+        if (!isField) {
+            for (int i = 0; i < m_functionVariables.size(); i++) {
+                if (identifier.equals(m_functionVariables.get(i).getVbName())) {
+                    return m_functionVariables.get(i);
+                }
+                if (identifier.equals(m_functionVariables.get(i).getJavaName())) {
+                    return m_functionVariables.get(i);
+                }
             }
-            if (identifier.equals(m_functionVariables.get(i).getJavaName())) {
-                return m_functionVariables.get(i);
-            }
-        }
-        for (int i = 0; i < m_memberVariables.size(); i++) {
-            if (identifier.equals(m_memberVariables.get(i).getVbName())) {
-                return m_memberVariables.get(i);
-            }
-            if (identifier.equals(m_memberVariables.get(i).getJavaName())) {
-                return m_memberVariables.get(i);
+            for (int i = 0; i < m_memberVariables.size(); i++) {
+                if (identifier.equals(m_memberVariables.get(i).getVbName())) {
+                    return m_memberVariables.get(i);
+                }
+                if (identifier.equals(m_memberVariables.get(i).getJavaName())) {
+                    return m_memberVariables.get(i);
+                }
             }
         }
 
@@ -6808,7 +6815,7 @@ public class Translator {
             }
             else {
                 IdentifierInfo info = null;
-                info = getIdentifierInfo(constValue, "");
+                info = getIdentifierInfo(constValue, "", false);
                 if (info != null) {
                     if (info.isFunction)
                         dataType = info.function.getReturnType().dataType;
@@ -6965,7 +6972,7 @@ public class Translator {
             }
             else {
                 IdentifierInfo info = null;
-                info = getIdentifierInfo(constValue, "");
+                info = getIdentifierInfo(constValue, "", false);
                 if (info != null) {
                     if (info.isFunction)
                         dataType = info.function.getReturnType().dataType;
@@ -8125,12 +8132,12 @@ public class Translator {
         String parent = "";
         String[] words = G.split2(identifier, "\t/*-+ .()");
         identifier = "";
-        String[] parents = new String[30]; // why 30? how nows :P, 30 should be enough :)
+        String[] parents = new String[30]; // why 30? who nows :P, 30 should be enough :)
         int openParentheses = 0;
 
         for (int i = 0; i < words.length; i++) {
             if (!(",.()\"'".contains(words[i]))) {
-                info = getIdentifierInfo(words[i], parent);
+                info = getIdentifierInfo(words[i], parent, false);
                 if (info == null)
                     varType = "";
                 else if (info.isFunction) {
@@ -8143,12 +8150,17 @@ public class Translator {
             }
             else if (words[i].equals("(")) {
                 parents[openParentheses] = parent;
+                parent = "";
                 openParentheses++;
             }
             else if (words[i].equals(")")) {
                 openParentheses--;
                 parent = parents[openParentheses];
             }
+            else if (words[i].equals(" ")) {
+                parent = "";
+            }
+            
         }
         if (type.equals("@numeric")) {
             return C_NUMERIC_DATA_TYPES.contains(varType.toLowerCase());
