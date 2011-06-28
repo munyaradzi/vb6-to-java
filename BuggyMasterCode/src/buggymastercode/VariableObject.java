@@ -176,17 +176,18 @@ public class VariableObject {
                             + " on v.cl_id = c.cl_id and v.fun_id = 0"
                             + " where"
                             + " (lower(var_vbname) = " + Db.getString(variableName.toLowerCase())
-                            + " or var_javaname = " + Db.getString(variableName);
+                            + " or var_javaname = " + Db.getString(variableName) + ")";
 
         if (searchForPrivateEnums) {
-            sqlstmt += ") and (cl_enumparentclass = " + Db.getString(className)
+            sqlstmt += " and (cl_enumparentclass = " + Db.getString(className)
                             + ")";
         }
         else if(searchForPublicEnums) {
-            sqlstmt += ") and (cl_ispublicenum <> 0)";
+            sqlstmt += " and (cl_ispublicenum <> 0)";
         }
-        else {
-            sqlstmt += ") and (lower(cl_vbname) = " + Db.getString(className.toLowerCase())
+        //else {
+        if (!className.isEmpty()) {
+            sqlstmt += " and (lower(cl_vbname) = " + Db.getString(className.toLowerCase())
                             + " or cl_javaname = " + Db.getString(className)
                             + ")";
         }
