@@ -345,9 +345,12 @@ public class Translator {
                     m_javaClassName = m_vbClassName;
                     
                     // debug
+                    /*
                     if (m_vbClassName.equalsIgnoreCase("mGlobal")) {
                         int i = 9999;
                     }
+                     /* 
+                     */
                     // debug
                 }
                 else {
@@ -1084,6 +1087,7 @@ public class Translator {
         
         // debug
         //
+        /*
         if (G.beginLike(strLine.trim(), "strOriginalErr2 = strOriginalErr2 & gErrorDB")) {
             int i = 9999;
         }
@@ -2425,8 +2429,8 @@ public class Translator {
         // it only exists in vb 6 to allow 'exit do', because
         // 'exit while' is not a recognized expresion in vb 6
         //
-                                        // remove the 'loop while' or 'loop until'
-        strLine = translateWhileSentence(strLine.substring(11));
+                                        // remove the 'loop ' in 'loop while' or 'loop until'
+        strLine = translateWhileSentence(strLine.substring(5));
         if (isWhile)
             strLine = "} " + strLine;
         else
@@ -2814,10 +2818,6 @@ public class Translator {
     }
 
     private String replaceVbNameWithJavaName(String strLine) {
-    
-        if (strLine.toLowerCase().contains("TransparentChanged".toLowerCase())) {
-            int i = 0;
-        }
         
         IdentifierInfo info = null;
         String type = "";
@@ -2906,6 +2906,16 @@ public class Translator {
             }
             else if (words[i].equals(")")) {
                 openParentheses--;
+                
+                // debug
+                /*
+                if (openParentheses > parents.length-1 || openParentheses < 0)
+                {
+                    int q = 0;
+                }
+                 /* 
+                 */
+                // debug
                 parent = parents[openParentheses];
             }
             else if (words[i].equals("[")) {
@@ -3148,6 +3158,15 @@ public class Translator {
     }
 
     private String replaceWithSentence(String strLine) {
+
+        // debug
+        /*
+        if (strLine.toLowerCase().contains("With m_Groups.Item(i)".toLowerCase())) {
+            int i = 0;
+        }
+         /* 
+         */
+        // debug
         
         if (G.beginLike(strLine, "with ")) {
             m_withDeclaration = true;
@@ -3168,6 +3187,7 @@ public class Translator {
             String type = "";
             String parent = "";
             String parentJavaName = "";
+            boolean inWith = false;
             workLine = workLine.substring(i + 5).trim();
             boolean startWithPeriod = false;
             if (workLine.charAt(0) == '.') {
@@ -3183,6 +3203,7 @@ public class Translator {
             if (m_collWiths.size() > 0 && startWithPeriod) {
                 parent = m_collWiths.get(m_collWiths.size()-1).dataType;
                 parentJavaName = m_collWiths.get(m_collWiths.size()-1).getJavaName() + ".";
+                inWith = true;
             }
             else {
                 parent = "";
@@ -3223,7 +3244,7 @@ public class Translator {
                 var.setJavaName("w_" + var.dataType.substring(0, 1).toLowerCase()
                             + var.dataType.substring(1));
 
-                if (m_inWith) {
+                if (inWith) {
                     strLine = prefix
                                 + var.dataType
                                 + " "
@@ -3255,7 +3276,7 @@ public class Translator {
                     else {
                         params = "()";
                     }
-                    if (m_inWith) {
+                    if (inWith) {
                         strLine = prefix
                                     + var.dataType
                                     + " "
@@ -5701,7 +5722,7 @@ public class Translator {
         // if we are here, we must look in the database
         //
         Function publicFunction = FunctionObject.getFunctionFromName(
-                                                    expression,
+                                                    functionName,
                                                     className,
                                                     m_references);
 
