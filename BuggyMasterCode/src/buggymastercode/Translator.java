@@ -1086,9 +1086,9 @@ public class Translator {
     private String translateCode(String strLine, boolean inDeclaration) {
         
         // debug
-        //
-        /*
-        if (G.beginLike(strLine.trim(), "strOriginalErr2 = strOriginalErr2 & gErrorDB")) {
+        //  
+        
+        if (strLine.contains("pIsSeparator(")) {
             int i = 9999;
         }
          /* 
@@ -1822,6 +1822,7 @@ public class Translator {
         String switchStatetment = "";
         boolean identifierHasStarted = false;
         boolean parenthesesClosed = false;
+        boolean isCaseElse = false;
         String[] words = G.split(strLine);
 
         if (m_isFirstCase) {
@@ -1829,7 +1830,13 @@ public class Translator {
             switchStatetment = "case ";
         }
         else {
-            switchStatetment = "    break;" + newline + getTabs() + "case ";
+            switchStatetment = "    break;" + newline + getTabs();
+            if (G.beginLike(strLine, "case else")) {
+                switchStatetment += "default ";
+                isCaseElse = true;
+            }
+            else                
+                switchStatetment += "case ";
         }
 
         for (int i = 0; i < words.length; i++) {
@@ -1851,12 +1858,20 @@ public class Translator {
                 }
             }
             else {
-                if (words[i].toLowerCase().equals("case"))
+                if (isCaseElse) {
+                    if (words[i].toLowerCase().equals("else"))
+                        identifierHasStarted = true;                    
+                }
+                else if (words[i].toLowerCase().equals("case"))
                     identifierHasStarted = true;
             }
         }
-        if (!parenthesesClosed)
-            switchStatetment += ":";
+        if (!parenthesesClosed) {
+            if (isCaseElse)
+                switchStatetment = switchStatetment.trim() + ":";
+            else
+                switchStatetment += ":";
+        }
         return switchStatetment + newline;
     }
 
@@ -2597,6 +2612,7 @@ public class Translator {
         strLine = replaceLCaseSentence(strLine);
         strLine = replaceUCaseSentence(strLine);
         strLine = replaceLenSentence(strLine);
+        strLine = replaceTrimSentence(strLine);
         strLine = replaceReplaceSentence(strLine);
         strLine = translateVbOperators(strLine);
         if (m_translateToJava) {
@@ -3561,6 +3577,9 @@ public class Translator {
                         source = "";
                     }
                 }
+                else {
+                    source += words[i];
+                }
                 openParentheses++;
             }
             else if (words[i].equals(")")) {
@@ -3568,6 +3587,9 @@ public class Translator {
                 if (openParentheses == 0) {
                     rtn += "(" + putParentheses(source) + ")";
                     source = "";
+                }
+                else {
+                    source += words[i];
                 }
             }
             else {
@@ -3630,6 +3652,7 @@ public class Translator {
             return strLine;
     }
     private boolean containsMathOperators(String strLine) {
+        strLine = removeLiterals(strLine);
         if(strLine.contains("+")) {
             return true;
         }
@@ -3645,6 +3668,18 @@ public class Translator {
         else
             return false;
 
+    }
+    private String removeLiterals(String strLine) {
+        boolean openLiterals = false;
+        String rtn = "";
+        for (int i = 0; i < strLine.length(); i++) {
+            String c = strLine.substring(0, 1);
+            if (c.equals("\""))
+                openLiterals = !openLiterals;
+            else if (!openLiterals) 
+                rtn += c;
+        }
+        return rtn;
     }
 
     private String replaceAmpersand(String strLine) {
@@ -4836,33 +4871,33 @@ public class Translator {
                                     compareType = param4;
                                     if (compareType.equals("0")
                                             || compareType.equals("vbBinaryCompare")) {
-                                        expression += source
+                                        expression += getSource(source)
                                                         + ".indexOf(" + toSearch
                                                         + ", " + start.trim() + ")";
                                     }
                                     else { // 1 or vbTextCompare
                                         if (isStringIdentifier(toSearch)) {
                                             if (m_translateToJava)
-                                                expression += source
+                                                expression += getSource(source)
                                                             + ".toLowerCase().indexOf("
                                                             + toSearch + ".toLowerCase(), "
                                                             + start.trim() + ")";
                                             else
-                                                expression += source
+                                                expression += getSource(source)
                                                             + ".ToLower().IndexOf("
                                                             + toSearch + ".ToLower(), "
                                                             + start.trim() + ")";                                                
                                         }
                                         else {
                                             if (m_translateToJava)
-                                                expression += source
+                                                expression += getSource(source)
                                                             + ".toLowerCase().indexOf(String.valueOf("
                                                             + toSearch + ").toLowerCase(), "
                                                             + start.trim() + ")";
                                             else
-                                                expression += source
+                                                expression += getSource(source)
                                                             + ".ToLower().IndexOf(("
-                                                            + toSearch + ").ToLower(), "
+                                                            + toSearch + ").ToString().ToLower(), "
                                                             + start.trim() + ")";
                                         }
                                     }
@@ -4878,7 +4913,7 @@ public class Translator {
                                         start = param1;
                                         source = param2;
                                         toSearch = param3;
-                                        expression += source
+                                        expression += getSource(source)
                                                     + ".indexOf("
                                                     + toSearch + ", "
                                                     + start.trim() + ")";
@@ -4889,29 +4924,29 @@ public class Translator {
                                         compareType = param3;
                                         if (compareType.equals("0")
                                                 || compareType.equals("vbBinaryCompare")) {
-                                            expression += source
+                                            expression += getSource(source)
                                                             + ".indexOf(" + toSearch + ")";
                                         }
                                         else { // 1 or vbTextCompare
                                             if (isStringIdentifier(toSearch)) {
                                                 if (m_translateToJava)
-                                                    expression += source
+                                                    expression += getSource(source)
                                                                 + ".toLowerCase().indexOf("
                                                                 + toSearch + ".toLowerCase())";
                                                 else
-                                                    expression += source
+                                                    expression += getSource(source)
                                                                 + ".ToLower().IndexOf("
                                                                 + toSearch + ".ToLower())";                                                    
                                             }
                                             else {
                                                 if (m_translateToJava)
-                                                    expression += source
+                                                    expression += getSource(source)
                                                                 + ".toLowerCase().indexOf(String.valueOf("
                                                                 + toSearch + ").toLowerCase())";
                                                 else
-                                                    expression += source
+                                                    expression += getSource(source)
                                                                 + ".ToLower().IndexOf(("
-                                                                + toSearch + ").ToLower())";
+                                                                + toSearch + ").ToString().ToLower())";
                                             }
                                         }
                                     }
@@ -4921,7 +4956,7 @@ public class Translator {
                                 else {
                                     source = param1;
                                     toSearch = param2;
-                                    expression += source
+                                    expression += getSource(source)
                                                 + ".indexOf("
                                                 + toSearch + ")";
                                 }
@@ -4954,6 +4989,13 @@ public class Translator {
             }
         }
         return expression.trim();
+    }
+    
+    private String getSource(String source) {
+        if (isComplexExpression(source))
+            return "(" + source + ")";
+        else
+            return source;
     }
 
     private String replaceReplaceSentence(String expression) {
@@ -5020,9 +5062,14 @@ public class Translator {
                             if (G.contains(identifier, " ")) {
                                 identifier = "(" + identifier + ")";
                             }
-                            expression += identifier 
-                                            + ".replace(" + toSearch.trim()
-                                            + ", " + newValue.trim() + ")";
+                            if (m_translateToJava)
+                                expression += identifier 
+                                                + ".replace(" + toSearch.trim()
+                                                + ", " + newValue.trim() + ")";
+                            else
+                                expression += identifier 
+                                                + ".Replace(" + toSearch.trim()
+                                                + ", " + newValue.trim() + ")";
                             replaceFound = false;
                             params = "";
                         }
@@ -5159,6 +5206,99 @@ public class Translator {
         return expression.trim();
     }
     
+    private String replaceTrimSentence(String expression) {
+
+        expression = G.ltrimTab(expression);
+
+        if (containsTrim(expression)) {
+
+            boolean trimFound = false;
+            int openParentheses = 0;
+            String[] words = G.split(expression);
+            String params = "";
+            expression = "";
+
+            for (int i = 0; i < words.length; i++) {
+                if (trimFound) {
+                    if (words[i].equals("(")) {
+                        openParentheses++;
+                        if (openParentheses > 1) {
+                            params += words[i];
+                        }
+                    }
+                    // look for a close parentheses without an open parentheses
+                    else if (words[i].equals(")")) {
+                        openParentheses--;
+                        if (openParentheses == 0) {
+                            if (containsTrim(params)) {
+                                params = replaceTrimSentence(params);
+                            }
+                            String[] vparams = G.split(params);
+                            String identifier = "";
+
+                            int colons = 0;
+                            identifier = "";
+                            for (int t = 0; t < vparams.length; t++) {
+                                if (vparams[t].equals(",")) {
+                                    colons++;
+                                }
+                                else {
+
+                                    if (colons == 0) {
+                                        identifier += vparams[t];
+                                    }
+                                    else {
+                                        showError("Unexpected colon found in Trim function's params: " + params);
+                                    }
+                                }
+                            }
+                            // identifier can be a complex expresion
+                            // like ' "an string plus" + a_var '
+                            //
+                            if (G.contains(identifier, " ")) {
+                                identifier = "(" + identifier + ")";
+                            }
+                            if (m_translateToJava)
+                                expression += identifier + ".trim()";
+                            else
+                                expression += identifier + ".Trim()";
+                            trimFound = false;
+                            params = "";
+                        }
+                        else {
+                            params = params.trim() + words[i];
+                        }
+                    }
+                    else {
+                        params += words[i];
+                    }
+                }
+                else {
+                    if (words[i].equalsIgnoreCase("trim")) {
+                        trimFound = true;
+                    }
+                    else if (words[i].equalsIgnoreCase("trim$")) {
+                        trimFound = true;
+                    }
+                    else if (G.beginLike(words[i],"trim(")) {
+                        expression += replaceTrimSentence(words[i]);
+                    }
+                    else if (G.beginLike(words[i],"trim$(")) {
+                        expression += replaceTrimSentence(words[i]);
+                    }
+                    else if (containsMid(words[i])) {
+                        expression += replaceTrimSentence(words[i]);
+                    }
+                    else {
+                        expression += words[i];
+                    }
+                    
+                }
+            }
+        }
+        return expression.trim();
+    }
+
     private String replaceIsNumericSentence(String expression) {
         if (containsFunction(expression, "IsNumeric")) {
             if (m_AddAuxFunctionsToClass) {
@@ -5462,6 +5602,30 @@ public class Translator {
         return containsFunction(expression, "len");
     }
 
+    private boolean containsTrim(String expression) {
+        if (expression.toLowerCase().contains(" trim(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains("(trim(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains(" trim$(")) {
+            return true;
+        }
+        else if (expression.toLowerCase().contains("(trim$(")) {
+            return true;
+        }
+        else if (G.beginLike(expression,"trim(")) {
+            return true;
+        }
+        else if (G.beginLike(expression,"trim$(")) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
     private boolean containsInStr(String expression) {
         return containsFunction(expression, "instr");
     }
@@ -5540,7 +5704,13 @@ public class Translator {
                 words[i] = "true";
             }
             else if (words[i].equalsIgnoreCase("vbCrLf")) {
+                words[i] = "\"\\r\\n\"";
+            }
+            else if (words[i].equalsIgnoreCase("vbCr")) {
                 words[i] = "\"\\n\"";
+            }
+            else if (words[i].equalsIgnoreCase("vbLf")) {
+                words[i] = "\"\\r\"";
             }
             else if (words[i].equalsIgnoreCase("me")) {
                 words[i] = "this";
@@ -5591,6 +5761,8 @@ public class Translator {
         String type = "";
         String parent = "";
         expression = expression.trim();
+        if (expression.length() == 0)
+            return false;
         if (expression.charAt(0) == '.') {
             if (expression.length() > 1) {
                 expression = expression.substring(1);
@@ -5730,7 +5902,24 @@ public class Translator {
     }
 
     private String getCastToString(String identifier) {
-        Variable var = getVariable(identifier);
+        
+        // if the caller by mistake put parentheses in a return sentences
+        // we fixed it here
+        //
+        if (identifier.startsWith("(return") && identifier.endsWith(")")) {
+            identifier = identifier.substring(1,identifier.length()-1);
+        }
+
+        String returnPrefix = "";
+        identifier = identifier.trim();
+        if (G.beginLike(identifier.trim(), "return")) {
+            int i = identifier.indexOf("return") + 6;
+            returnPrefix = identifier.substring(0, i);
+            identifier = identifier.substring(i);
+        }
+
+        Variable var = getVariable(identifier);        
+        
         if (var == null) {
             IdentifierInfo info = getIdentifierInfo(identifier);
             if (info != null) {
@@ -5742,38 +5931,47 @@ public class Translator {
         }
         if (var != null) {
             if (var.isString)
-                return identifier;
+                return returnPrefix + identifier;
                     
             else if (var.isLong)
                 if (m_translateToJava)
-                    return "((Long) " + identifier + ").toString()";
+                    return returnPrefix + "((Long) " + identifier + ").toString()";
                 else
-                    return identifier + ".toString()";
+                    return returnPrefix + identifier + ".toString()";
                     
             else if (var.isInt)
                 if (m_translateToJava)
-                    return "((Integer) " + identifier + ").toString()";
+                    return returnPrefix + "((Integer) " + identifier + ").toString()";
                 else
-                    return identifier + ".toString()";
+                    return returnPrefix + identifier + ".toString()";
                     
             else if (var.isBoolean)
                 if (m_translateToJava)
-                    return "((Boolean) " + identifier + ").toString()";
+                    return returnPrefix + "((Boolean) " + identifier + ").toString()";
                 else
-                    return identifier + ".toString()";
+                    return returnPrefix + identifier + ".toString()";
                     
             else
-                return identifier;
+                return returnPrefix + identifier;
         }
         else if (isComplexExpression(identifier)) {
-            identifier = identifier.trim();
-            if (identifier.startsWith("("))
-                return "String.valueOf" + identifier;
-            else
-                return "String.valueOf(" + identifier + ")";
+            if (isStringExpression(identifier)) 
+                return returnPrefix + identifier;
+            else if (identifier.startsWith("(")) {
+                if (m_translateToJava)
+                    return returnPrefix + "String.valueOf" + identifier;
+                else
+                    return returnPrefix + identifier + ".ToString()";
+            }
+            else {
+                if (m_translateToJava)
+                    return returnPrefix + "String.valueOf(" + identifier + ")";
+                else
+                    return returnPrefix + "(" + identifier + ").ToString()";
+            } 
         }
         else
-            return identifier;
+            return returnPrefix + identifier;
     }
     
     private IdentifierInfo getIdentifierInfo(String expression) {
@@ -8126,7 +8324,9 @@ public class Translator {
         //
         if (type.equals("String")) {
             if (identifier.startsWith("\"")) {
-                return true;
+                identifier = removeLiterals(identifier);
+                if (identifier.length() == 0)
+                    return true;
             }
         }
         if (type.equals("@numeric")) {
