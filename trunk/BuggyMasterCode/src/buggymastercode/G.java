@@ -312,6 +312,9 @@ public class G {
         } catch (IOException ex) {
             Logger.getLogger(BuggyMasterCodeView.class.getName()).log(Level.SEVERE, null, ex);
             return false;
+        } catch (Exception ex) {
+            Logger.getLogger(BuggyMasterCodeView.class.getName()).log(Level.SEVERE, null, ex);
+            return false;            
         } finally {
             try {
                 fstream.close();
@@ -319,6 +322,9 @@ public class G {
             } catch (IOException ex) {
                 Logger.getLogger(BuggyMasterCodeView.class.getName()).log(Level.SEVERE, null, ex);
                 return false;
+            } catch (Exception ex) {
+                Logger.getLogger(BuggyMasterCodeView.class.getName()).log(Level.SEVERE, null, ex);
+                return false; 
             }
         }
     }
@@ -789,4 +795,27 @@ public class G {
             return file.replace("\\", "/");
         }
     }
+
+    public static String getFileName(String fullPath) {
+        String fileName = fullPath;
+        for (int i = fullPath.length() - 1; i > 0; i--) {
+            if (fullPath.charAt(i) == '\\' || fullPath.charAt(i) == '/') {
+                fileName = fullPath.substring(i + 1);
+                break;
+            }
+        }
+        return fileName;
+    }
+
+    public static String getFilePath(String fullPath) {
+        String path = "";
+        for (int i = fullPath.length() - 1; i > 0; i--) {
+            if (fullPath.charAt(i) == '\\' || fullPath.charAt(i) == '/') {
+                path = fullPath.substring(0, i);
+                break;
+            }
+        }
+        return path;
+    }
+    
 }

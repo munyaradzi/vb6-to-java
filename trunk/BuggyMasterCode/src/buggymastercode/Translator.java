@@ -8393,7 +8393,7 @@ public class Translator {
     private void showError(String msg) {
         msg = "module: " + m_vbClassName + newline + msg;
         msg = "function: " + m_vbFunctionName + newline + msg;
-        G.showInfo(msg);
+        //G.showInfo(msg);
     }
 
     // ADODB
