@@ -556,6 +556,7 @@ public class BuggyMasterCodeView extends FrameView {
     }
 
     private void translateGroup(String vbgFile) {
+        /*
         // Parse
         //
         int line = 1;
@@ -564,14 +565,15 @@ public class BuggyMasterCodeView extends FrameView {
 
         if (G.getToken(vbgFile, "Project", line, value)) {
             while (!value.text.isEmpty()) {
+                statusMessageLabel.setText("Loading references for " + value.text);
                 // stop if the user wants to cancel
                 //
                 if (m_cancel)
                     return;
                 Project project = new Project();
-                project.setName(getFileName(value.text));
-                String path = getFilePath(vbgFile);
-                String filePath = getFilePath(value.text);
+                project.setName(G.getFileName(value.text));
+                String path = G.getFilePath(vbgFile);
+                String filePath = G.getFilePath(value.text);
                 if (!filePath.isEmpty()) {
                     if (filePath.contains(":"))
                         path = filePath;
@@ -595,9 +597,9 @@ public class BuggyMasterCodeView extends FrameView {
         if (G.getToken(vbgFile, "StartupProject", 1, value)) {
             if (!value.text.isEmpty()) {
                 Project project = new Project();
-                project.setName(getFileName(value.text));
-                String path = getFilePath(vbgFile);
-                String filePath = getFilePath(value.text);
+                project.setName(G.getFileName(value.text));
+                String path = G.getFilePath(vbgFile);
+                String filePath = G.getFilePath(value.text);
                 if (!filePath.isEmpty())
                     path += "\\" + filePath;
                 project.setPath(path);
@@ -621,8 +623,34 @@ public class BuggyMasterCodeView extends FrameView {
         vbGroup.setCaller(this);
         vbGroup.loadGrid(projects);
         BuggyMasterCodeApp.getApplication().show(vbGroup);
+         * 
+         */
+
+        try {
+            TranslatorWorkerGroup twg = new TranslatorWorkerGroup(
+                                            this, 
+                                            vbgFile);
+            twg.execute();
+        }
+        catch (Exception ex) {
+            String msg = "the translate execution has failed";
+            BuggyMasterCodeApp.getLogger().log(Level.WARNING, msg, ex);
+            G.showInfo(msg);
+            setEnabledCtrls(true);
+        }
     }
 
+    public void showVBGroupDialog(ArrayList<Project> projects) {
+        if (vbGroup == null) {
+            JFrame mainFrame = BuggyMasterCodeApp.getApplication().getMainFrame();
+            vbGroup = new VbGroup(mainFrame, false);
+            vbGroup.setLocationRelativeTo(mainFrame);
+        }
+        vbGroup.setCaller(this);
+        vbGroup.loadGrid(projects);
+        BuggyMasterCodeApp.getApplication().show(vbGroup);
+    }
+    
     public void translateProjects(ArrayList<Project> projects) {
         m_projects.removeAll(projects);
 
@@ -643,11 +671,23 @@ public class BuggyMasterCodeView extends FrameView {
         }
         else {
             if (m_projects.size() > 0) {
-                Project project = m_projects.get(0);
-                String name = project.getName();
-                String path = G.getFileForOS(project.getPath() + "\\" + name);
-                m_projects.remove(0);
-                translate(path, name);
+                int minRef = 999999;
+                int index = -1;
+                Project project = null;
+                for (int i = 0; i < m_projects.size(); i++) {
+                    if (minRef > m_projects.get(i).getLevel()) {
+                        index = i;
+                        project = m_projects.get(i);
+                        minRef =  project.getLevel();                        
+                    }
+                }
+                if (project != null) {
+                    setStatusBarMessage("Projects in queue " + ((Integer)m_projects.size()).toString());
+                    String name = project.getName();
+                    String path = G.getFileForOS(project.getPath() + "\\" + name);
+                    m_projects.remove(index);
+                    translate(path, name);
+                }
             }
         }
     }
@@ -686,6 +726,11 @@ public class BuggyMasterCodeView extends FrameView {
         model.add(0, message);
     }
 
+    public void setStatusBarMessage(String message) {
+        statusMessageLabel.setText(message);
+    }
+    
+
     public void updateLastMessage(String message) {
         DefaultListModel model = (DefaultListModel)lsFiles.getModel();
         model.setElementAt(message, 0);
@@ -717,7 +762,7 @@ public class BuggyMasterCodeView extends FrameView {
         if (txOutputFolder.getText().isEmpty())
             return;
         Writer output = null;
-        String folder = getFileName(m_vbpFile);
+        String folder = G.getFileName(m_vbpFile);
         createFolderIfNotExists(G.getFileForOS(txOutputFolder.getText()
                                                 + "\\"
                                                 + folder));
@@ -797,31 +842,9 @@ public class BuggyMasterCodeView extends FrameView {
     public void translateFromList() {
         String fullPath = cbProject.getSelectedItem().toString();
         if (!fullPath.isEmpty()) {
-            String fileName = getFileName(fullPath);
+            String fileName = G.getFileName(fullPath);
             translate(fullPath, fileName);
         }
-    }
-
-    private String getFileName(String fullPath) {
-        String fileName = fullPath;
-        for (int i = fullPath.length() - 1; i > 0; i--) {
-            if (fullPath.charAt(i) == '\\' || fullPath.charAt(i) == '/') {
-                fileName = fullPath.substring(i + 1);
-                break;
-            }
-        }
-        return fileName;
-    }
-
-    private String getFilePath(String fullPath) {
-        String path = "";
-        for (int i = fullPath.length() - 1; i > 0; i--) {
-            if (fullPath.charAt(i) == '\\' || fullPath.charAt(i) == '/') {
-                path = fullPath.substring(0, i);
-                break;
-            }
-        }
-        return path;
     }
 
     public void fillOpenRecentList() {

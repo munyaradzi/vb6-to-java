@@ -159,7 +159,7 @@ public class VbGroup extends javax.swing.JDialog {
                                           projects.get(i).getName(),
                                           projects.get(i).getDllName(),
                                           projects.get(i).getPath(),
-                                          false});
+                                          true});
             }
 
             m_projects = projects;
