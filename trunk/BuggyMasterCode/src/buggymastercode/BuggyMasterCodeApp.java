@@ -21,7 +21,7 @@ public class BuggyMasterCodeApp extends SingleFrameApplication {
     public static final String C_DB_TYPE_ORACLE = "oracle";
     public static final String C_DB_TYPE_H2 = "h2";
 
-    static Logger m_logger = Logger.getLogger("ar.com.crowsoft.cvxi");
+    static final Logger m_logger = Logger.getLogger("ar.com.crowsoft.cvxi");
     FileHandler fh;
 
     private static DBConnection m_db;
